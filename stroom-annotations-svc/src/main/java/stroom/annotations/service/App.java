@@ -7,11 +7,15 @@ import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
 import io.dropwizard.db.DataSourceFactory;
 import io.dropwizard.db.ManagedDataSource;
+import io.dropwizard.db.PooledDataSourceFactory;
 import io.dropwizard.flyway.FlywayBundle;
 import io.dropwizard.flyway.FlywayFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.flywaydb.core.Flyway;
+import org.jooq.DSLContext;
+import org.jooq.SQLDialect;
+import org.jooq.impl.DSL;
 import stroom.annotations.service.health.AnnotationsHealthCheck;
 import stroom.annotations.service.resources.AnnotationsResource;
 
@@ -48,10 +52,17 @@ public class App extends Application<Config> {
     @Override
     public void run(Config configuration, Environment environment) throws Exception {
         final AnnotationsResource annotationsResource = new AnnotationsResource();
-        final AnnotationsHealthCheck annotationsHealthCheck =
-                new AnnotationsHealthCheck();
 
-        environment.healthChecks().register("annotations", annotationsHealthCheck);
+        // Register DB health check
+        final PooledDataSourceFactory dsf = jooqBundle.getDataSourceFactory(configuration);
+        final SQLDialect dialect = configuration.getJooqFactory().getDialect().get();
+        final ManagedDataSource dataSource = dsf
+                .build(environment.metrics(), dialect.getName());
+        final String validationQuery = dsf.getValidationQuery();
+        final DSLContext dslContext = DSL.using(dataSource, dialect);
+        environment.lifecycle().manage(dataSource);
+        environment.healthChecks().register(dialect.getName(), new AnnotationsHealthCheck(dslContext, validationQuery));
+
         environment.jersey().register(annotationsResource);
 
         migrate(configuration, environment);

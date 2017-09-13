@@ -2,9 +2,7 @@ package stroom.annotations.service.resources;
 
 import com.codahale.metrics.annotation.Timed;
 import org.jooq.DSLContext;
-import org.jooq.Result;
 import stroom.annotations.service.model.AnnotationDTO;
-import stroom.db.annotations.Tables;
 import stroom.db.annotations.tables.records.AnnotationsRecord;
 
 import javax.validation.constraints.NotNull;
@@ -28,9 +26,9 @@ public class AnnotationsResource {
     @Timed
     @NotNull
     public final Response welcome() {
-        
-
-        return Response.status(Response.Status.OK).entity("Welcome to the annotations service").build();
+        return Response.status(Response.Status.OK)
+                .entity("Welcome to the annotations service")
+                .build();
     }
 
     @GET
@@ -60,13 +58,12 @@ public class AnnotationsResource {
     @Produces({MediaType.TEXT_PLAIN})
     @Timed
     @NotNull
-    public final Response post(@Context @NotNull DSLContext database,
-                               @PathParam("id") final String id,
-                               final String body) {
+    public final Response create(@Context @NotNull DSLContext database,
+                                 @PathParam("id") final String id) {
 
         final int result = database.insertInto(ANNOTATIONS_)
-                .columns(ANNOTATIONS_.ID, ANNOTATIONS_.CONTENT)
-                .values(id, body)
+                .columns(ANNOTATIONS_.ID)
+                .values(id)
                 .execute();
 
         return Response.status(Response.Status.OK)
