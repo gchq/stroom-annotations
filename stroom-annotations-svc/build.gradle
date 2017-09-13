@@ -1,0 +1,100 @@
+/*
+ * Copyright 2017 Crown Copyright
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+plugins {
+    id 'com.github.johnrengelman.shadow' version '1.2.4'
+}
+
+apply plugin: 'application'
+mainClassName = 'stroom.annotations.service.App'
+
+jar {
+    manifest {
+        attributes(
+                "Implementation-Title": "Stroom Annotations Service",
+                "Implementation-Version": version,
+                "Main-Class" : "stroom.annotations.service.App"
+        )
+    }
+
+    archiveName 'stroom-annotations-service.jar'
+}
+
+shadowJar {
+    // Allows us to build fat jars with lots of files
+    zip64 true
+    mergeServiceFiles()
+    archiveName 'stroom-annotations-service-all.jar'
+}
+
+sourceSets {
+    // This lets us use different directories for our integration tests.
+    integrationTest {
+        java {
+            compileClasspath += main.output + test.output
+            runtimeClasspath += main.output + test.output
+            srcDir file('src/integration-test/java')
+        }
+        resources.srcDir file('src/integration-test/resources')
+    }
+}
+
+configurations {
+    // This means our integration tests get all the dependencies from our tests and we don't need to specify them twice.
+    integrationTestCompile.extendsFrom testCompile
+    integrationTestRuntime.extendsFrom testRuntime
+}
+
+// This task lets us run the actual integration tests.
+task integrationTest(type: Test) {
+    testClassesDir = sourceSets.integrationTest.output.classesDir
+    classpath = sourceSets.integrationTest.runtimeClasspath
+}
+
+// These lines pull the integration test task into our build process.
+check.dependsOn integrationTest
+integrationTest.mustRunAfter test
+
+// This means the reports from our integration tests won't over-write the reports from our unit tests.
+tasks.withType(Test) {
+    reports.html.destination = file("${reporting.baseDir}/${name}")
+}
+
+dependencies {
+    compile project(':stroom-annotations-persistence')
+    compile deps.dropwizard_core
+    compile deps.dropwizard_flyway
+    compile deps.dropwizard_jooq
+    compile deps.dropwizard_auth
+    compile deps.dropwizard_auth_jwt
+    compile deps.bcrypt
+    compile deps.jose4j
+    compile deps.guice
+    compile deps.slf4j
+    compile deps.shiro_core
+    compile deps.flyway_core
+    compile deps.curator_service_discovery
+    compile deps.simple_java_mail
+
+    runtime deps.mariadb_connector
+
+    testCompile testDeps.junit
+    testCompile testDeps.assertj
+
+    integrationTestCompile testDeps.dropwizard_testing
+    integrationTestCompile testDeps.moshi
+    integrationTestCompile testDeps.unirest
+}
