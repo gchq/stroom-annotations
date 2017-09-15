@@ -28,7 +28,7 @@ export const fetchAnnotation = (id) => {
     return function(dispatch) {
         dispatch(requestFetchAnnotation(id));
 
-        return fetch(`http://192.168.1.10:8199/annotations/v1/${id}`)
+        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/${id}`)
               .then(
                 response => response.json(),
                 // Do not use catch, because that will also catch

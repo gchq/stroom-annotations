@@ -26,7 +26,7 @@ export const removeAnnotation = (id) => {
     return function(dispatch) {
         dispatch(requestRemoveAnnotation(id));
 
-        return fetch(`http://192.168.1.10:8199/annotations/v1/${id}`,
+        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/${id}`,
             {
                 method: "DELETE"
             }

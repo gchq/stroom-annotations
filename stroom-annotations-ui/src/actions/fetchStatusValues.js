@@ -27,7 +27,7 @@ export const fetchStatusValues = (id) => {
     return function(dispatch) {
         dispatch(requestFetchStatusValues(id));
 
-        return fetch(`http://192.168.1.10:8199/annotations/v1/static/statusValues`)
+        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/static/statusValues`)
               .then(
                 response => response.json(),
                 // Do not use catch, because that will also catch
