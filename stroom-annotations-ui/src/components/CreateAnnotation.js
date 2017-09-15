@@ -1,7 +1,7 @@
 import React from 'react';
 import { connect } from 'react-redux'
 
-import { createAnnotation } from '../actions';
+import { createAnnotation } from '../actions/createAnnotation';
 
 const CreateAnnotation = ({annotationId, createAnnotation}) => (
     <div>
@@ -10,6 +10,8 @@ const CreateAnnotation = ({annotationId, createAnnotation}) => (
 )
 
 export default connect(
-    null,
+    (state) => ({
+        annotationId: state.annotation.annotationId
+    }),
     {createAnnotation}
 )(CreateAnnotation)

@@ -12,6 +12,7 @@ import io.dropwizard.flyway.FlywayBundle;
 import io.dropwizard.flyway.FlywayFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.flywaydb.core.Flyway;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
@@ -19,7 +20,10 @@ import org.jooq.impl.DSL;
 import stroom.annotations.service.health.AnnotationsHealthCheck;
 import stroom.annotations.service.resources.AnnotationsResource;
 
+import javax.servlet.DispatcherType;
+import javax.servlet.FilterRegistration;
 import javax.sql.DataSource;
+import java.util.EnumSet;
 
 public class App extends Application<Config> {
 
@@ -65,7 +69,19 @@ public class App extends Application<Config> {
 
         environment.jersey().register(annotationsResource);
 
+        configureCors(environment);
         migrate(configuration, environment);
+    }
+
+
+    private static final void configureCors(Environment environment) {
+        FilterRegistration.Dynamic cors = environment.servlets().addFilter("CORS", CrossOriginFilter.class);
+        cors.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, new String[]{"/*"});
+        cors.setInitParameter("allowedMethods", "GET,PUT,POST,DELETE,OPTIONS");
+        cors.setInitParameter("allowedOrigins", "*");
+        cors.setInitParameter("Access-Control-Allow-Origin", "*");
+        cors.setInitParameter("allowedHeaders", "Content-Type,Authorization,X-Requested-With,Content-Length,Accept,Origin");
+        cors.setInitParameter("allowCredentials", "true");
     }
 
     @Override

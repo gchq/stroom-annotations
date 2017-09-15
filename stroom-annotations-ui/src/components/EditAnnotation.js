@@ -1,11 +1,12 @@
 import React from 'react';
 import { connect } from 'react-redux'
 
-import { updateAnnotation, removeAnnotation } from '../actions';
+import { updateAnnotation } from '../actions/updateAnnotation';
+import { removeAnnotation } from '../actions/removeAnnotation';
 
 const EditAnnotation = ({annotation, updateAnnotation, removeAnnotation}) => (
     <div>
-        <textarea value={annotation.content} onChange={e => updateAnnotation(e.target.value)} />
+        <textarea value={annotation.content} onChange={e => updateAnnotation(annotation.id, e.target.value)} />
         <button onClick={() => removeAnnotation(annotation.id)}>Remove Annotation</button>
     </div>
 )

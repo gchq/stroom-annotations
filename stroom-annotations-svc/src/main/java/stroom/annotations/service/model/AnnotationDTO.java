@@ -1,6 +1,8 @@
 package stroom.annotations.service.model;
 
 public class AnnotationDTO {
+    public static final String DEFAULT_ANNOTATION_CONTENT = "";
+
     private String id;
 
     private String content;
