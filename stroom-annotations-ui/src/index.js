@@ -4,8 +4,7 @@ import thunkMiddleware from 'redux-thunk'
 import { createLogger } from 'redux-logger'
 import { createStore, applyMiddleware } from 'redux'
 import { Provider } from 'react-redux'
-import App from './components/app/App'
-import NoIdSpecified from './components/NoIdSpecified';
+import App from './components/app'
 import reducer from './reducers'
 import { fetchAnnotation } from './actions/fetchAnnotation'
 import { fetchStatusValues } from './actions/fetchStatusValues'
@@ -43,7 +42,11 @@ const Root = ({ match }) => {
     let app = undefined;
 
     if (!match.params.annotationId) {
-        app = <NoIdSpecified />
+        app = (
+            <div>
+                <p>No Annotation ID Specified</p>
+            </div>
+        )
     } else {
         store.dispatch(fetchAnnotation(match.params.annotationId))
         store.dispatch(fetchStatusValues())
@@ -52,7 +55,6 @@ const Root = ({ match }) => {
 
     return (
         <MuiThemeProvider muiTheme={theme}>
-
             {app}
         </MuiThemeProvider>
     )

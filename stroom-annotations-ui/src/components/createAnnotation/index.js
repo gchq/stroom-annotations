@@ -1,7 +1,7 @@
 import React from 'react';
 import { connect } from 'react-redux'
 
-import { createAnnotation } from '../actions/createAnnotation';
+import { createAnnotation } from '../../actions/createAnnotation';
 
 import RaisedButton from 'material-ui/RaisedButton';
 

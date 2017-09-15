@@ -1,30 +1,13 @@
-.App-logo {
+.app {
+    max-width: 30rem;
+}
+
+.app--logo {
    height: 45px;
    margin-top: 10px;
    margin-left: 10px;
 }
 
-/* This just adds some padding to the content, so the paper stands out */
-.main {
-  /* padding:10px;  */
-}
-
-.App-appBar-buttons {
-  /* Align the buttons with the main Stroom logo */
-  padding-top:6px;
-  /* We need the buttons to align horizontally */
-  display:flex;
-}
-
-.App-appBar-button {
-  color:whitesmoke !important;
-}
-
-.UserSearch-appButton {
-  margin:0px !important;
-}
-
-.App-iconButton {
-  height:10px !important;
-  padding:7px !important;
+.app--body {
+    padding: 1em;
 }

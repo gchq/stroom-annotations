@@ -18,7 +18,9 @@ export const SelectStatus = ({statusValues, value, onChange}) => {
         <SelectField
                 floatingLabelText="Status"
                 value={value}
-                onChange={handleChange}>
+                onChange={handleChange}
+                fullWidth={true}
+                >
             {statusValues.map(sv => <MenuItem key={sv} value={sv} primaryText={sv} />)}
         </SelectField>
     )

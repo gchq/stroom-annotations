@@ -1,0 +1,8 @@
+.edit-annotation {
+    display: flex;
+    flex-direction: column;
+}
+
+.edit-annotation__remove-button {
+    margin-top: 2rem;
+}
