@@ -28,15 +28,13 @@ export const updateAnnotation = (id, annotation) => {
     return function(dispatch) {
         dispatch(requestUpdateAnnotation(id, annotation));
 
-        console.log('Update', annotation);
-
         return fetch(`http://192.168.1.10:8199/annotations/v1/${id}`,
             {
                 method: "PUT",
                 headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                      },
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(annotation)
             }
         )
