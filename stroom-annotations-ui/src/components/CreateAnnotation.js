@@ -3,7 +3,7 @@ import { connect } from 'react-redux'
 
 import { createAnnotation } from '../actions/createAnnotation';
 
-const CreateAnnotation = ({annotationId, createAnnotation}) => (
+export const CreateAnnotation = ({annotationId, createAnnotation}) => (
     <div>
         <button onClick={() => createAnnotation(annotationId)}>Create Annotation</button>
     </div>

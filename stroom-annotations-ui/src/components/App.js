@@ -5,6 +5,7 @@ import EditAnnotation from './EditAnnotation';
 import CreateAnnotation from './CreateAnnotation';
 import Waiting from './Waiting';
 import Error from './Error';
+import CleanIndicator from './CleanIndicator';
 
 let App = (props) => {
     let errorComponent = undefined;
@@ -29,6 +30,7 @@ let App = (props) => {
             </div>
             {annotationComponent}
             {errorComponent}
+            <CleanIndicator />
         </div>
     );
 }

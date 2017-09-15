@@ -24,7 +24,7 @@ import {
 
 const defaultState = {
     isFetching: false,
-    didInvalidate: false,
+    isClean: true,
     errorMsg: undefined
 }
 
@@ -39,31 +39,52 @@ const annotation = (
         case RECEIVE_REMOVE_ANNOTATION_FAILED:
             return {
                     isFetching: false,
-                    didInvalidate: false,
+                    isClean: false,
                     errorMsg: action.errorMsg,
                     lastUpdated: action.receivedAt
                   }
 
         case REQUEST_CREATE_ANNOTATION:
-        case REQUEST_UPDATE_ANNOTATION:
         case REQUEST_FETCH_ANNOTATION:
-        case REQUEST_REMOVE_ANNOTATION:
             return Object.assign({}, state, {
                     isFetching: true,
-                    didInvalidate: false,
+                    isClean: false,
                     errorMsg: undefined,
                     annotationId: action.id
                   })
 
+        case REQUEST_UPDATE_ANNOTATION:
+            return Object.assign({}, state, {
+                    isFetching: false,
+                    isClean: false,
+                    errorMsg: undefined,
+                    content: action.content
+                  })
+
+        case REQUEST_REMOVE_ANNOTATION:
+            return Object.assign({}, state, {
+                    isFetching: false,
+                    isClean: false,
+                    errorMsg: undefined
+                  })
+
         case RECEIVE_CREATE_ANNOTATION:
-        case RECEIVE_UPDATE_ANNOTATION:
         case RECEIVE_FETCH_ANNOTATION:
             return Object.assign({}, state, {
                     isFetching: false,
-                    didInvalidate: false,
+                    isClean: true,
                     errorMsg: undefined,
                     id: action.id,
                     content: action.content,
+                    lastUpdated: action.receivedAt
+                  })
+
+        case RECEIVE_UPDATE_ANNOTATION:
+            return Object.assign({}, state, {
+                    isFetching: false,
+                    isClean: true,
+                    errorMsg: undefined,
+                    id: action.id,
                     lastUpdated: action.receivedAt
                   })
 
@@ -71,14 +92,16 @@ const annotation = (
         case RECEIVE_UPDATE_ANNOTATION_FAILED:
             return Object.assign({}, state, {
                     isFetching: false,
-                    didInvalidate: false,
+                    isClean: false,
                     errorMsg: action.errorMsg,
                     lastUpdated: action.receivedAt
                   })
+
+        // Of no real concern, it means no annotation exists, so the option to create one will be presented.
         case RECEIVE_FETCH_ANNOTATION_FAILED:
             return Object.assign({}, state, {
                     isFetching: false,
-                    didInvalidate: false,
+                    isClean: true,
                     lastUpdated: action.receivedAt
                   })
         default:

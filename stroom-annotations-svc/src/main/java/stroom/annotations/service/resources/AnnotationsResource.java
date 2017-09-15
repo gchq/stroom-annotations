@@ -105,8 +105,6 @@ public class AnnotationsResource {
                 .where(ANNOTATIONS_.ID.equal(id))
                 .execute();
 
-        System.out.println("Updating Annotation " + id + " with content " + body);
-
         if (result > 0) {
             return get(database, id);
         } else {

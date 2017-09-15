@@ -2,6 +2,6 @@ import React from 'react';
 
 export default () => (
     <div>
-        <p>Waiting</p>
+        <p>Waiting...</p>
     </div>
 )
