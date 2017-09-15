@@ -8,6 +8,7 @@ import App from './components/App'
 import NoIdSpecified from './components/NoIdSpecified';
 import reducer from './reducers'
 import { fetchAnnotation } from './actions/fetchAnnotation'
+import { fetchStatusValues } from './actions/fetchStatusValues'
 import {
   BrowserRouter as Router,
   Route
@@ -23,12 +24,14 @@ const store = createStore(
     )
 )
 
+// This component is primarily responsible for deciding if the annotation ID has been specified
+// and dispatching the initial fetchAnnotation action.
 const Root = ({ match }) => {
-    store.dispatch(fetchAnnotation(match.params.annotationId))
-
     if (!match.params.annotationId) {
         return <NoIdSpecified />
     } else {
+        store.dispatch(fetchAnnotation(match.params.annotationId))
+        store.dispatch(fetchStatusValues())
         return <App />
     }
 }

@@ -4,10 +4,10 @@ import { connect } from 'react-redux'
 import Spinner from './Spinner.svg'
 
 export const CleanIndicator = (props) => {
-    if (props.annotation.isClean) {
-        return <span />
-    } else {
+    if (props.annotation.pendingUpdates > 0) {
         return <img src={Spinner} alt='Saving Changes'/>
+    } else {
+        return <span />
     }
 }
 

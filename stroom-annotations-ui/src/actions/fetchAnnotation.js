@@ -12,7 +12,7 @@ export const RECEIVE_FETCH_ANNOTATION = 'RECEIVE_FETCH_ANNOTATION';
 export const receiveFetchAnnotation = (id, json) => ({
     type: RECEIVE_FETCH_ANNOTATION,
     id,
-    content: json.content,
+    annotation: json,
     receivedAt: Date.now()
 })
 

@@ -25,7 +25,9 @@ import {
 const defaultState = {
     isFetching: false,
     isClean: true,
-    errorMsg: undefined
+    errorMsg: undefined,
+    pendingUpdates: 0,
+    annotation: {}
 }
 
 const annotation = (
@@ -57,8 +59,12 @@ const annotation = (
             return Object.assign({}, state, {
                     isFetching: false,
                     isClean: false,
+                    pendingUpdates: state.pendingUpdates + 1,
                     errorMsg: undefined,
-                    content: action.content
+                    annotation: {
+                        ...state.annotation,
+                        ...action.annotation,
+                    }
                   })
 
         case REQUEST_REMOVE_ANNOTATION:
@@ -75,7 +81,7 @@ const annotation = (
                     isClean: true,
                     errorMsg: undefined,
                     id: action.id,
-                    content: action.content,
+                    annotation: action.annotation,
                     lastUpdated: action.receivedAt
                   })
 
@@ -85,14 +91,23 @@ const annotation = (
                     isClean: true,
                     errorMsg: undefined,
                     id: action.id,
+                    pendingUpdates: state.pendingUpdates - 1,
                     lastUpdated: action.receivedAt
                   })
 
         case RECEIVE_CREATE_ANNOTATION_FAILED:
+            return Object.assign({}, state, {
+                    isFetching: false,
+                    isClean: false,
+                    errorMsg: action.errorMsg,
+                    lastUpdated: action.receivedAt
+                  })
+
         case RECEIVE_UPDATE_ANNOTATION_FAILED:
             return Object.assign({}, state, {
                     isFetching: false,
                     isClean: false,
+                    pendingUpdates: state.pendingUpdates - 1,
                     errorMsg: action.errorMsg,
                     lastUpdated: action.receivedAt
                   })

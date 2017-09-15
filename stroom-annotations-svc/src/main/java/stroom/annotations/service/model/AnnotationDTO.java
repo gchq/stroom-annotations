@@ -1,11 +1,14 @@
 package stroom.annotations.service.model;
 
 public class AnnotationDTO {
-    public static final String DEFAULT_ANNOTATION_CONTENT = "";
+    public static final String DEFAULT_CONTENT = "";
+    public static final Status DEFAULT_STATUS = Status.CREATED;
 
     private String id;
 
     private String content;
+
+    private Status status;
 
     public String getId() {
         return id;
@@ -23,22 +26,12 @@ public class AnnotationDTO {
         this.content = content;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        AnnotationDTO that = (AnnotationDTO) o;
-
-        if (id != null ? !id.equals(that.id) : that.id != null) return false;
-        return content != null ? content.equals(that.content) : that.content == null;
+    public Status getStatus() {
+        return status;
     }
 
-    @Override
-    public int hashCode() {
-        int result = id != null ? id.hashCode() : 0;
-        result = 31 * result + (content != null ? content.hashCode() : 0);
-        return result;
+    public void setStatus(Status status) {
+        this.status = status;
     }
 
     @Override
@@ -46,6 +39,7 @@ public class AnnotationDTO {
         return "AnnotationDTO{" +
                 "id='" + id + '\'' +
                 ", content='" + content + '\'' +
+                ", status=" + status +
                 '}';
     }
 
@@ -67,6 +61,11 @@ public class AnnotationDTO {
 
         public Builder content(final String content) {
             this.instance.setContent(content);
+            return this;
+        }
+
+        public Builder status(final Status status) {
+            this.instance.setStatus(status);
             return this;
         }
 

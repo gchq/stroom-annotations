@@ -33,7 +33,7 @@ import stroom.db.annotations.tables.records.AnnotationsRecord;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Annotations extends TableImpl<AnnotationsRecord> {
 
-    private static final long serialVersionUID = 1448827036;
+    private static final long serialVersionUID = -365710530;
 
     /**
      * The reference instance of <code>annotations.annotations</code>
@@ -57,6 +57,11 @@ public class Annotations extends TableImpl<AnnotationsRecord> {
      * The column <code>annotations.annotations.content</code>.
      */
     public final TableField<AnnotationsRecord, String> CONTENT = createField("content", org.jooq.impl.SQLDataType.VARCHAR.length(2048).nullable(false), this, "");
+
+    /**
+     * The column <code>annotations.annotations.status</code>.
+     */
+    public final TableField<AnnotationsRecord, String> STATUS = createField("status", org.jooq.impl.SQLDataType.VARCHAR.length(255).nullable(false), this, "");
 
     /**
      * Create a <code>annotations.annotations</code> table reference

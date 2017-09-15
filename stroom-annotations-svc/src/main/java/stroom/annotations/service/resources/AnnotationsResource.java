@@ -4,6 +4,7 @@ import com.codahale.metrics.annotation.Timed;
 import org.jooq.DSLContext;
 import stroom.annotations.service.model.AnnotationDTO;
 import stroom.annotations.service.model.ResponseMsgDTO;
+import stroom.annotations.service.model.Status;
 import stroom.db.annotations.tables.records.AnnotationsRecord;
 
 import javax.validation.constraints.NotNull;
@@ -22,13 +23,24 @@ public class AnnotationsResource {
     }
 
     @GET
-    @Path("/welcome")
+    @Path("/static/welcome")
     @Produces({MediaType.TEXT_PLAIN})
     @Timed
     @NotNull
     public final Response welcome() {
         return Response.status(Response.Status.OK)
                 .entity("Welcome to the annotations service")
+                .build();
+    }
+
+    @GET
+    @Path("/static/statusValues")
+    @Produces({MediaType.APPLICATION_JSON})
+    @Timed
+    @NotNull
+    public final Response statusValues() {
+        return Response.status(Response.Status.OK)
+                .entity(Status.values())
                 .build();
     }
 
@@ -53,6 +65,7 @@ public class AnnotationsResource {
             final AnnotationDTO annotationDTO = new AnnotationDTO.Builder()
                     .id(result.getId())
                     .content(result.getContent())
+                    .status(Status.valueOf(result.getStatus()))
                     .build();
 
             return Response.status(Response.Status.OK)
@@ -76,8 +89,9 @@ public class AnnotationsResource {
                                  @PathParam("id") final String id) {
 
         final int result = database.insertInto(ANNOTATIONS_)
-                .columns(ANNOTATIONS_.ID, ANNOTATIONS_.CONTENT)
-                .values(id, AnnotationDTO.DEFAULT_ANNOTATION_CONTENT)
+                .set(ANNOTATIONS_.ID, id)
+                .set(ANNOTATIONS_.CONTENT, AnnotationDTO.DEFAULT_CONTENT)
+                .set(ANNOTATIONS_.STATUS, AnnotationDTO.DEFAULT_STATUS.toString())
                 .execute();
 
         if (result > 0) {
@@ -93,15 +107,18 @@ public class AnnotationsResource {
 
     @PUT
     @Path("/{id}")
-    @Consumes({MediaType.TEXT_PLAIN})
+    @Consumes({MediaType.APPLICATION_JSON})
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
     @NotNull
     public final Response update(@Context @NotNull DSLContext database,
                                  @PathParam("id") final String id,
-                                 final String body) {
+                                 final AnnotationDTO annotation) {
+        System.out.println("Update" + annotation);
+
         final int result = database.update(ANNOTATIONS_)
-                .set(ANNOTATIONS_.CONTENT, body)
+                .set(ANNOTATIONS_.CONTENT, annotation.getContent())
+                .set(ANNOTATIONS_.STATUS, annotation.getStatus().toString())
                 .where(ANNOTATIONS_.ID.equal(id))
                 .execute();
 

@@ -2,38 +2,42 @@ import fetch from 'isomorphic-fetch'
 
 export const REQUEST_UPDATE_ANNOTATION = 'REQUEST_UPDATE_ANNOTATION'
 
-export const requestUpdateAnnotation = (id, content) => ({
+export const requestUpdateAnnotation = (id, annotation) => ({
     type: REQUEST_UPDATE_ANNOTATION,
-    id
+    id,
+    annotation
 })
 
 export const RECEIVE_UPDATE_ANNOTATION = 'RECEIVE_UPDATE_ANNOTATION';
  
- export const receiveUpdateAnnotation = (id, json) => ({
+ export const receiveUpdateAnnotation = (id) => ({
      type: RECEIVE_UPDATE_ANNOTATION,
      id,
-     content: json.content,
      receivedAt: Date.now()
  })
- 
+
  export const RECEIVE_UPDATE_ANNOTATION_FAILED = 'RECEIVE_UPDATE_ANNOTATION_FAILED';
- 
+
  export const receiveUpdateAnnotationFailed = (errorMsg) => ({
      type: RECEIVE_UPDATE_ANNOTATION_FAILED,
      errorMsg,
      receivedAt: Date.now()
  })
 
-export const updateAnnotation = (id, content) => {
+export const updateAnnotation = (id, annotation) => {
     return function(dispatch) {
-        dispatch(requestUpdateAnnotation(id, content));
+        dispatch(requestUpdateAnnotation(id, annotation));
 
-        console.log(`Updating Annotation ${id} with content ${content}`)
+        console.log('Update', annotation);
 
         return fetch(`http://192.168.1.10:8199/annotations/v1/${id}`,
             {
                 method: "PUT",
-                body: content
+                headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                      },
+                body: JSON.stringify(annotation)
             }
         )
               .then(
@@ -46,7 +50,7 @@ export const updateAnnotation = (id, content) => {
               )
               .then(json => {
                 if (json.id) {
-                    dispatch(receiveUpdateAnnotation(id, json))
+                    dispatch(receiveUpdateAnnotation(id))
                 } else {
                     dispatch(receiveUpdateAnnotationFailed(json.msg))
                 }
