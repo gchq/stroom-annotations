@@ -6,6 +6,9 @@ import { removeAnnotation } from '../actions/removeAnnotation';
 
 import SelectStatus from './SelectStatus';
 
+import RaisedButton from 'material-ui/RaisedButton';
+import TextField from 'material-ui/TextField';
+
 export const EditAnnotation = (props) => {
 
     const onContentChange = (e) => {
@@ -28,10 +31,19 @@ export const EditAnnotation = (props) => {
 
     return (
         <div>
-            <textarea value={props.annotation.content} onChange={onContentChange} />
-            <SelectStatus value={props.annotation.status} onChange={onStatusChange} />
+            <TextField value={props.annotation.content} onChange={onContentChange}
+                    hintText="Write notes against this event"
+                    floatingLabelText="Annotation Content"
+                    multiLine={true}
+                    rows={2}
+                    rowsMax={4}
+                />
+            <br />
 
-            <button onClick={() => props.removeAnnotation(props.annotation.id)}>Remove Annotation</button>
+            <SelectStatus value={props.annotation.status} onChange={onStatusChange} />
+            <br />
+
+            <RaisedButton label='Remove Annotation' onClick={() => props.removeAnnotation(props.annotation.id)} />
         </div>
     )
 }

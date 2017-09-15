@@ -4,17 +4,30 @@ import thunkMiddleware from 'redux-thunk'
 import { createLogger } from 'redux-logger'
 import { createStore, applyMiddleware } from 'redux'
 import { Provider } from 'react-redux'
-import App from './components/App'
+import App from './components/app/App'
 import NoIdSpecified from './components/NoIdSpecified';
 import reducer from './reducers'
 import { fetchAnnotation } from './actions/fetchAnnotation'
 import { fetchStatusValues } from './actions/fetchStatusValues'
+
+import {blue600, amber900} from 'material-ui/styles/colors'
+import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
+import getMuiTheme from 'material-ui/styles/getMuiTheme'
+
 import {
   BrowserRouter as Router,
   Route
 } from 'react-router-dom'
 
 const loggerMiddleware = createLogger()
+
+const theme = getMuiTheme({
+  palette: {
+    primary1Color: blue600,
+    accent1Color: amber900,
+  }
+})
+
 
 const store = createStore(
     reducer,
@@ -27,13 +40,22 @@ const store = createStore(
 // This component is primarily responsible for deciding if the annotation ID has been specified
 // and dispatching the initial fetchAnnotation action.
 const Root = ({ match }) => {
+    let app = undefined;
+
     if (!match.params.annotationId) {
-        return <NoIdSpecified />
+        app = <NoIdSpecified />
     } else {
         store.dispatch(fetchAnnotation(match.params.annotationId))
         store.dispatch(fetchStatusValues())
-        return <App />
+        app = <App />
     }
+
+    return (
+        <MuiThemeProvider muiTheme={theme}>
+
+            {app}
+        </MuiThemeProvider>
+    )
 }
 
 render(

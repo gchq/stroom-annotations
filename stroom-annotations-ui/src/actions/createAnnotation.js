@@ -9,9 +9,10 @@ export const requestCreateAnnotation = (id) => ({
 
 export const RECEIVE_CREATE_ANNOTATION = 'RECEIVE_CREATE_ANNOTATION'
 
-export const receiveCreateAnnotation = (id) => ({
+export const receiveCreateAnnotation = (id, annotation) => ({
     type: RECEIVE_CREATE_ANNOTATION,
-    id
+    id,
+    annotation
 })
 
 export const RECEIVE_CREATE_ANNOTATION_FAILED = 'RECEIVE_CREATE_ANNOTATION_FAILED'

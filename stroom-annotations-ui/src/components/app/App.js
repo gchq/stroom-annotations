@@ -1,11 +1,17 @@
 import React from 'react';
 import { connect } from 'react-redux'
+import {NavLink} from 'react-router-dom'
 
-import EditAnnotation from './EditAnnotation';
-import CreateAnnotation from './CreateAnnotation';
-import Waiting from './Waiting';
-import Error from './Error';
-import CleanIndicator from './CleanIndicator';
+import EditAnnotation from '../EditAnnotation';
+import CreateAnnotation from '../CreateAnnotation';
+import Waiting from '../Waiting';
+import Error from '../Error';
+import CleanIndicator from '../CleanIndicator';
+
+import AppBar from 'material-ui/AppBar'
+
+import './App.css'
+import logo from './logo.svg'
 
 let App = (props) => {
     let errorComponent = undefined;
@@ -17,17 +23,18 @@ let App = (props) => {
 
     if (props.annotation.isFetching) {
         annotationComponent = <Waiting />
-    } else if (props.annotation.id) {
+    } else if (props.annotation.annotation.id) {
         annotationComponent = <EditAnnotation />
     } else {
         annotationComponent = <CreateAnnotation />
     }
 
     return (
-        <div>
-            <div>
-                <h2>Stroom Annotation Editor</h2>
-            </div>
+        <div className='App'>
+            <AppBar
+                title={<NavLink to='/'><img src={logo} className="App-logo" alt="Stroom logo"/></NavLink>}
+                iconElementLeft={<div/>}
+                />
             {annotationComponent}
             {errorComponent}
             <CleanIndicator />

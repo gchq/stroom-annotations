@@ -55,12 +55,6 @@ public class AnnotationsResource {
                 .where(ANNOTATIONS_.ID.equal(id))
                 .fetchAny();
 
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
         if (null != result) {
             final AnnotationDTO annotationDTO = new AnnotationDTO.Builder()
                     .id(result.getId())

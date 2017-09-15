@@ -36,15 +36,21 @@ const annotation = (
  ) => {
     switch(action.type) {
         case RECEIVE_REMOVE_ANNOTATION:
-            return defaultState
+            return Object.assign({}, state, {
+                    isFetching: false,
+                    isClean: true,
+                    lastUpdated: action.receivedAt,
+                    annotation: {}
+                })
 
         case RECEIVE_REMOVE_ANNOTATION_FAILED:
-            return {
+            return Object.assign({}, state, {
                     isFetching: false,
                     isClean: false,
                     errorMsg: action.errorMsg,
-                    lastUpdated: action.receivedAt
-                  }
+                    lastUpdated: action.receivedAt,
+                    annotation: {}
+                  })
 
         case REQUEST_CREATE_ANNOTATION:
         case REQUEST_FETCH_ANNOTATION:
