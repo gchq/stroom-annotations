@@ -1,4 +1,4 @@
-# stroom-auth
+# stroom-annotations
 Pre-release version of a Stroom annotation service.
 
 ## stroom-annotations-svc
