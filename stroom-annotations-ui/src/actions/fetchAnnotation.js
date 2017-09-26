@@ -28,7 +28,7 @@ export const fetchAnnotation = (id) => {
     return function(dispatch) {
         dispatch(requestFetchAnnotation(id));
 
-        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/${id}`)
+        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/single/${id}`)
               .then(
                 response => response.json(),
                 // Do not use catch, because that will also catch

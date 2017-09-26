@@ -2,7 +2,7 @@ package stroom.annotations.service.model;
 
 public class AnnotationDTO {
     public static final String DEFAULT_CONTENT = "";
-    public static final Status DEFAULT_STATUS = Status.CREATED;
+    public static final Status DEFAULT_STATUS = Status.QUEUED;
 
     private String id;
 

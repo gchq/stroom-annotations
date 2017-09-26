@@ -2,7 +2,9 @@ package stroom.annotations.service.resources;
 
 import com.codahale.metrics.annotation.Timed;
 import org.jooq.DSLContext;
+import org.jooq.Result;
 import stroom.annotations.service.model.AnnotationDTO;
+import stroom.annotations.service.model.AnnotationDTOMarshaller;
 import stroom.annotations.service.model.ResponseMsgDTO;
 import stroom.annotations.service.model.Status;
 import stroom.db.annotations.tables.records.AnnotationsRecord;
@@ -13,11 +15,19 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
 import static stroom.db.annotations.Tables.ANNOTATIONS_;
 
 @Path("/annotations/v1")
 @Produces(MediaType.APPLICATION_JSON)
 public class AnnotationsResource {
+    private static final Logger LOGGER = Logger.getLogger(AnnotationsResource.class.getName());
 
     public AnnotationsResource() {
     }
@@ -39,13 +49,40 @@ public class AnnotationsResource {
     @Timed
     @NotNull
     public final Response statusValues() {
+        final Map<String, String> statusValues = Arrays.stream(Status.values())
+                .collect(Collectors.toMap(Object::toString, Status::getDisplayText));
+
         return Response.status(Response.Status.OK)
-                .entity(Status.values())
+                .entity(statusValues)
                 .build();
     }
 
     @GET
-    @Path("/{id}")
+    @Path("/search")
+    @Produces({MediaType.APPLICATION_JSON})
+    @Timed
+    @NotNull
+    public final Response search(@Context @NotNull DSLContext database,
+                                 @QueryParam("q") final String q) {
+
+        LOGGER.info("Searching the annotations for " + q);
+
+        final Result<AnnotationsRecord> records = database.selectFrom(ANNOTATIONS_)
+                .where(ANNOTATIONS_.CONTENT.contains(q))
+                .or(ANNOTATIONS_.ID.contains(q))
+                .fetch();
+
+        final List<AnnotationDTO> dtos = records.stream()
+                .map(AnnotationDTOMarshaller::toDTO)
+                .collect(Collectors.toList());
+
+        return Response.status(Response.Status.OK)
+                .entity(dtos)
+                .build();
+    }
+
+    @GET
+    @Path("/single/{id}")
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
     @NotNull
@@ -56,11 +93,7 @@ public class AnnotationsResource {
                 .fetchAny();
 
         if (null != result) {
-            final AnnotationDTO annotationDTO = new AnnotationDTO.Builder()
-                    .id(result.getId())
-                    .content(result.getContent())
-                    .status(Status.valueOf(result.getStatus()))
-                    .build();
+            final AnnotationDTO annotationDTO = AnnotationDTOMarshaller.toDTO(result);
 
             return Response.status(Response.Status.OK)
                     .entity(annotationDTO)
@@ -75,7 +108,7 @@ public class AnnotationsResource {
     }
 
     @POST
-    @Path("/{id}")
+    @Path("/single/{id}")
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
     @NotNull
@@ -100,7 +133,7 @@ public class AnnotationsResource {
     }
 
     @PUT
-    @Path("/{id}")
+    @Path("/single/{id}")
     @Consumes({MediaType.APPLICATION_JSON})
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
@@ -128,7 +161,7 @@ public class AnnotationsResource {
     }
 
     @DELETE
-    @Path("/{id}")
+    @Path("/single/{id}")
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
     @NotNull

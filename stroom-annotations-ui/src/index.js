@@ -5,8 +5,10 @@ import { createLogger } from 'redux-logger'
 import { createStore, applyMiddleware } from 'redux'
 import { Provider } from 'react-redux'
 import App from './components/app'
+import ManageAnnotations from './components/manageAnnotations'
 import reducer from './reducers'
 import { fetchAnnotation } from './actions/fetchAnnotation'
+import { searchAnnotations } from './actions/searchAnnotations'
 import { fetchStatusValues } from './actions/fetchStatusValues'
 
 import {blue600, amber900} from 'material-ui/styles/colors'
@@ -15,7 +17,8 @@ import getMuiTheme from 'material-ui/styles/getMuiTheme'
 
 import {
   BrowserRouter as Router,
-  Route
+  Route,
+  Switch
 } from 'react-router-dom'
 
 const loggerMiddleware = createLogger()
@@ -38,19 +41,20 @@ const store = createStore(
 
 // This component is primarily responsible for deciding if the annotation ID has been specified
 // and dispatching the initial fetchAnnotation action.
-const Root = ({ match }) => {
+const SingleAnnotationMui = (annotationId, isDialog) => {
     let app = undefined;
 
-    if (!match.params.annotationId) {
+    if (!annotationId) {
         app = (
             <div>
-                <p>No Annotation ID Specified</p>
+                No Annotation ID Found
             </div>
         )
     } else {
-        store.dispatch(fetchAnnotation(match.params.annotationId))
+        store.dispatch(fetchAnnotation(annotationId))
         store.dispatch(fetchStatusValues())
-        app = <App />
+        console.log('Is Dialog? ', isDialog);
+        app = <App isDialog={isDialog} />
     }
 
     return (
@@ -60,10 +64,32 @@ const Root = ({ match }) => {
     )
 }
 
+const SingleAnnotationMuiDialog = ({ match }) => {
+    return SingleAnnotationMui(match.params.annotationId, true);
+}
+
+const SingleAnnotationMuiPage = ({ match }) => {
+    return SingleAnnotationMui(match.params.annotationId, false);
+}
+
+const ManageAnnotationsMui = ({ match }) => {
+    store.dispatch(searchAnnotations())
+
+    return (
+        <MuiThemeProvider muiTheme={theme}>
+            <ManageAnnotations />
+        </MuiThemeProvider>
+    )
+}
+
 render(
   <Provider store={store}>
     <Router>
-        <Route path="/:annotationId?" component={Root} />
+        <Switch>
+            <Route exact={true} path="/single/:annotationId?" component={SingleAnnotationMuiDialog} />
+            <Route exact={true} path="/single/edit/:annotationId?" component={SingleAnnotationMuiPage} />
+            <Route exact={true} path="/" component={ManageAnnotationsMui} />
+        </Switch>
     </Router>
   </Provider>,
   document.getElementById('root')

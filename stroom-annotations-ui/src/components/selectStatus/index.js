@@ -21,7 +21,10 @@ export const SelectStatus = ({statusValues, value, onChange}) => {
                 onChange={handleChange}
                 fullWidth={true}
                 >
-            {statusValues.map(sv => <MenuItem key={sv} value={sv} primaryText={sv} />)}
+            {
+                Object.entries(statusValues)
+                    .map(([key, value]) => <MenuItem key={key} value={key} primaryText={value} />)
+            }
         </SelectField>
     )
 }

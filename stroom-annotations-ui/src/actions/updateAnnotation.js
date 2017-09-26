@@ -28,7 +28,7 @@ export const updateAnnotation = (id, annotation) => {
     return function(dispatch) {
         dispatch(requestUpdateAnnotation(id, annotation));
 
-        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/${id}`,
+        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/single/${id}`,
             {
                 method: "PUT",
                 headers: {

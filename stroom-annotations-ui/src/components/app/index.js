@@ -1,6 +1,6 @@
 import React from 'react';
 import { connect } from 'react-redux'
-import {NavLink} from 'react-router-dom'
+import { withRouter } from 'react-router'
 
 import EditAnnotation from '../editAnnotation';
 import CreateAnnotation from '../createAnnotation';
@@ -11,7 +11,6 @@ import AppBar from 'material-ui/AppBar'
 import Paper from 'material-ui/Paper';
 
 import './App.css'
-import logo from './logo.svg'
 
 let App = (props) => {
     let errorComponent = undefined;
@@ -24,7 +23,7 @@ let App = (props) => {
     if (props.annotation.isFetching) {
         annotationComponent = (
             <div>
-                <p>No Annotation ID Specified</p>
+                <p>Fetching Annotation...</p>
             </div>
         )
     } else if (props.annotation.annotation.id) {
@@ -33,11 +32,18 @@ let App = (props) => {
         annotationComponent = <CreateAnnotation />
     }
 
+    let iconElementLeft = props.isDialog ? <div /> : undefined;
+
+    let goToManage = () => {
+        props.history.push('/');
+    }
+
     return (
         <div className='app'>
             <AppBar
-                title={<NavLink to='/'><img src={logo} className="app--logo" alt="Stroom logo"/></NavLink>}
-                iconElementLeft={<div/>}
+                title={`Annotation on ${props.annotation.annotationId}`}
+                iconElementLeft={iconElementLeft}
+                onLeftIconButtonTouchTap={goToManage}
                 iconElementRight={<CleanIndicator />}
                 />
             <Paper className='app--body'>
@@ -53,4 +59,4 @@ export default App = connect(
         annotation: state.annotation
     }),
     null
-)(App);
+)(withRouter(App));

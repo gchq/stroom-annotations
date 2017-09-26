@@ -26,7 +26,7 @@ export const removeAnnotation = (id) => {
     return function(dispatch) {
         dispatch(requestRemoveAnnotation(id));
 
-        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/${id}`,
+        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/single/${id}`,
             {
                 method: "DELETE"
             }

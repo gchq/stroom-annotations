@@ -27,7 +27,7 @@ export const createAnnotation = (id) => {
     return function(dispatch) {
         dispatch(requestCreateAnnotation(id));
 
-        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/${id}`,
+        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/single/${id}`,
             {
                 method: "POST"
             }
