@@ -7,6 +7,7 @@ package stroom.db.annotations;
 import javax.annotation.Generated;
 
 import stroom.db.annotations.tables.Annotations;
+import stroom.db.annotations.tables.AnnotationsHistory;
 
 
 /**
@@ -26,4 +27,9 @@ public class Tables {
      * The table <code>annotations.annotations</code>.
      */
     public static final Annotations ANNOTATIONS_ = stroom.db.annotations.tables.Annotations.ANNOTATIONS_;
+
+    /**
+     * The table <code>annotations.annotations_history</code>.
+     */
+    public static final AnnotationsHistory ANNOTATIONS_HISTORY = stroom.db.annotations.tables.AnnotationsHistory.ANNOTATIONS_HISTORY;
 }

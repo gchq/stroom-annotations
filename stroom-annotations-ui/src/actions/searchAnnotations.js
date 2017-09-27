@@ -37,13 +37,14 @@ export const searchAnnotations = (searchTermRaw) => {
                 // any errors in the dispatch and resulting render,
                 // causing an loop of 'Unexpected batch number' errors.
                 // https://github.com/facebook/react/issues/6895
-                error => console.log('An error occured.', error)
+                error => {
+                    dispatch(receiveSearchAnnotationsFailed('An error occured.', error))
+                    return undefined;
+                }
             )
             .then(json => {
                 if (json) {
                     dispatch(receiveSearchAnnotations(json))
-                } else {
-                    dispatch(receiveSearchAnnotationsFailed(json.msg))
                 }
             })
     }

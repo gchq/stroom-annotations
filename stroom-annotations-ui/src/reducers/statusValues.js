@@ -14,7 +14,6 @@ const statusValues = (
         case REQUEST_FETCH_STATUS_VALUES:
             return state
         case RECEIVE_FETCH_STATUS_VALUES:
-        console.log('action', action)
             return action.values
         case RECEIVE_FETCH_STATUS_VALUES_FAILED:
             return state

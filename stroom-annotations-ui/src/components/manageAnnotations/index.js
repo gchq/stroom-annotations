@@ -1,20 +1,23 @@
-import React, { Component } from 'react';
+import React, { Component } from 'react'
 import { connect } from 'react-redux'
 import {NavLink} from 'react-router-dom'
 
 import AppBar from 'material-ui/AppBar'
 import Paper from 'material-ui/Paper'
 
-import IconButton from 'material-ui/IconButton';
-import EditIcon from 'material-ui/svg-icons/editor/mode-edit';
-import DeleteIcon from 'material-ui/svg-icons/action/delete';
-import FlatButton from 'material-ui/FlatButton';
-import Dialog from 'material-ui/Dialog';
+import IconButton from 'material-ui/IconButton'
+import EditIcon from 'material-ui/svg-icons/editor/mode-edit'
+import DeleteIcon from 'material-ui/svg-icons/action/delete'
+import RaisedButton from 'material-ui/RaisedButton'
+import FlatButton from 'material-ui/FlatButton'
+import Dialog from 'material-ui/Dialog'
+import TextField from 'material-ui/TextField'
 
 import PendingUpdatesSpinner from '../pendingUpdatesSpinner'
 import SearchAnnotationBox from '../searchAnnotationBox'
 
-import { removeAnnotation } from '../../actions/removeAnnotation';
+import { removeAnnotation } from '../../actions/removeAnnotation'
+import { createAnnotation } from '../../actions/createAnnotation'
 
 import {
     Table,
@@ -30,36 +33,77 @@ import './../app/App.css'
 class ManageAnnotations extends Component {
     state = {
         selectedId: undefined,
-        open: false,
+        removeDialogOpen: false,
+        createDialogOpen: false,
+        newAnnotationId: undefined
     };
 
-    handleOpen(selectedId) {
+    onNewAnnotationIdChange(e) {
         this.setState({
-            open: true,
+            newAnnotationId: e.target.value
+        })
+    }
+
+    // Create dialog
+    handleCreateDialogOpen() {
+        this.setState({
+            createDialogOpen: true
+        });
+    };
+
+    handleCreateDialogClose() {
+        this.setState({
+            createDialogOpen: false,
+            newAnnotationId: undefined
+        });
+    };
+
+    handleConfirmCreate() {
+        this.props.createAnnotation(this.state.newAnnotationId)
+        this.handleCreateDialogClose()
+    }
+
+    // Remove Dialog
+    handleRemoveDialogOpen(selectedId) {
+        this.setState({
+            removeDialogOpen: true,
             selectedId
         });
     };
 
-    handleClose() {
-        this.setState({open: false});
+    handleRemoveDialogClose() {
+        this.setState({removeDialogOpen: false});
     };
 
-    handleRemoveAndClose() {
+    handleConfirmRemove() {
         this.props.removeAnnotation(this.state.selectedId)
-        this.handleClose();
+        this.handleRemoveDialogClose();
     }
 
     render (props) {
-        const actions = [
+        const createDialogActions = [
             <FlatButton
                 label="Cancel"
                 primary={true}
-                onClick={this.handleClose.bind(this)}
+                onClick={this.handleCreateDialogClose.bind(this)}
+                />,
+            <FlatButton
+                label="Create"
+                primary={true}
+                onClick={this.handleConfirmCreate.bind(this)}
+                />,
+        ];
+    
+        const removeDialogActions = [
+            <FlatButton
+                label="Cancel"
+                primary={true}
+                onClick={this.handleRemoveDialogClose.bind(this)}
                 />,
             <FlatButton
                 label="Remove"
                 primary={true}
-                onClick={this.handleRemoveAndClose.bind(this)}
+                onClick={this.handleConfirmRemove.bind(this)}
                 />,
         ];
 
@@ -77,13 +121,33 @@ class ManageAnnotations extends Component {
                     />
                 <Paper className='app--body'>
                     <SearchAnnotationBox />
-
+                    
                     <Dialog
-                      actions={actions}
-                      modal={false}
-                      open={this.state.open}
-                      onRequestClose={this.handleClose.bind(this)}
-                      contentStyle={customContentStyle}
+                          actions={createDialogActions}
+                          modal={false}
+                          open={this.state.createDialogOpen}
+                          onRequestClose={this.handleCreateDialogClose.bind(this)}
+                          contentStyle={customContentStyle}
+                    >
+                         <TextField value={this.state.newAnnotationId} onChange={this.onNewAnnotationIdChange.bind(this)}
+                                                hintText="Enter the ID for the new annotation"
+                                                floatingLabelText="Annotation ID"
+                                                fullWidth={true}
+                                            />
+                    </Dialog>
+                    
+                    <RaisedButton
+                        label="Create"
+                        primary={true}
+                        onClick={this.handleCreateDialogOpen.bind(this)}
+                        />
+                
+                    <Dialog
+                        actions={removeDialogActions}
+                        modal={false}
+                        open={this.state.removeDialogOpen}
+                        onRequestClose={this.handleRemoveDialogClose.bind(this)}
+                        contentStyle={customContentStyle}
                     >
                         Remove the Annotation for {this.state.selectedId}?
                     </Dialog>
@@ -111,7 +175,7 @@ class ManageAnnotations extends Component {
                                                 <EditIcon />
                                             </IconButton>
                                         </NavLink>
-                                        <IconButton tooltip="delete" onClick={() => this.handleOpen(a.id)}>
+                                        <IconButton tooltip="delete" onClick={() => this.handleRemoveDialogOpen(a.id)}>
                                             <DeleteIcon />
                                         </IconButton>
                                     </TableRowColumn>
@@ -129,7 +193,8 @@ export default ManageAnnotations = connect(
     (state) => ({
         annotations: state.annotations.annotations
     }),
-  {
-     removeAnnotation
-  }
+    {
+        createAnnotation,
+        removeAnnotation
+    }
 )(ManageAnnotations);

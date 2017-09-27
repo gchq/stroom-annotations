@@ -7,6 +7,7 @@ import CreateAnnotation from '../createAnnotation';
 import ErrorDisplay from '../errorDisplay';
 
 import PendingUpdatesSpinner from '../pendingUpdatesSpinner'
+import AnnotationHistory from '../annotationHistory'
 
 import AppBar from 'material-ui/AppBar'
 import Paper from 'material-ui/Paper';
@@ -54,8 +55,9 @@ let App = (props) => {
                 iconElementRight={<PendingUpdatesSpinner />}
                 />
             <Paper className='app--body'>
-            {annotationComponent}
-            {errorComponent}
+                {annotationComponent}
+                {errorComponent}
+                <AnnotationHistory />
             </Paper>
         </div>
     );

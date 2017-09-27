@@ -5,6 +5,10 @@ import {
 } from '../actions/searchAnnotations'
 
 import {
+    RECEIVE_CREATE_ANNOTATION
+} from '../actions/createAnnotation'
+
+import {
     RECEIVE_REMOVE_ANNOTATION
 } from '../actions/removeAnnotation'
 
@@ -26,6 +30,16 @@ const annotations = (
                     isFetching: false,
                     lastUpdated: action.receivedAt,
                     annotations
+                })
+
+        case RECEIVE_CREATE_ANNOTATION:
+            return Object.assign({}, state, {
+                    isFetching: false,
+                    lastUpdated: action.receivedAt,
+                    annotations: [
+                        ...state.annotations,
+                        action.annotation
+                    ]
                 })
 
         case REQUEST_SEARCH_ANNOTATIONS:

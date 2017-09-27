@@ -1,18 +1,19 @@
-import React, { Component } from 'react';
+import React, { Component } from 'react'
 import { connect } from 'react-redux'
+import moment from 'moment'
 
-import { updateAnnotation, editAnnotation } from '../../actions/updateAnnotation';
-import { removeAnnotation } from '../../actions/removeAnnotation';
+import { updateAnnotation, editAnnotation } from '../../actions/updateAnnotation'
+import { removeAnnotation } from '../../actions/removeAnnotation'
 
 import './EditAnnotation.css'
 
-import SelectStatus from '../selectStatus';
+import Subheader from 'material-ui/Subheader'
+import Dialog from 'material-ui/Dialog'
+import FlatButton from 'material-ui/FlatButton'
+import RaisedButton from 'material-ui/RaisedButton'
+import TextField from 'material-ui/TextField'
 
-import Subheader from 'material-ui/Subheader';
-import Dialog from 'material-ui/Dialog';
-import FlatButton from 'material-ui/FlatButton';
-import RaisedButton from 'material-ui/RaisedButton';
-import TextField from 'material-ui/TextField';
+import SelectStatus from '../selectStatus'
 
 export class EditAnnotation extends Component {
 
@@ -91,7 +92,7 @@ export class EditAnnotation extends Component {
 
         return (
             <div className='edit-annotation'>
-                <Subheader style={subheaderStyle}>Last updated by {this.props.annotation.updatedBy} on {this.props.annotation.lastUpdated}</Subheader>
+                <Subheader style={subheaderStyle}>Last updated by {this.props.annotation.updatedBy} {moment(this.props.annotation.lastUpdated).fromNow()}</Subheader>
 
                 <TextField value={this.props.annotation.content} onChange={this.onContentChange.bind(this)}
                         hintText="Write notes against this event"

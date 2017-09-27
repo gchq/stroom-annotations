@@ -13,7 +13,7 @@ export const PendingUpdatesSpinner = (props) => {
 
 export default connect(
     (state) => ({
-        isSpinning: (state.annotation.pendingUpdates > 0) || state.annotation.isFetching || state.annotations.isFetching,
+        isSpinning: (state.annotation.pendingUpdates > 0) || state.annotation.isFetching || state.annotations.isFetching || state.annotationHistory.isFetching,
     }),
     null
 )(PendingUpdatesSpinner);

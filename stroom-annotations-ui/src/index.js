@@ -8,6 +8,7 @@ import App from './components/app'
 import ManageAnnotations from './components/manageAnnotations'
 import reducer from './reducers'
 import { fetchAnnotation } from './actions/fetchAnnotation'
+import { fetchAnnotationHistory } from './actions/fetchAnnotationHistory'
 import { searchAnnotations } from './actions/searchAnnotations'
 import { fetchStatusValues } from './actions/fetchStatusValues'
 
@@ -52,8 +53,8 @@ const SingleAnnotationMui = (annotationId, isDialog) => {
         )
     } else {
         store.dispatch(fetchAnnotation(annotationId))
+        store.dispatch(fetchAnnotationHistory(annotationId))
         store.dispatch(fetchStatusValues())
-        console.log('Is Dialog? ', isDialog);
         app = <App isDialog={isDialog} />
     }
 

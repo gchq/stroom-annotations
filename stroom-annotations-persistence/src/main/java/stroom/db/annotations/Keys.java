@@ -6,10 +6,13 @@ package stroom.db.annotations;
 
 import javax.annotation.Generated;
 
+import org.jooq.Identity;
 import org.jooq.UniqueKey;
 import org.jooq.impl.AbstractKeys;
 
 import stroom.db.annotations.tables.Annotations;
+import stroom.db.annotations.tables.AnnotationsHistory;
+import stroom.db.annotations.tables.records.AnnotationsHistoryRecord;
 import stroom.db.annotations.tables.records.AnnotationsRecord;
 
 
@@ -31,12 +34,14 @@ public class Keys {
     // IDENTITY definitions
     // -------------------------------------------------------------------------
 
+    public static final Identity<AnnotationsHistoryRecord, Integer> IDENTITY_ANNOTATIONS_HISTORY = Identities0.IDENTITY_ANNOTATIONS_HISTORY;
 
     // -------------------------------------------------------------------------
     // UNIQUE and PRIMARY KEY definitions
     // -------------------------------------------------------------------------
 
     public static final UniqueKey<AnnotationsRecord> KEY_ANNOTATIONS_PRIMARY = UniqueKeys0.KEY_ANNOTATIONS_PRIMARY;
+    public static final UniqueKey<AnnotationsHistoryRecord> KEY_ANNOTATIONS_HISTORY_PRIMARY = UniqueKeys0.KEY_ANNOTATIONS_HISTORY_PRIMARY;
 
     // -------------------------------------------------------------------------
     // FOREIGN KEY definitions
@@ -47,7 +52,12 @@ public class Keys {
     // [#1459] distribute members to avoid static initialisers > 64kb
     // -------------------------------------------------------------------------
 
+    private static class Identities0 extends AbstractKeys {
+        public static Identity<AnnotationsHistoryRecord, Integer> IDENTITY_ANNOTATIONS_HISTORY = createIdentity(AnnotationsHistory.ANNOTATIONS_HISTORY, AnnotationsHistory.ANNOTATIONS_HISTORY.ID);
+    }
+
     private static class UniqueKeys0 extends AbstractKeys {
         public static final UniqueKey<AnnotationsRecord> KEY_ANNOTATIONS_PRIMARY = createUniqueKey(Annotations.ANNOTATIONS_, "KEY_annotations_PRIMARY", Annotations.ANNOTATIONS_.ID);
+        public static final UniqueKey<AnnotationsHistoryRecord> KEY_ANNOTATIONS_HISTORY_PRIMARY = createUniqueKey(AnnotationsHistory.ANNOTATIONS_HISTORY, "KEY_annotations_history_PRIMARY", AnnotationsHistory.ANNOTATIONS_HISTORY.ID);
     }
 }

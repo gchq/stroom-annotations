@@ -3,10 +3,9 @@ package stroom.annotations.service.resources;
 import com.codahale.metrics.annotation.Timed;
 import org.jooq.DSLContext;
 import org.jooq.types.ULong;
-import stroom.annotations.service.model.AnnotationDTO;
-import stroom.annotations.service.model.AnnotationDTOMarshaller;
-import stroom.annotations.service.model.ResponseMsgDTO;
-import stroom.annotations.service.model.Status;
+import stroom.annotations.service.model.*;
+import stroom.db.annotations.tables.AnnotationsHistory;
+import stroom.db.annotations.tables.records.AnnotationsHistoryRecord;
 import stroom.db.annotations.tables.records.AnnotationsRecord;
 
 import javax.validation.constraints.NotNull;
@@ -22,6 +21,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static stroom.db.annotations.Tables.ANNOTATIONS_;
+import static stroom.db.annotations.Tables.ANNOTATIONS_HISTORY;
 
 @Path("/annotations/v1")
 @Produces(MediaType.APPLICATION_JSON)
@@ -107,6 +107,33 @@ public class AnnotationsResource {
         }
     }
 
+    @GET
+    @Path("/single/{annotationId}/history")
+    @Produces({MediaType.APPLICATION_JSON})
+    @Timed
+    @NotNull
+    public final Response getHistory(@Context @NotNull DSLContext database,
+                                     @PathParam("annotationId") final String annotationId) {
+        final List<AnnotationHistoryDTO> results = database.selectFrom(ANNOTATIONS_HISTORY)
+                .where(ANNOTATIONS_HISTORY.ANNOTATIONID.equal(annotationId))
+                .fetch()
+                .stream()
+                .map(AnnotationDTOMarshaller::toDTO)
+                .collect(Collectors.toList());
+
+        if (results.size() > 0) {
+            return Response.status(Response.Status.OK)
+                    .entity(results)
+                    .build();
+        } else {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(ResponseMsgDTO.msg("No history found for annotation")
+                            .recordsUpdated(0)
+                            .build())
+                    .build();
+        }
+    }
+
     @POST
     @Path("/single/{id}")
     @Produces({MediaType.APPLICATION_JSON})
@@ -123,6 +150,8 @@ public class AnnotationsResource {
                 .set(ANNOTATIONS_.CONTENT, AnnotationDTO.DEFAULT_CONTENT)
                 .set(ANNOTATIONS_.STATUS, AnnotationDTO.DEFAULT_STATUS.toString())
                 .execute();
+
+        takeAnnotationHistory(database, id, HistoryOperation.CREATE);
 
         if (result > 0) {
             return get(database, id);
@@ -144,7 +173,7 @@ public class AnnotationsResource {
     public final Response update(@Context @NotNull DSLContext database,
                                  @PathParam("id") final String id,
                                  final AnnotationDTO annotation) {
-        System.out.println("Update" + annotation);
+        LOGGER.info("Update Annotation: " + annotation);
 
         final int result = database.update(ANNOTATIONS_)
                 .set(ANNOTATIONS_.LASTUPDATED, ULong.valueOf(System.currentTimeMillis()))
@@ -153,6 +182,8 @@ public class AnnotationsResource {
                 .set(ANNOTATIONS_.STATUS, annotation.getStatus().toString())
                 .where(ANNOTATIONS_.ID.equal(id))
                 .execute();
+
+        takeAnnotationHistory(database, id, HistoryOperation.UPDATE);
 
         if (result > 0) {
             return get(database, id);
@@ -172,9 +203,13 @@ public class AnnotationsResource {
     @NotNull
     public final Response remove(@Context @NotNull DSLContext database,
                                  @PathParam("id") final String id) {
+        // Take the history snapshot before deletion happens
+        takeAnnotationHistory(database, id, HistoryOperation.DELETE);
+
         final int result = database.deleteFrom(ANNOTATIONS_)
                 .where(ANNOTATIONS_.ID.equal(id))
                 .execute();
+
 
         if (result > 0) {
             return Response.status(Response.Status.OK)
@@ -189,5 +224,25 @@ public class AnnotationsResource {
                             .build())
                     .build();
         }
+    }
+
+    private void takeAnnotationHistory(final DSLContext database,
+                                       final String id,
+                                       final HistoryOperation operation) {
+        final AnnotationsRecord currentState = database.selectFrom(ANNOTATIONS_)
+                .where(ANNOTATIONS_.ID.equal(id))
+                .fetchAny();
+
+        int rowsAffected = database.insertInto(ANNOTATIONS_HISTORY)
+                .set(ANNOTATIONS_HISTORY.ANNOTATIONID, currentState.getId())
+                .set(ANNOTATIONS_HISTORY.OPERATION, operation.toString())
+                .set(ANNOTATIONS_HISTORY.LASTUPDATED, currentState.getLastupdated())
+                .set(ANNOTATIONS_HISTORY.ASSIGNTO, currentState.getAssignto())
+                .set(ANNOTATIONS_HISTORY.UPDATEDBY, currentState.getUpdatedby())
+                .set(ANNOTATIONS_HISTORY.CONTENT, currentState.getContent())
+                .set(ANNOTATIONS_HISTORY.STATUS, currentState.getStatus())
+                .execute();
+
+        LOGGER.info(String.format("History Point Taken for Annotation %s - rowsAffected: %d", id, rowsAffected));
     }
 }

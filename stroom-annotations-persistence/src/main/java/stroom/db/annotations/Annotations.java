@@ -15,6 +15,7 @@ import org.jooq.Table;
 import org.jooq.impl.SchemaImpl;
 
 import stroom.db.DefaultCatalog;
+import stroom.db.annotations.tables.AnnotationsHistory;
 
 
 /**
@@ -30,7 +31,7 @@ import stroom.db.DefaultCatalog;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Annotations extends SchemaImpl {
 
-    private static final long serialVersionUID = -320409517;
+    private static final long serialVersionUID = -793039442;
 
     /**
      * The reference instance of <code>annotations</code>
@@ -41,6 +42,11 @@ public class Annotations extends SchemaImpl {
      * The table <code>annotations.annotations</code>.
      */
     public final stroom.db.annotations.tables.Annotations ANNOTATIONS_ = stroom.db.annotations.tables.Annotations.ANNOTATIONS_;
+
+    /**
+     * The table <code>annotations.annotations_history</code>.
+     */
+    public final AnnotationsHistory ANNOTATIONS_HISTORY = stroom.db.annotations.tables.AnnotationsHistory.ANNOTATIONS_HISTORY;
 
     /**
      * No further instances allowed
@@ -67,6 +73,7 @@ public class Annotations extends SchemaImpl {
 
     private final List<Table<?>> getTables0() {
         return Arrays.<Table<?>>asList(
-            stroom.db.annotations.tables.Annotations.ANNOTATIONS_);
+            stroom.db.annotations.tables.Annotations.ANNOTATIONS_,
+            AnnotationsHistory.ANNOTATIONS_HISTORY);
     }
 }
