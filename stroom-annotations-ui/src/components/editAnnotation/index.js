@@ -1,13 +1,14 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux'
 
-import { updateAnnotation } from '../../actions/updateAnnotation';
+import { updateAnnotation, editAnnotation } from '../../actions/updateAnnotation';
 import { removeAnnotation } from '../../actions/removeAnnotation';
 
 import './EditAnnotation.css'
 
 import SelectStatus from '../selectStatus';
 
+import Subheader from 'material-ui/Subheader';
 import Dialog from 'material-ui/Dialog';
 import FlatButton from 'material-ui/FlatButton';
 import RaisedButton from 'material-ui/RaisedButton';
@@ -23,6 +24,10 @@ export class EditAnnotation extends Component {
         };
     }
 
+    saveChanges() {
+        this.props.updateAnnotation(this.props.annotation.id, this.props.annotation);
+    }
+
     handleOpen() {
         this.setState({open: true});
     };
@@ -36,22 +41,28 @@ export class EditAnnotation extends Component {
         this.handleClose();
     }
 
-    onContentChange (e) {
-        const annotation = {
-            content: e.target.value,
-            status: this.props.annotation.status
+    onAssignToChange(e) {
+        const updates = {
+            assignTo: e.target.value
         }
 
-        this.props.updateAnnotation(this.props.annotation.id, annotation)
+        this.props.editAnnotation(this.props.annotation.id, updates)
     }
 
-    onStatusChange (e) {
-        const annotation = {
-            content: this.props.annotation.content,
+    onContentChange(e) {
+        const updates = {
+            content: e.target.value
+        }
+
+        this.props.editAnnotation(this.props.annotation.id, updates)
+    }
+
+    onStatusChange(e) {
+        const updates = {
             status: e.target.value
         }
 
-        this.props.updateAnnotation(this.props.annotation.id, annotation)
+        this.props.editAnnotation(this.props.annotation.id, updates)
     }
 
     render() {
@@ -73,8 +84,15 @@ export class EditAnnotation extends Component {
             maxWidth: 'none',
         };
 
+        const subheaderStyle = {
+            paddingLeft: "0px",
+            lineHeight: "1rem"
+        }
+
         return (
             <div className='edit-annotation'>
+                <Subheader style={subheaderStyle}>Last updated by {this.props.annotation.updatedBy} on {this.props.annotation.lastUpdated}</Subheader>
+
                 <TextField value={this.props.annotation.content} onChange={this.onContentChange.bind(this)}
                         hintText="Write notes against this event"
                         floatingLabelText="Annotation Content"
@@ -84,16 +102,31 @@ export class EditAnnotation extends Component {
                         fullWidth={true}
                     />
 
+                <TextField value={this.props.annotation.assignTo} onChange={this.onAssignToChange.bind(this)}
+                        hintText="Enter the name/identifier of someone to assign this to"
+                        floatingLabelText="Assign To"
+                        fullWidth={true}
+                    />
+
                 <SelectStatus
                         value={this.props.annotation.status}
                         onChange={this.onStatusChange.bind(this)}
                         />
 
-                <RaisedButton
-                        label="Remove Annotation"
-                        onClick={this.handleOpen.bind(this)}
-                        className='edit-annotation__remove-button'
-                        />
+                <div>
+                    <RaisedButton
+                            label="Save Changes"
+                            onClick={this.saveChanges.bind(this)}
+                            primary={true}
+                            className='edit-annotation__save-button'
+                            />
+                    <RaisedButton
+                            label="Remove Annotation"
+                            onClick={this.handleOpen.bind(this)}
+                            className='edit-annotation__remove-button'
+                            />
+                </div>
+
                 <Dialog
                   actions={actions}
                   modal={false}
@@ -114,6 +147,7 @@ export default connect(
      annotation: state.annotation.annotation
   }),
   {
+     editAnnotation,
      updateAnnotation,
      removeAnnotation
   }

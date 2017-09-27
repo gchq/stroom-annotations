@@ -2,7 +2,7 @@ package stroom.annotations.service.resources;
 
 import com.codahale.metrics.annotation.Timed;
 import org.jooq.DSLContext;
-import org.jooq.Result;
+import org.jooq.types.ULong;
 import stroom.annotations.service.model.AnnotationDTO;
 import stroom.annotations.service.model.AnnotationDTOMarshaller;
 import stroom.annotations.service.model.ResponseMsgDTO;
@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import static stroom.db.annotations.Tables.ANNOTATIONS_;
 
@@ -67,12 +66,13 @@ public class AnnotationsResource {
 
         LOGGER.info("Searching the annotations for " + q);
 
-        final Result<AnnotationsRecord> records = database.selectFrom(ANNOTATIONS_)
-                .where(ANNOTATIONS_.CONTENT.contains(q))
-                .or(ANNOTATIONS_.ID.contains(q))
-                .fetch();
-
-        final List<AnnotationDTO> dtos = records.stream()
+        // Find annotations matching either the content or the ID itself
+        final List<AnnotationDTO> dtos = database.selectFrom(ANNOTATIONS_)
+                .where(ANNOTATIONS_.ID.contains(q))
+                .or(ANNOTATIONS_.CONTENT.contains(q))
+                .or(ANNOTATIONS_.ASSIGNTO.contains(q))
+                .fetch() // from database
+                .stream()
                 .map(AnnotationDTOMarshaller::toDTO)
                 .collect(Collectors.toList());
 
@@ -117,6 +117,9 @@ public class AnnotationsResource {
 
         final int result = database.insertInto(ANNOTATIONS_)
                 .set(ANNOTATIONS_.ID, id)
+                .set(ANNOTATIONS_.LASTUPDATED, ULong.valueOf(System.currentTimeMillis()))
+                .set(ANNOTATIONS_.ASSIGNTO, AnnotationDTO.DEFAULT_ASSIGNEE)
+                .set(ANNOTATIONS_.UPDATEDBY, AnnotationDTO.DEFAULT_UPDATED_BY)
                 .set(ANNOTATIONS_.CONTENT, AnnotationDTO.DEFAULT_CONTENT)
                 .set(ANNOTATIONS_.STATUS, AnnotationDTO.DEFAULT_STATUS.toString())
                 .execute();
@@ -144,6 +147,8 @@ public class AnnotationsResource {
         System.out.println("Update" + annotation);
 
         final int result = database.update(ANNOTATIONS_)
+                .set(ANNOTATIONS_.LASTUPDATED, ULong.valueOf(System.currentTimeMillis()))
+                .set(ANNOTATIONS_.ASSIGNTO, annotation.getAssignTo())
                 .set(ANNOTATIONS_.CONTENT, annotation.getContent())
                 .set(ANNOTATIONS_.STATUS, annotation.getStatus().toString())
                 .where(ANNOTATIONS_.ID.equal(id))

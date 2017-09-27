@@ -1,5 +1,13 @@
 import fetch from 'isomorphic-fetch'
 
+export const EDIT_ANNOTATION = 'EDIT_ANNOTATION'
+
+export const editAnnotation = (id, updates) => ({
+    type: EDIT_ANNOTATION,
+    id,
+    updates
+})
+
 export const REQUEST_UPDATE_ANNOTATION = 'REQUEST_UPDATE_ANNOTATION'
 
 export const requestUpdateAnnotation = (id, annotation) => ({
@@ -10,9 +18,10 @@ export const requestUpdateAnnotation = (id, annotation) => ({
 
 export const RECEIVE_UPDATE_ANNOTATION = 'RECEIVE_UPDATE_ANNOTATION';
  
- export const receiveUpdateAnnotation = (id) => ({
+ export const receiveUpdateAnnotation = (id, annotation) => ({
      type: RECEIVE_UPDATE_ANNOTATION,
      id,
+     annotation,
      receivedAt: Date.now()
  })
 
@@ -48,7 +57,7 @@ export const updateAnnotation = (id, annotation) => {
               )
               .then(json => {
                 if (json.id) {
-                    dispatch(receiveUpdateAnnotation(id))
+                    dispatch(receiveUpdateAnnotation(id, json))
                 } else {
                     dispatch(receiveUpdateAnnotationFailed(json.msg))
                 }

@@ -10,8 +10,11 @@ public final class AnnotationDTOMarshaller {
     public static AnnotationDTO toDTO(final AnnotationsRecord record) {
         return new AnnotationDTO.Builder()
                 .id(record.getId())
-                .content(record.getContent())
                 .status(Status.valueOf(record.getStatus()))
+                .assignTo(record.getAssignto())
+                .content(record.getContent())
+                .updatedBy(record.getUpdatedby())
+                .lastUpdated(record.getLastupdated().longValue())
                 .build();
     }
 }

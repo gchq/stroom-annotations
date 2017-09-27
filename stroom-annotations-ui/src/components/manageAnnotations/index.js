@@ -9,10 +9,10 @@ import IconButton from 'material-ui/IconButton';
 import EditIcon from 'material-ui/svg-icons/editor/mode-edit';
 import DeleteIcon from 'material-ui/svg-icons/action/delete';
 import FlatButton from 'material-ui/FlatButton';
-
-import CleanIndicator from '../cleanIndicator'
-import SearchAnnotationBox from '../searchAnnotationBox'
 import Dialog from 'material-ui/Dialog';
+
+import PendingUpdatesSpinner from '../pendingUpdatesSpinner'
+import SearchAnnotationBox from '../searchAnnotationBox'
 
 import { removeAnnotation } from '../../actions/removeAnnotation';
 
@@ -73,11 +73,10 @@ class ManageAnnotations extends Component {
                 <AppBar
                     title='Manage Annotations'
                     iconElementLeft={<div/>}
-                    iconElementRight={<CleanIndicator />}
+                    iconElementRight={<PendingUpdatesSpinner />}
                     />
                 <Paper className='app--body'>
                     <SearchAnnotationBox />
-                    <p>Annotations will go here</p>
 
                     <Dialog
                       actions={actions}
@@ -86,7 +85,7 @@ class ManageAnnotations extends Component {
                       onRequestClose={this.handleClose.bind(this)}
                       contentStyle={customContentStyle}
                     >
-                        Remove the Annotation for event {this.props.selectedId}?
+                        Remove the Annotation for {this.state.selectedId}?
                     </Dialog>
 
                     <Table selectable={false}>
@@ -94,6 +93,7 @@ class ManageAnnotations extends Component {
                             <TableRow>
                             <TableHeaderColumn>ID</TableHeaderColumn>
                             <TableHeaderColumn>Status</TableHeaderColumn>
+                            <TableHeaderColumn>Assign To</TableHeaderColumn>
                             <TableHeaderColumn>Content</TableHeaderColumn>
                             <TableHeaderColumn>Actions</TableHeaderColumn>
                             </TableRow>
@@ -103,6 +103,7 @@ class ManageAnnotations extends Component {
                                 <TableRow key={a.id}>
                                     <TableRowColumn>{a.id}</TableRowColumn>
                                     <TableRowColumn>{a.status}</TableRowColumn>
+                                    <TableRowColumn>{a.assignTo}</TableRowColumn>
                                     <TableRowColumn>{a.content}</TableRowColumn>
                                     <TableRowColumn>
                                         <NavLink to={`/single/edit/${a.id}`}>

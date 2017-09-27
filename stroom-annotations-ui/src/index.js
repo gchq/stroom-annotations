@@ -64,6 +64,7 @@ const SingleAnnotationMui = (annotationId, isDialog) => {
     )
 }
 
+// If opened as a dialog, do not present navigational items in the header
 const SingleAnnotationMuiDialog = ({ match }) => {
     return SingleAnnotationMui(match.params.annotationId, true);
 }

@@ -38,7 +38,7 @@ jooq {
             name = 'org.jooq.util.DefaultGenerator'
             database {
                 name = 'org.jooq.util.mariadb.MariaDBDatabase'
-                includes = 'annotations'
+                includes = 'annotations.*'
                 // We don't want to include flyway versioning
                 excludes = 'schema_version'
             }

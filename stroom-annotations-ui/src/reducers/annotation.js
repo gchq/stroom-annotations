@@ -1,4 +1,5 @@
 import {
+    EDIT_ANNOTATION,
     REQUEST_UPDATE_ANNOTATION,
     RECEIVE_UPDATE_ANNOTATION,
     RECEIVE_UPDATE_ANNOTATION_FAILED
@@ -56,9 +57,19 @@ const annotation = (
         case REQUEST_FETCH_ANNOTATION:
             return Object.assign({}, state, {
                     isFetching: true,
-                    isClean: false,
+                    isClean: true,
                     errorMsg: undefined,
                     annotationId: action.id
+                  })
+
+        case EDIT_ANNOTATION:
+            return Object.assign({}, state, {
+                    isFetching: false,
+                    isClean: false,
+                    annotation: {
+                        ...state.annotation,
+                        ...action.updates,
+                    }
                   })
 
         case REQUEST_UPDATE_ANNOTATION:
@@ -98,6 +109,7 @@ const annotation = (
                     errorMsg: undefined,
                     id: action.id,
                     pendingUpdates: state.pendingUpdates - 1,
+                    annotation: action.annotation,
                     lastUpdated: action.receivedAt
                   })
 

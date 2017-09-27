@@ -3,6 +3,12 @@
     flex-direction: column;
 }
 
+.edit-annotation__save-button {
+    margin-top: 2rem;
+    margin-right: 2rem;
+}
+
 .edit-annotation__remove-button {
     margin-top: 2rem;
+    margin-right: 2rem;
 }

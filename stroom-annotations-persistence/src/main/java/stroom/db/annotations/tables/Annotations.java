@@ -15,6 +15,7 @@ import org.jooq.Table;
 import org.jooq.TableField;
 import org.jooq.UniqueKey;
 import org.jooq.impl.TableImpl;
+import org.jooq.types.ULong;
 
 import stroom.db.annotations.Keys;
 import stroom.db.annotations.tables.records.AnnotationsRecord;
@@ -33,7 +34,7 @@ import stroom.db.annotations.tables.records.AnnotationsRecord;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Annotations extends TableImpl<AnnotationsRecord> {
 
-    private static final long serialVersionUID = -365710530;
+    private static final long serialVersionUID = 1650683197;
 
     /**
      * The reference instance of <code>annotations.annotations</code>
@@ -54,14 +55,29 @@ public class Annotations extends TableImpl<AnnotationsRecord> {
     public final TableField<AnnotationsRecord, String> ID = createField("id", org.jooq.impl.SQLDataType.VARCHAR.length(255).nullable(false), this, "");
 
     /**
-     * The column <code>annotations.annotations.content</code>.
-     */
-    public final TableField<AnnotationsRecord, String> CONTENT = createField("content", org.jooq.impl.SQLDataType.VARCHAR.length(2048).nullable(false), this, "");
-
-    /**
      * The column <code>annotations.annotations.status</code>.
      */
     public final TableField<AnnotationsRecord, String> STATUS = createField("status", org.jooq.impl.SQLDataType.VARCHAR.length(255).nullable(false), this, "");
+
+    /**
+     * The column <code>annotations.annotations.assignTo</code>.
+     */
+    public final TableField<AnnotationsRecord, String> ASSIGNTO = createField("assignTo", org.jooq.impl.SQLDataType.VARCHAR.length(255), this, "");
+
+    /**
+     * The column <code>annotations.annotations.content</code>.
+     */
+    public final TableField<AnnotationsRecord, String> CONTENT = createField("content", org.jooq.impl.SQLDataType.VARCHAR.length(8092), this, "");
+
+    /**
+     * The column <code>annotations.annotations.updatedBy</code>.
+     */
+    public final TableField<AnnotationsRecord, String> UPDATEDBY = createField("updatedBy", org.jooq.impl.SQLDataType.VARCHAR.length(255).nullable(false), this, "");
+
+    /**
+     * The column <code>annotations.annotations.lastUpdated</code>.
+     */
+    public final TableField<AnnotationsRecord, ULong> LASTUPDATED = createField("lastUpdated", org.jooq.impl.SQLDataType.BIGINTUNSIGNED.nullable(false), this, "");
 
     /**
      * Create a <code>annotations.annotations</code> table reference

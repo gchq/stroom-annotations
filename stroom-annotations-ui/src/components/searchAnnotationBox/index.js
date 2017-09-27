@@ -20,7 +20,7 @@ let SearchAnnotationBox = (props) => {
             <ActionSearch style={iconStyles} />
             <TextField
                 value={props.searchTerm} onChange={onSearchTermChange}
-                  hintText="Content"
+                  hintText="Content, AssignTo or ID"
                   floatingLabelText="Search for Annotations" />
         </div>
     )
