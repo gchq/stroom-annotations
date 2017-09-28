@@ -8,9 +8,9 @@ import PendingUpdatesSpinner from '../pendingUpdatesSpinner'
 import AnnotationHistory from '../annotationHistory'
 
 import AppBar from 'material-ui/AppBar'
-import Paper from 'material-ui/Paper';
 import Subheader from 'material-ui/Subheader';
 import RaisedButton from 'material-ui/RaisedButton';
+import Paper from 'material-ui/Paper';
 
 import { fetchAnnotation } from '../../actions/fetchAnnotation'
 import { fetchAnnotationHistory } from '../../actions/fetchAnnotationHistory'
@@ -46,7 +46,7 @@ class SingleAnnotation extends Component {
             annotationComponent = <RaisedButton
                                       label="Create Annotation"
                                       primary={true}
-                                      onClick={() => createAnnotation(this.props.annotationId)}
+                                      onClick={() => this.props.createAnnotation(this.props.annotationId)}
                                       />
         }
 
@@ -70,7 +70,7 @@ class SingleAnnotation extends Component {
                     onLeftIconButtonTouchTap={goToManage}
                     iconElementRight={<PendingUpdatesSpinner />}
                     />
-                <Paper className='app--body'>
+                <Paper className='app--body' zDepth={0}>
                     {annotationComponent}
                     <AnnotationHistory />
                 </Paper>

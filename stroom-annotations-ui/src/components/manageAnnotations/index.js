@@ -4,13 +4,13 @@ import {NavLink} from 'react-router-dom'
 import moment from 'moment'
 
 import AppBar from 'material-ui/AppBar'
-import Paper from 'material-ui/Paper'
 
 import IconButton from 'material-ui/IconButton'
 import EditIcon from 'material-ui/svg-icons/editor/mode-edit'
 import DeleteIcon from 'material-ui/svg-icons/action/delete'
 import FlatButton from 'material-ui/FlatButton'
 import Dialog from 'material-ui/Dialog'
+import Paper from 'material-ui/Paper';
 
 import PendingUpdatesSpinner from '../pendingUpdatesSpinner'
 import CreateAnnotation from '../createAnnotation'
@@ -107,7 +107,7 @@ class ManageAnnotations extends Component {
                     iconElementLeft={<div/>}
                     iconElementRight={<PendingUpdatesSpinner />}
                     />
-                <Paper className='app--body'>
+                <Paper className='app--body' zDepth={0}>
                     <div className='manage-annotations__search-create-bar'>
                         <SearchBar value={this.props.searchTerm}
                                     onChange={this.onSearchTermChange.bind(this)}
