@@ -6,6 +6,7 @@
     "isomorphic-fetch": "^2.2.1",
     "material-ui": "^0.19.2",
     "material-ui-icons": "^1.0.0-beta.10",
+    "material-ui-search-bar": "^0.4.0",
     "moment": "^2.18.1",
     "react": "^15.6.2",
     "react-dom": "^15.6.2",

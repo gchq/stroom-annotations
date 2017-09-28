@@ -1,0 +1,92 @@
+import React, { Component } from 'react';
+import { connect } from 'react-redux'
+import { withRouter } from 'react-router'
+
+import EditAnnotation from '../editAnnotation';
+
+import PendingUpdatesSpinner from '../pendingUpdatesSpinner'
+import AnnotationHistory from '../annotationHistory'
+
+import AppBar from 'material-ui/AppBar'
+import Paper from 'material-ui/Paper';
+import Subheader from 'material-ui/Subheader';
+import RaisedButton from 'material-ui/RaisedButton';
+
+import { fetchAnnotation } from '../../actions/fetchAnnotation'
+import { fetchAnnotationHistory } from '../../actions/fetchAnnotationHistory'
+import { fetchStatusValues } from '../../actions/fetchStatusValues'
+import { createAnnotation } from '../../actions/createAnnotation';
+
+import '../appStyle/app.css'
+
+class SingleAnnotation extends Component {
+    componentDidMount() {
+        if (this.props.annotationId) {
+            this.props.fetchAnnotation(this.props.annotationId)
+            this.props.fetchAnnotationHistory(this.props.annotationId)
+            this.props.fetchStatusValues()
+        }
+    }
+
+    render() {
+        let annotationComponent = undefined;
+
+        // Decide on the annotation component
+        if (!this.props.annotationId) {
+            annotationComponent = (
+                <Subheader>No Annotation ID Given</Subheader>
+            )
+        } else if (this.props.annotation.isFetching) {
+            annotationComponent = (
+                <Subheader>Fetching Annotation...</Subheader>
+            )
+        } else if (this.props.annotation.annotation.id) {
+            annotationComponent = <EditAnnotation />
+        } else {
+            annotationComponent = <RaisedButton
+                                      label="Create Annotation"
+                                      primary={true}
+                                      onClick={() => createAnnotation(this.props.annotationId)}
+                                      />
+        }
+
+        // Only present navigation icon if we are NOT a dialog
+        let iconElementLeft = this.props.isDialog ? <div /> : undefined;
+        let goToManage = () => {
+            this.props.history.push('/');
+        }
+
+        // Indicate if the annotation information is clean
+        let title = `Annotation on ${this.props.annotation.annotationId}`
+        if (!this.props.annotation.isClean) {
+            title += " *"
+        }
+
+        return (
+            <div className='app'>
+                <AppBar
+                    title={title}
+                    iconElementLeft={iconElementLeft}
+                    onLeftIconButtonTouchTap={goToManage}
+                    iconElementRight={<PendingUpdatesSpinner />}
+                    />
+                <Paper className='app--body'>
+                    {annotationComponent}
+                    <AnnotationHistory />
+                </Paper>
+            </div>
+        );
+    }
+}
+
+export default SingleAnnotation = connect(
+    (state) => ({
+        annotation: state.annotation
+    }),
+    {
+        createAnnotation,
+        fetchAnnotation,
+        fetchAnnotationHistory,
+        fetchStatusValues
+    }
+)(withRouter(SingleAnnotation));
