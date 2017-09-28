@@ -1,5 +1,7 @@
 import fetch from 'isomorphic-fetch'
 
+import { fetchAnnotationHistory } from './fetchAnnotationHistory'
+
 export const REQUEST_REMOVE_ANNOTATION = 'REQUEST_REMOVE_ANNOTATION'
 
 export const requestRemoveAnnotation = (id) => ({
@@ -32,7 +34,10 @@ export const removeAnnotation = (id) => {
             }
         )
               .then(
-                response => dispatch(receiveRemoveAnnotation(id)),
+                response => {
+                    dispatch(receiveRemoveAnnotation(id))
+                    dispatch(fetchAnnotationHistory(id))
+                },
                 error => dispatch(receiveRemoveAnnotationFailed(error))
               )
     }

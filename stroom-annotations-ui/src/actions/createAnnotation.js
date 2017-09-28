@@ -1,5 +1,7 @@
 import fetch from 'isomorphic-fetch'
 
+import { fetchAnnotationHistory } from './fetchAnnotationHistory'
+
 export const REQUEST_CREATE_ANNOTATION = 'REQUEST_CREATE_ANNOTATION'
 
 export const requestCreateAnnotation = (id) => ({
@@ -43,6 +45,7 @@ export const createAnnotation = (id) => {
               .then(json => {
                 if (json.id) {
                     dispatch(receiveCreateAnnotation(id, json))
+                    dispatch(fetchAnnotationHistory(id))
                 } else {
                     dispatch(receiveCreateAnnotationFailed(json.msg))
                 }

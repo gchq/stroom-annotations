@@ -1,6 +1,7 @@
 import React, { Component } from 'react'
 import { connect } from 'react-redux'
 import {NavLink} from 'react-router-dom'
+import moment from 'moment'
 
 import AppBar from 'material-ui/AppBar'
 import Paper from 'material-ui/Paper'
@@ -35,7 +36,7 @@ class ManageAnnotations extends Component {
         selectedId: undefined,
         removeDialogOpen: false,
         createDialogOpen: false,
-        newAnnotationId: undefined
+        newAnnotationId: ''
     };
 
     onNewAnnotationIdChange(e) {
@@ -130,10 +131,10 @@ class ManageAnnotations extends Component {
                           contentStyle={customContentStyle}
                     >
                          <TextField value={this.state.newAnnotationId} onChange={this.onNewAnnotationIdChange.bind(this)}
-                                                hintText="Enter the ID for the new annotation"
-                                                floatingLabelText="Annotation ID"
-                                                fullWidth={true}
-                                            />
+                            hintText="Enter the ID for the new annotation"
+                            floatingLabelText="Annotation ID"
+                            fullWidth={true}
+                        />
                     </Dialog>
                     
                     <RaisedButton
@@ -159,6 +160,7 @@ class ManageAnnotations extends Component {
                             <TableHeaderColumn>Status</TableHeaderColumn>
                             <TableHeaderColumn>Assign To</TableHeaderColumn>
                             <TableHeaderColumn>Content</TableHeaderColumn>
+                            <TableHeaderColumn>Last Update</TableHeaderColumn>
                             <TableHeaderColumn>Actions</TableHeaderColumn>
                             </TableRow>
                         </TableHeader>
@@ -169,6 +171,9 @@ class ManageAnnotations extends Component {
                                     <TableRowColumn>{a.status}</TableRowColumn>
                                     <TableRowColumn>{a.assignTo}</TableRowColumn>
                                     <TableRowColumn>{a.content}</TableRowColumn>
+                                    <TableRowColumn>{
+                                        `${moment(a.lastUpdated).fromNow()} by ${a.updatedBy}`
+                                    }</TableRowColumn>
                                     <TableRowColumn>
                                         <NavLink to={`/single/edit/${a.id}`}>
                                             <IconButton tooltip="edit">

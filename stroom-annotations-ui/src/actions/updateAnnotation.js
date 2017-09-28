@@ -1,5 +1,7 @@
 import fetch from 'isomorphic-fetch'
 
+import { fetchAnnotationHistory } from './fetchAnnotationHistory'
+
 export const EDIT_ANNOTATION = 'EDIT_ANNOTATION'
 
 export const editAnnotation = (id, updates) => ({
@@ -58,6 +60,7 @@ export const updateAnnotation = (id, annotation) => {
               .then(json => {
                 if (json.id) {
                     dispatch(receiveUpdateAnnotation(id, json))
+                    dispatch(fetchAnnotationHistory(id))
                 } else {
                     dispatch(receiveUpdateAnnotationFailed(json.msg))
                 }

@@ -229,19 +229,39 @@ public class AnnotationsResource {
     private void takeAnnotationHistory(final DSLContext database,
                                        final String id,
                                        final HistoryOperation operation) {
+        int rowsAffected = 0;
+
         final AnnotationsRecord currentState = database.selectFrom(ANNOTATIONS_)
                 .where(ANNOTATIONS_.ID.equal(id))
                 .fetchAny();
 
-        int rowsAffected = database.insertInto(ANNOTATIONS_HISTORY)
-                .set(ANNOTATIONS_HISTORY.ANNOTATIONID, currentState.getId())
-                .set(ANNOTATIONS_HISTORY.OPERATION, operation.toString())
-                .set(ANNOTATIONS_HISTORY.LASTUPDATED, currentState.getLastupdated())
-                .set(ANNOTATIONS_HISTORY.ASSIGNTO, currentState.getAssignto())
-                .set(ANNOTATIONS_HISTORY.UPDATEDBY, currentState.getUpdatedby())
-                .set(ANNOTATIONS_HISTORY.CONTENT, currentState.getContent())
-                .set(ANNOTATIONS_HISTORY.STATUS, currentState.getStatus())
-                .execute();
+        switch (operation) {
+            case CREATE:
+            case UPDATE:
+                rowsAffected = database.insertInto(ANNOTATIONS_HISTORY)
+                        .set(ANNOTATIONS_HISTORY.ANNOTATIONID, currentState.getId())
+                        .set(ANNOTATIONS_HISTORY.OPERATION, operation.toString())
+                        .set(ANNOTATIONS_HISTORY.LASTUPDATED, currentState.getLastupdated())
+                        .set(ANNOTATIONS_HISTORY.ASSIGNTO, currentState.getAssignto())
+                        .set(ANNOTATIONS_HISTORY.UPDATEDBY, currentState.getUpdatedby())
+                        .set(ANNOTATIONS_HISTORY.CONTENT, currentState.getContent())
+                        .set(ANNOTATIONS_HISTORY.STATUS, currentState.getStatus())
+                        .execute();
+                break;
+            case DELETE:
+                rowsAffected = database.insertInto(ANNOTATIONS_HISTORY)
+                        .set(ANNOTATIONS_HISTORY.ANNOTATIONID, currentState.getId())
+                        .set(ANNOTATIONS_HISTORY.OPERATION, operation.toString())
+                        .set(ANNOTATIONS_HISTORY.LASTUPDATED, ULong.valueOf(System.currentTimeMillis()))
+                        .set(ANNOTATIONS_HISTORY.ASSIGNTO, currentState.getAssignto())
+                        .set(ANNOTATIONS_HISTORY.UPDATEDBY, AnnotationDTO.DEFAULT_UPDATED_BY)
+                        .set(ANNOTATIONS_HISTORY.CONTENT, currentState.getContent())
+                        .set(ANNOTATIONS_HISTORY.STATUS, currentState.getStatus())
+                        .execute();
+                break;
+        }
+
+
 
         LOGGER.info(String.format("History Point Taken for Annotation %s - rowsAffected: %d", id, rowsAffected));
     }

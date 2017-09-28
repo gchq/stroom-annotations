@@ -1,13 +1,11 @@
 import React, { Component } from 'react'
 import { connect } from 'react-redux'
-import moment from 'moment'
 
 import { updateAnnotation, editAnnotation } from '../../actions/updateAnnotation'
 import { removeAnnotation } from '../../actions/removeAnnotation'
 
 import './EditAnnotation.css'
 
-import Subheader from 'material-ui/Subheader'
 import Dialog from 'material-ui/Dialog'
 import FlatButton from 'material-ui/FlatButton'
 import RaisedButton from 'material-ui/RaisedButton'
@@ -80,25 +78,13 @@ export class EditAnnotation extends Component {
                 />,
         ];
 
-        const customContentStyle = {
-            width: '20rem',
-            maxWidth: 'none',
-        };
-
-        const subheaderStyle = {
-            paddingLeft: "0px",
-            lineHeight: "1rem"
-        }
-
         return (
             <div className='edit-annotation'>
-                <Subheader style={subheaderStyle}>Last updated by {this.props.annotation.updatedBy} {moment(this.props.annotation.lastUpdated).fromNow()}</Subheader>
-
                 <TextField value={this.props.annotation.content} onChange={this.onContentChange.bind(this)}
                         hintText="Write notes against this event"
                         floatingLabelText="Annotation Content"
                         multiLine={true}
-                        rows={2}
+                        rows={1}
                         rowsMax={4}
                         fullWidth={true}
                     />
@@ -133,7 +119,6 @@ export class EditAnnotation extends Component {
                   modal={false}
                   open={this.state.open}
                   onRequestClose={this.handleClose.bind(this)}
-                  contentStyle={customContentStyle}
                 >
                     Remove the Annotation for event {this.props.annotation.id}?
                 </Dialog>
