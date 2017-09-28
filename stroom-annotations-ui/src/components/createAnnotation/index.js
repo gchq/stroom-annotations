@@ -58,6 +58,7 @@ class CreateAnnotation extends Component {
         return (
             <div>
                 <Dialog
+                    title='Create a new Annotation'
                     actions={createDialogActions}
                     modal={false}
                     open={this.state.createDialogOpen}

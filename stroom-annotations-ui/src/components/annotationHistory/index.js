@@ -12,8 +12,16 @@ import TextField from 'material-ui/TextField'
 
 export class AnnotationHistory extends Component {
     state = {
-        stepIndex: 0,
+        stepIndex: -1,
     };
+
+    toggleStep(i) {
+        if (this.state.stepIndex === i) {
+            this.setState({stepIndex: -1})
+        } else {
+            this.setState({stepIndex: i})
+        }
+    }
 
     renderHistory() {
         const stepContentStyle = {
@@ -23,7 +31,7 @@ export class AnnotationHistory extends Component {
 
         return this.props.annotationHistory.history.slice().reverse().map((h, i) => (
             <Step key={i}>
-                <StepButton onClick={() => this.setState({stepIndex: i})}>
+                <StepButton onClick={() => this.toggleStep(i)}>
                     {h.operation} by {h.annotation.updatedBy} on {moment(h.annotation.lastUpdated).fromNow()}
                 </StepButton>
                 <StepContent>
@@ -55,7 +63,7 @@ export class AnnotationHistory extends Component {
 
     if (this.props.annotationHistory.history.length > 0) {
         return (
-            <div style={{maxWidth: 600}}>
+            <div>
                 <h1>History</h1>
                 <Stepper
                     activeStep={stepIndex}
