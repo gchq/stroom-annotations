@@ -5,7 +5,7 @@
 docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
 
 ANNOTATIONS_SERVICE_TAG="gchq/stroom-annotations-service:${TRAVIS_TAG}"
-echo "Building stroom-auth-service with tag ${AUTH_SERVICE_TAG}"
+echo "Building stroom-annotations-service with tag ${ANNOTATIONS_SERVICE_TAG}"
 docker build --tag=${ANNOTATIONS_SERVICE_TAG} stroom-annotations-svc/.
 echo "Pushing ${ANNOTATIONS_SERVICE_TAG}"
 docker push ${ANNOTATIONS_SERVICE_TAG}

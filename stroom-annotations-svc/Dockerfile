@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 #**********************************************************************
 # Copyright 2016 Crown Copyright
 #
@@ -16,10 +14,23 @@
 # limitations under the License.
 #**********************************************************************
 
-# This script is all you need to build an image of stroom-auth-service and stroom-auth-ui.
+FROM openjdk:8-alpine
 
-# Exclude tests because we want this to be fast. I guess you'd better test the build before releasing.
-./gradlew clean build shadowJar -x test -x integrationTest
+WORKDIR /usr/stroom-annotations-service
 
-docker build --tag gchq/stroom-annotations-service:v0.0.1-alpha stroom-annotations-svc/.
-docker build --tag gchq/stroom-annotations-ui:v0.0.1-alpha stroom-annotations-ui/.
+ADD ./build/libs/stroom-annotations-service-all.jar /usr/stroom-annotations-service/stroom-annotations-service-all.jar
+ADD ./config.yml /usr/stroom-annotations-service/config.yml
+ADD ./wait-for-it/wait-for-it_busybox.sh wait-for-it_busybox.sh
+
+# update alpine and install Bash as it is not in alpine by default
+# then run setup to configure the tomcat instance
+RUN echo "http_proxy: $http_proxy" && \
+    echo "https_proxy: $https_proxy" && \
+    apk update && \
+    apk upgrade && \
+    apk add --no-cache bash && \
+    rm -rf /var/cache/apk/*
+
+EXPOSE 8081
+
+CMD java -jar stroom-annotations-service-all.jar server config.yml

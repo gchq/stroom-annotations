@@ -1,3 +1,16 @@
+# Copyright 2017 Crown Copyright
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 # ---- Base Node ----
 FROM alpine:3.6 AS base
@@ -18,14 +31,5 @@ FROM dependencies AS build
 COPY --from=dependencies /root/app/node_modules /root/app/node_modules
 COPY src src
 COPY public public
-COPY .env.production .env.production
-RUN yarn build
-
-
-# ---- Release ----
-FROM base AS release
-# This path is where the app is mounted in the image
-RUN mkdir /root/app/annotations
-COPY --from=build /root/app/build/. ./annotations
 EXPOSE 5000
-CMD serve --single --cors .
+CMD yarn build && serve --single --cors ./build

@@ -65,7 +65,7 @@ deploy:
   file: stroom-annotations-svc/build/libs/stroom-annotations-service-all.jar
   skip_cleanup: true
   on:
-    repo: gchq/stroom-auth
+    repo: gchq/stroom-annotations
     tags: true
 
 # Clean out gradle caches as per travis docs
