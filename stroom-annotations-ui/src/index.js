@@ -6,6 +6,7 @@ import { createStore, applyMiddleware } from 'redux'
 import { Provider } from 'react-redux'
 import SingleAnnotation from './components/singleAnnotation'
 import ManageAnnotations from './components/manageAnnotations'
+import NotFound from './components/notFound'
 import reducer from './reducers'
 
 import {blue600, amber900} from 'material-ui/styles/colors'
@@ -52,6 +53,7 @@ render(
                     <Route exact={true} path="/single/:annotationId?" component={SingleAnnotationMuiDialog} />
                     <Route exact={true} path="/singleEdit/:annotationId?" component={SingleAnnotationMuiPage} />
                     <Route exact={true} path="/" component={ManageAnnotations} />
+                    <Route path="*" component={NotFound}/>
                 </Switch>
             </Router>
         </Provider>
