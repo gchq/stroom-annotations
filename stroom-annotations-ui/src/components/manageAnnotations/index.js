@@ -1,22 +1,16 @@
 import React, { Component } from 'react'
 import { connect } from 'react-redux'
-import {NavLink} from 'react-router-dom'
+import { withRouter } from 'react-router'
 import moment from 'moment'
 
 import AppBar from 'material-ui/AppBar'
 
-import IconButton from 'material-ui/IconButton'
-import EditIcon from 'material-ui/svg-icons/editor/mode-edit'
-import DeleteIcon from 'material-ui/svg-icons/action/delete'
-import FlatButton from 'material-ui/FlatButton'
-import Dialog from 'material-ui/Dialog'
 import Paper from 'material-ui/Paper';
 
 import PendingUpdatesSpinner from '../pendingUpdatesSpinner'
 import CreateAnnotation from '../createAnnotation'
 import SearchBar from 'material-ui-search-bar'
 
-import { removeAnnotation } from '../../actions/removeAnnotation'
 import { searchAnnotations } from '../../actions/searchAnnotations'
 
 import {
@@ -41,22 +35,6 @@ class ManageAnnotations extends Component {
     componentDidMount() {
         this.props.searchAnnotations();
     }
-    // Remove Dialog
-    handleRemoveDialogOpen(selectedId) {
-        this.setState({
-            removeDialogOpen: true,
-            selectedId
-        });
-    };
-
-    handleRemoveDialogClose() {
-        this.setState({removeDialogOpen: false});
-    };
-
-    handleConfirmRemove() {
-        this.props.removeAnnotation(this.state.selectedId)
-        this.handleRemoveDialogClose();
-    }
 
     onSearchTermChange(e) {
         this.props.searchAnnotations(e);
@@ -72,34 +50,17 @@ class ManageAnnotations extends Component {
                 <TableRowColumn>{
                     `${moment(a.lastUpdated).fromNow()} by ${a.updatedBy}`
                 }</TableRowColumn>
-                <TableRowColumn>
-                    <NavLink to={`/singleEdit/${a.id}`}>
-                        <IconButton tooltip="edit">
-                            <EditIcon />
-                        </IconButton>
-                    </NavLink>
-                    <IconButton tooltip="delete" onClick={() => this.handleRemoveDialogOpen(a.id)}>
-                        <DeleteIcon />
-                    </IconButton>
-                </TableRowColumn>
             </TableRow>
         ))
     }
 
-    render (props) {
-        const removeDialogActions = [
-            <FlatButton
-                label="Cancel"
-                primary={true}
-                onClick={this.handleRemoveDialogClose.bind(this)}
-                />,
-            <FlatButton
-                label="Remove"
-                primary={true}
-                onClick={this.handleConfirmRemove.bind(this)}
-                />,
-        ];
 
+    handleRowSelection = (selectedRows) => {
+        let annotation = this.props.annotations[selectedRows]
+        this.props.history.push(`/singleEdit/${annotation.id}`)
+    };
+
+    render (props) {
         return (
             <div className='app'>
                 <AppBar
@@ -116,28 +77,25 @@ class ManageAnnotations extends Component {
                         <CreateAnnotation />
                     </div>
 
-                    <Dialog
-                        actions={removeDialogActions}
-                        modal={false}
-                        open={this.state.removeDialogOpen}
-                        onRequestClose={this.handleRemoveDialogClose.bind(this)}
-                        contentClassName='dialog'
-                    >
-                        Remove the Annotation for {this.state.selectedId}?
-                    </Dialog>
-
-                    <Table selectable={false}>
-                        <TableHeader>
+                    <Table  selectable={true}
+                            onRowSelection={this.handleRowSelection.bind(this)}>
+                        <TableHeader
+                                adjustForCheckbox={false}
+                                displaySelectAll={false}
+                                enableSelectAll={false}>
                             <TableRow>
-                            <TableHeaderColumn>ID</TableHeaderColumn>
-                            <TableHeaderColumn>Status</TableHeaderColumn>
-                            <TableHeaderColumn>Assign To</TableHeaderColumn>
-                            <TableHeaderColumn>Content</TableHeaderColumn>
-                            <TableHeaderColumn>Last Update</TableHeaderColumn>
-                            <TableHeaderColumn>Actions</TableHeaderColumn>
+                                <TableHeaderColumn>ID</TableHeaderColumn>
+                                <TableHeaderColumn>Status</TableHeaderColumn>
+                                <TableHeaderColumn>Assign To</TableHeaderColumn>
+                                <TableHeaderColumn>Content</TableHeaderColumn>
+                                <TableHeaderColumn>Last Update</TableHeaderColumn>
+                                <TableHeaderColumn>Actions</TableHeaderColumn>
                             </TableRow>
                         </TableHeader>
-                        <TableBody>
+                        <TableBody
+                                displayRowCheckbox={false}
+                                showRowHover={true}
+                            >
                             {this.renderRows()}
                         </TableBody>
                     </Table>
@@ -153,7 +111,6 @@ export default ManageAnnotations = connect(
         searchTerm: state.annotations.searchTerm
     }),
     {
-        removeAnnotation,
         searchAnnotations
     }
-)(ManageAnnotations);
+)(withRouter(ManageAnnotations));

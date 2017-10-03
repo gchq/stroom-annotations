@@ -7,6 +7,8 @@ import EditAnnotation from '../editAnnotation';
 import PendingUpdatesSpinner from '../pendingUpdatesSpinner'
 import AnnotationHistory from '../annotationHistory'
 
+import IconButton from 'material-ui/IconButton';
+import BackIcon from 'material-ui/svg-icons/navigation/arrow-back'
 import AppBar from 'material-ui/AppBar'
 import Subheader from 'material-ui/Subheader';
 import RaisedButton from 'material-ui/RaisedButton';
@@ -51,7 +53,7 @@ class SingleAnnotation extends Component {
         }
 
         // Only present navigation icon if we are NOT a dialog
-        let iconElementLeft = this.props.isDialog ? <div /> : undefined;
+        let iconElementLeft = this.props.isDialog ? <div /> : <IconButton><BackIcon /></IconButton>;
         let goToManage = () => {
             this.props.history.push('/');
         }
