@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux'
 
+import SimpleSchema from 'simpl-schema';
+
 import { createAnnotation } from '../../actions/createAnnotation';
 
 import RaisedButton from 'material-ui/RaisedButton';
@@ -13,7 +15,8 @@ import '../appStyle/dialog.css'
 class CreateAnnotation extends Component {
     state = {
         createDialogOpen: false,
-        newAnnotationId: ''
+        newAnnotationId: '',
+        newAnnotationIdError: undefined
     };
 
     onNewAnnotationIdChange(e) {
@@ -37,8 +40,24 @@ class CreateAnnotation extends Component {
     };
 
     handleConfirmCreate() {
-        this.props.createAnnotation(this.state.newAnnotationId)
-        this.handleCreateDialogClose()
+
+        try {
+            new SimpleSchema({
+                id: {
+                    type: String,
+                    required: true,
+                    min: 3
+                }
+            }).validate({
+                id: this.state.newAnnotationId,
+            });
+            this.props.createAnnotation(this.state.newAnnotationId)
+            this.handleCreateDialogClose()
+        } catch(e) {
+            this.setState({
+                newAnnotationIdError: e.message
+            })
+        }
     }
 
     render() {
@@ -69,6 +88,7 @@ class CreateAnnotation extends Component {
                         hintText="Enter the ID for the new annotation"
                         floatingLabelText="Annotation ID"
                         fullWidth={true}
+                        errorText={this.state.newAnnotationIdError}
                         />
                 </Dialog>
 

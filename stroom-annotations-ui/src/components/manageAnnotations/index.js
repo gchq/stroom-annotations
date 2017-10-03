@@ -89,7 +89,6 @@ class ManageAnnotations extends Component {
                                 <TableHeaderColumn>Assign To</TableHeaderColumn>
                                 <TableHeaderColumn>Content</TableHeaderColumn>
                                 <TableHeaderColumn>Last Update</TableHeaderColumn>
-                                <TableHeaderColumn>Actions</TableHeaderColumn>
                             </TableRow>
                         </TableHeader>
                         <TableBody

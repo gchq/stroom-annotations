@@ -1,6 +1,7 @@
 package stroom.annotations.service.model;
 
 public class AnnotationDTO {
+    public static final int MIN_ID_LENGTH = 3;
     public static final Status DEFAULT_STATUS = Status.QUEUED;
     public static final String DEFAULT_CONTENT = "";
     public static final String DEFAULT_UPDATED_BY = "stroom-annotations-user";

@@ -1,6 +1,8 @@
 package stroom.annotations.service.resources;
 
 import com.codahale.metrics.annotation.Timed;
+import io.dropwizard.validation.Validated;
+import org.hibernate.validator.constraints.Length;
 import org.jooq.DSLContext;
 import org.jooq.types.ULong;
 import stroom.annotations.service.model.*;
@@ -87,7 +89,7 @@ public class AnnotationsResource {
     @Timed
     @NotNull
     public final Response get(@Context @NotNull DSLContext database,
-                              @PathParam("id") final String id) {
+                              @Validated @PathParam("id") @NotNull @Length(min=AnnotationDTO.MIN_ID_LENGTH) final String id) {
         final AnnotationsRecord result = database.selectFrom(ANNOTATIONS_)
                 .where(ANNOTATIONS_.ID.equal(id))
                 .fetchAny();
@@ -108,14 +110,14 @@ public class AnnotationsResource {
     }
 
     @GET
-    @Path("/single/{annotationId}/history")
+    @Path("/single/{id}/history")
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
     @NotNull
     public final Response getHistory(@Context @NotNull DSLContext database,
-                                     @PathParam("annotationId") final String annotationId) {
+                                     @Validated @PathParam("id") @NotNull @Length(min=AnnotationDTO.MIN_ID_LENGTH) final String id) {
         final List<AnnotationHistoryDTO> results = database.selectFrom(ANNOTATIONS_HISTORY)
-                .where(ANNOTATIONS_HISTORY.ANNOTATIONID.equal(annotationId))
+                .where(ANNOTATIONS_HISTORY.ANNOTATIONID.equal(id))
                 .fetch()
                 .stream()
                 .map(AnnotationDTOMarshaller::toDTO)
@@ -140,7 +142,7 @@ public class AnnotationsResource {
     @Timed
     @NotNull
     public final Response create(@Context @NotNull DSLContext database,
-                                 @PathParam("id") final String id) {
+                                 @Validated @PathParam("id") @NotNull @Length(min=AnnotationDTO.MIN_ID_LENGTH) final String id) {
 
         final int result = database.insertInto(ANNOTATIONS_)
                 .set(ANNOTATIONS_.ID, id)
@@ -171,7 +173,7 @@ public class AnnotationsResource {
     @Timed
     @NotNull
     public final Response update(@Context @NotNull DSLContext database,
-                                 @PathParam("id") final String id,
+                                 @Validated @PathParam("id") @NotNull @Length(min=AnnotationDTO.MIN_ID_LENGTH) final String id,
                                  final AnnotationDTO annotation) {
         LOGGER.info("Update Annotation: " + annotation);
 
@@ -202,7 +204,7 @@ public class AnnotationsResource {
     @Timed
     @NotNull
     public final Response remove(@Context @NotNull DSLContext database,
-                                 @PathParam("id") final String id) {
+                                 @Validated @PathParam("id") @NotNull @Length(min=AnnotationDTO.MIN_ID_LENGTH) final String id) {
         // Take the history snapshot before deletion happens
         takeAnnotationHistory(database, id, HistoryOperation.DELETE);
 
