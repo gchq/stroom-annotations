@@ -47,7 +47,7 @@ before_script:
   - pushd stroom-resources/dev-resources/compose
   - git checkout annotations #TODO change to master when Annotations is released
   # Start all the services we need to run the integration tests in stroom
-  - docker-compose -f stroomDb-stroomStatsDb-stroomAuthDb.yml up -d
+  #- docker-compose -f stroomDb-stroomStatsDb-stroomAnnotationsDb.yml up -d
   - popd
   - popd
 

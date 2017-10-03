@@ -51,6 +51,10 @@ class CreateAnnotation extends Component {
             }).validate({
                 id: this.state.newAnnotationId,
             });
+            this.setState({
+                newAnnotationIdError: undefined
+            })
+
             this.props.createAnnotation(this.state.newAnnotationId)
             this.handleCreateDialogClose()
         } catch(e) {
