@@ -17,9 +17,9 @@ export const receiveFetchStatusValues = (values) => ({
 
 export const RECEIVE_FETCH_STATUS_VALUES_FAILED = 'RECEIVE_FETCH_STATUS_VALUES_FAILED';
 
-export const receiveFetchStatusValuesFailed = (errorMsg) => ({
+export const receiveFetchStatusValuesFailed = (message) => ({
     type: RECEIVE_FETCH_STATUS_VALUES_FAILED,
-    errorMsg,
+    message,
     receivedAt: Date.now()
 })
 

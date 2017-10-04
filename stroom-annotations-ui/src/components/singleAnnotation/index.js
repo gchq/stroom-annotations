@@ -5,19 +5,21 @@ import { withRouter } from 'react-router'
 import EditAnnotation from '../editAnnotation';
 
 import PendingUpdatesSpinner from '../pendingUpdatesSpinner'
+import ErrorDisplay from '../errorDisplay'
+import SnackbarDisplay from '../snackbarDisplay'
 import AnnotationHistory from '../annotationHistory'
 
-import IconButton from 'material-ui/IconButton';
+import IconButton from 'material-ui/IconButton'
 import BackIcon from 'material-ui/svg-icons/navigation/arrow-back'
 import AppBar from 'material-ui/AppBar'
-import Subheader from 'material-ui/Subheader';
-import RaisedButton from 'material-ui/RaisedButton';
-import Paper from 'material-ui/Paper';
+import Subheader from 'material-ui/Subheader'
+import RaisedButton from 'material-ui/RaisedButton'
+import Paper from 'material-ui/Paper'
 
 import { fetchAnnotation } from '../../actions/fetchAnnotation'
 import { fetchAnnotationHistory } from '../../actions/fetchAnnotationHistory'
 import { fetchStatusValues } from '../../actions/fetchStatusValues'
-import { createAnnotation } from '../../actions/createAnnotation';
+import { createAnnotation } from '../../actions/createAnnotation'
 
 import '../appStyle/app.css'
 
@@ -38,11 +40,11 @@ class SingleAnnotation extends Component {
             annotationComponent = (
                 <Subheader>No Annotation ID Given</Subheader>
             )
-        } else if (this.props.annotation.isFetching) {
+        } else if (this.props.singleAnnotation.isFetching) {
             annotationComponent = (
                 <Subheader>Fetching Annotation...</Subheader>
             )
-        } else if (this.props.annotation.annotation.id) {
+        } else if (this.props.singleAnnotation.annotation.id) {
             annotationComponent = <EditAnnotation />
         } else {
             annotationComponent = <RaisedButton
@@ -59,8 +61,8 @@ class SingleAnnotation extends Component {
         }
 
         // Indicate if the annotation information is clean
-        let title = `Annotation on ${this.props.annotation.annotationId}`
-        if (!this.props.annotation.isClean) {
+        let title = `Annotation on ${this.props.singleAnnotation.annotationId}`
+        if (!this.props.singleAnnotation.isClean) {
             title += " *"
         }
 
@@ -70,8 +72,10 @@ class SingleAnnotation extends Component {
                     title={title}
                     iconElementLeft={iconElementLeft}
                     onLeftIconButtonTouchTap={goToManage}
-                    iconElementRight={<PendingUpdatesSpinner />}
+                    iconElementRight={<ErrorDisplay />}
                     />
+                <SnackbarDisplay />
+                <PendingUpdatesSpinner />
                 <Paper className='app--body' zDepth={0}>
                     {annotationComponent}
                     <AnnotationHistory />
@@ -83,7 +87,7 @@ class SingleAnnotation extends Component {
 
 export default SingleAnnotation = connect(
     (state) => ({
-        annotation: state.annotation
+        singleAnnotation: state.singleAnnotation
     }),
     {
         createAnnotation,

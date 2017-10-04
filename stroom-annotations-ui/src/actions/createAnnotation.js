@@ -19,9 +19,9 @@ export const receiveCreateAnnotation = (id, annotation) => ({
 
 export const RECEIVE_CREATE_ANNOTATION_FAILED = 'RECEIVE_CREATE_ANNOTATION_FAILED'
 
-export const receiveCreateAnnotationFailed = (errorMsg) => ({
+export const receiveCreateAnnotationFailed = (message) => ({
     type: RECEIVE_CREATE_ANNOTATION_FAILED,
-    errorMsg,
+    message,
     receivedAt: Date.now()
 })
 
@@ -29,26 +29,22 @@ export const createAnnotation = (id) => {
     return function(dispatch) {
         dispatch(requestCreateAnnotation(id));
 
-        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/single/${id}`,
-            {
-                method: "POST"
-            }
-        )
-              .then(
-                response => response.json(),
-                // Do not use catch, because that will also catch
-                // any errors in the dispatch and resulting render,
-                // causing an loop of 'Unexpected batch number' errors.
-                // https://github.com/facebook/react/issues/6895
-                error => console.log('An error occured.', error)
-              )
-              .then(json => {
+        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/single/${id}`, {method: "POST"})
+            .then(
+                response => {
+                    if (!response.ok) {
+                        throw new Error(response.statusText)
+                    }
+                    return response.json()
+                }
+            )
+            .then(json => {
                 if (json.id) {
                     dispatch(receiveCreateAnnotation(id, json))
                     dispatch(fetchAnnotationHistory(id))
-                } else {
-                    dispatch(receiveCreateAnnotationFailed(json.msg))
                 }
-              })
+            }).catch(error => {
+                dispatch(receiveCreateAnnotationFailed(error.message))
+            })
     }
 }

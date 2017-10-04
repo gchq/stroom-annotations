@@ -14,6 +14,7 @@ import {
 import {
     REQUEST_FETCH_ANNOTATION,
     RECEIVE_FETCH_ANNOTATION,
+    RECEIVE_FETCH_ANNOTATION_NOT_EXIST,
     RECEIVE_FETCH_ANNOTATION_FAILED
 } from '../actions/fetchAnnotation'
 
@@ -26,12 +27,12 @@ import {
 const defaultState = {
     isFetching: false,
     isClean: true,
-    errorMsg: undefined,
+    message: undefined,
     pendingUpdates: 0,
     annotation: {}
 }
 
-const annotation = (
+const singleAnnotation = (
     state = defaultState,
     action
  ) => {
@@ -48,7 +49,7 @@ const annotation = (
             return Object.assign({}, state, {
                     isFetching: false,
                     isClean: false,
-                    errorMsg: action.errorMsg,
+                    message: action.message,
                     lastUpdated: action.receivedAt,
                     annotation: {}
                   })
@@ -58,7 +59,7 @@ const annotation = (
             return Object.assign({}, state, {
                     isFetching: true,
                     isClean: true,
-                    errorMsg: undefined,
+                    message: undefined,
                     annotationId: action.id
                   })
 
@@ -77,7 +78,7 @@ const annotation = (
                     isFetching: false,
                     isClean: false,
                     pendingUpdates: state.pendingUpdates + 1,
-                    errorMsg: undefined,
+                    message: undefined,
                     annotation: {
                         ...state.annotation,
                         ...action.annotation,
@@ -88,7 +89,7 @@ const annotation = (
             return Object.assign({}, state, {
                     isFetching: false,
                     isClean: false,
-                    errorMsg: undefined
+                    message: undefined
                   })
 
         case RECEIVE_CREATE_ANNOTATION:
@@ -96,9 +97,19 @@ const annotation = (
             return Object.assign({}, state, {
                     isFetching: false,
                     isClean: true,
-                    errorMsg: undefined,
+                    message: undefined,
                     id: action.id,
                     annotation: action.annotation,
+                    lastUpdated: action.receivedAt
+                  })
+
+        case RECEIVE_FETCH_ANNOTATION_NOT_EXIST:
+            return Object.assign({}, state, {
+                    isFetching: false,
+                    isClean: true,
+                    message: undefined,
+                    id: action.id,
+                    annotation: {},
                     lastUpdated: action.receivedAt
                   })
 
@@ -106,7 +117,7 @@ const annotation = (
             return Object.assign({}, state, {
                     isFetching: false,
                     isClean: true,
-                    errorMsg: undefined,
+                    message: undefined,
                     id: action.id,
                     pendingUpdates: state.pendingUpdates - 1,
                     annotation: action.annotation,
@@ -117,7 +128,7 @@ const annotation = (
             return Object.assign({}, state, {
                     isFetching: false,
                     isClean: false,
-                    errorMsg: action.errorMsg,
+                    message: action.message,
                     lastUpdated: action.receivedAt
                   })
 
@@ -126,7 +137,7 @@ const annotation = (
                     isFetching: false,
                     isClean: false,
                     pendingUpdates: state.pendingUpdates - 1,
-                    errorMsg: action.errorMsg,
+                    message: action.message,
                     lastUpdated: action.receivedAt
                   })
 
@@ -143,4 +154,4 @@ const annotation = (
 
 }
 
-export default annotation
+export default singleAnnotation

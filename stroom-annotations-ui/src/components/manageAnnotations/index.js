@@ -8,6 +8,8 @@ import AppBar from 'material-ui/AppBar'
 import Paper from 'material-ui/Paper';
 
 import PendingUpdatesSpinner from '../pendingUpdatesSpinner'
+import ErrorDisplay from '../errorDisplay'
+import SnackbarDisplay from '../snackbarDisplay'
 import CreateAnnotation from '../createAnnotation'
 import SearchBar from 'material-ui-search-bar'
 
@@ -66,8 +68,10 @@ class ManageAnnotations extends Component {
                 <AppBar
                     title='Manage Annotations'
                     iconElementLeft={<div/>}
-                    iconElementRight={<PendingUpdatesSpinner />}
+                    iconElementRight={<ErrorDisplay />}
                     />
+                <PendingUpdatesSpinner />
+                <SnackbarDisplay />
                 <Paper className='app--body' zDepth={0}>
                     <div className='manage-annotations__search-create-bar'>
                         <SearchBar value={this.props.searchTerm}
@@ -106,8 +110,8 @@ class ManageAnnotations extends Component {
 
 export default ManageAnnotations = connect(
     (state) => ({
-        annotations: state.annotations.annotations,
-        searchTerm: state.annotations.searchTerm
+        annotations: state.manageAnnotations.annotations,
+        searchTerm: state.manageAnnotations.searchTerm
     }),
     {
         searchAnnotations

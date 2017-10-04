@@ -5,7 +5,17 @@ import CircularProgress from 'material-ui/CircularProgress';
 
 export const PendingUpdatesSpinner = (props) => {
     if (props.isSpinning) {
-        return <CircularProgress size={40} thickness={7} color='white' />
+        const spinnerStyle = {
+            position: 'absolute',
+            bottom: '50px',
+            right: '50px'
+        }
+
+        return <CircularProgress
+                    style={spinnerStyle}
+                    size={200}
+                    thickness={40}
+                    color='red' />
     } else {
         return <span />
     }
@@ -13,7 +23,7 @@ export const PendingUpdatesSpinner = (props) => {
 
 export default connect(
     (state) => ({
-        isSpinning: (state.annotation.pendingUpdates > 0) || state.annotation.isFetching || state.annotations.isFetching || state.annotationHistory.isFetching,
+        isSpinning: (state.singleAnnotation.pendingUpdates > 0) || state.singleAnnotation.isFetching || state.manageAnnotations.isFetching || state.annotationHistory.isFetching,
     }),
     null
 )(PendingUpdatesSpinner);

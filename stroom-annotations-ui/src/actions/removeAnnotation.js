@@ -18,9 +18,9 @@ export const receiveRemoveAnnotation = (id) => ({
 
 export const RECEIVE_REMOVE_ANNOTATION_FAILED = 'RECEIVE_REMOVE_ANNOTATION_FAILED'
 
-export const receiveRemoveAnnotationFailed = (errorMsg) => ({
+export const receiveRemoveAnnotationFailed = (message) => ({
     type: RECEIVE_REMOVE_ANNOTATION_FAILED,
-    errorMsg,
+    message,
     receivedAt: Date.now()
 })
 

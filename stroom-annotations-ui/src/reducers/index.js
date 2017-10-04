@@ -1,12 +1,19 @@
 import { combineReducers } from 'redux'
 
-import annotation from './annotation'
+import singleAnnotation from './singleAnnotation'
 import annotationHistory from './annotationHistory'
-import annotations from './annotations'
+import manageAnnotations from './manageAnnotations'
 import statusValues from './statusValues'
+import snackbarMessages from './snackbarMessages'
+import errorMessages from './errorMessages'
 
 const annotationsApp = combineReducers({
-  annotation, annotationHistory, annotations, statusValues
+    singleAnnotation,
+    annotationHistory,
+    manageAnnotations,
+    statusValues,
+    snackbarMessages,
+    errorMessages
 })
 
 export default annotationsApp

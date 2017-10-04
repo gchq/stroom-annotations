@@ -18,9 +18,9 @@ export const receiveFetchAnnotationHistory = (id, json) => ({
 
 export const RECEIVE_FETCH_ANNOTATION_HISTORY_FAILED = 'RECEIVE_FETCH_ANNOTATION_HISTORY_FAILED';
 
-export const receiveFetchAnnotationHistoryFailed = (errorMsg) => ({
+export const receiveFetchAnnotationHistoryFailed = (message) => ({
     type: RECEIVE_FETCH_ANNOTATION_HISTORY_FAILED,
-    errorMsg,
+    message,
     receivedAt: Date.now()
 })
 

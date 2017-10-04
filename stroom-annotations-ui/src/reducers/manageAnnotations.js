@@ -14,12 +14,12 @@ import {
 
 const defaultState = {
     isFetching: false,
-    errorMsg: undefined,
+    message: undefined,
     searchTerm: '',
     annotations: []
 }
 
-const annotations = (
+const manageAnnotations = (
     state = defaultState,
     action
  ) => {
@@ -45,14 +45,14 @@ const annotations = (
         case REQUEST_SEARCH_ANNOTATIONS:
             return Object.assign({}, state, {
                     isFetching: true,
-                    errorMsg: undefined,
+                    message: undefined,
                     searchTerm: action.searchTerm
                   })
 
         case RECEIVE_SEARCH_ANNOTATIONS:
             return Object.assign({}, state, {
                     isFetching: false,
-                    errorMsg: undefined,
+                    message: undefined,
                     annotations: action.annotations,
                     lastUpdated: action.receivedAt
                   })
@@ -69,4 +69,4 @@ const annotations = (
 
 }
 
-export default annotations
+export default manageAnnotations

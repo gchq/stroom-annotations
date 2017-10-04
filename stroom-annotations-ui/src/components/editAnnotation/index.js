@@ -130,7 +130,7 @@ export class EditAnnotation extends Component {
 
 export default connect(
   (state) => ({
-     annotation: state.annotation.annotation
+     annotation: state.singleAnnotation.annotation
   }),
   {
      editAnnotation,

@@ -29,9 +29,9 @@ export const RECEIVE_UPDATE_ANNOTATION = 'RECEIVE_UPDATE_ANNOTATION';
 
  export const RECEIVE_UPDATE_ANNOTATION_FAILED = 'RECEIVE_UPDATE_ANNOTATION_FAILED';
 
- export const receiveUpdateAnnotationFailed = (errorMsg) => ({
+ export const receiveUpdateAnnotationFailed = (message) => ({
      type: RECEIVE_UPDATE_ANNOTATION_FAILED,
-     errorMsg,
+     message,
      receivedAt: Date.now()
  })
 

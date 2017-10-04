@@ -83,7 +83,6 @@ export class AnnotationHistory extends Component {
 
 export default connect(
   (state) => ({
-     annotationId: state.annotation.annotationId,
      annotationHistory: state.annotationHistory
   }),
   null

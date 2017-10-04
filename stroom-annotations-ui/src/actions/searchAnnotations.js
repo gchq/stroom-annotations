@@ -17,9 +17,9 @@ export const receiveSearchAnnotations = (json) => ({
 
 export const RECEIVE_SEARCH_ANNOTATIONS_FAILED = 'RECEIVE_SEARCH_ANNOTATIONS_FAILED';
 
-export const receiveSearchAnnotationsFailed = (errorMsg) => ({
+export const receiveSearchAnnotationsFailed = (message) => ({
     type: RECEIVE_SEARCH_ANNOTATIONS_FAILED,
-    errorMsg,
+    message,
     receivedAt: Date.now()
 })
 
@@ -32,20 +32,16 @@ export const searchAnnotations = (searchTermRaw) => {
 
         return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/search?q=${searchTerm}`)
             .then(
-                response => response.json(),
-                // Do not use catch, because that will also catch
-                // any errors in the dispatch and resulting render,
-                // causing an loop of 'Unexpected batch number' errors.
-                // https://github.com/facebook/react/issues/6895
-                error => {
-                    dispatch(receiveSearchAnnotationsFailed('An error occured.', error))
-                    return undefined;
+                response => {
+                    if (!response.ok) {
+                        throw new Error(response.statusText)
+                    }
+                    return response.json()
                 }
             )
-            .then(json => {
-                if (json) {
-                    dispatch(receiveSearchAnnotations(json))
-                }
+            .then(json => dispatch(receiveSearchAnnotations(json)) )
+            .catch(error => {
+                dispatch(receiveSearchAnnotationsFailed(error))
             })
     }
 }

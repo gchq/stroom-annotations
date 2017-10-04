@@ -35,7 +35,7 @@ class CreateAnnotation extends Component {
     handleCreateDialogClose() {
         this.setState({
             createDialogOpen: false,
-            newAnnotationId: undefined
+            newAnnotationId: ''
         });
     };
 
@@ -108,7 +108,7 @@ class CreateAnnotation extends Component {
 
 export default connect(
     (state) => ({
-        annotationId: state.annotation.annotationId
+        annotationId: state.singleAnnotation.annotationId
     }),
     {
         createAnnotation
