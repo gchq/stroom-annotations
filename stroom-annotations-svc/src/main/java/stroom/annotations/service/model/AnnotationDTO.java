@@ -1,5 +1,7 @@
 package stroom.annotations.service.model;
 
+import java.util.Objects;
+
 public class AnnotationDTO {
     public static final int MIN_ID_LENGTH = 3;
     public static final Status DEFAULT_STATUS = Status.QUEUED;
@@ -77,6 +79,27 @@ public class AnnotationDTO {
                 ", lastUpdated=" + lastUpdated +
                 ", updatedBy=" + updatedBy +
                 '}';
+    }
+
+    /**
+     * Only takes into account the fields settable by the user.
+     * @param o The other annotation to compare.
+     * @return If the annotations have the same values in the user settable fields.
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        AnnotationDTO that = (AnnotationDTO) o;
+        return Objects.equals(id, that.id) &&
+                Objects.equals(assignTo, that.assignTo) &&
+                status == that.status &&
+                Objects.equals(content, that.content);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, assignTo, status, content);
     }
 
     public static class Builder {

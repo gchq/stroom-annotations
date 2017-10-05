@@ -30,6 +30,8 @@ import static stroom.db.annotations.Tables.ANNOTATIONS_HISTORY;
 public class AnnotationsResource {
     private static final Logger LOGGER = Logger.getLogger(AnnotationsResource.class.getName());
 
+    public static final String WELCOME_TEXT = "Welcome to the annotations service";
+
     public AnnotationsResource() {
     }
 
@@ -40,7 +42,7 @@ public class AnnotationsResource {
     @NotNull
     public final Response welcome() {
         return Response.status(Response.Status.OK)
-                .entity("Welcome to the annotations service")
+                .entity(WELCOME_TEXT)
                 .build();
     }
 
