@@ -27,7 +27,6 @@ import {
 const defaultState = {
     isFetching: false,
     isClean: true,
-    message: undefined,
     pendingUpdates: 0,
     annotation: {}
 }
@@ -49,7 +48,6 @@ const singleAnnotation = (
             return Object.assign({}, state, {
                     isFetching: false,
                     isClean: false,
-                    message: action.message,
                     lastUpdated: action.receivedAt,
                     annotation: {}
                   })
@@ -59,7 +57,6 @@ const singleAnnotation = (
             return Object.assign({}, state, {
                     isFetching: true,
                     isClean: true,
-                    message: undefined,
                     annotationId: action.id
                   })
 
@@ -97,7 +94,6 @@ const singleAnnotation = (
             return Object.assign({}, state, {
                     isFetching: false,
                     isClean: true,
-                    message: undefined,
                     id: action.id,
                     annotation: action.annotation,
                     lastUpdated: action.receivedAt
@@ -107,7 +103,6 @@ const singleAnnotation = (
             return Object.assign({}, state, {
                     isFetching: false,
                     isClean: true,
-                    message: undefined,
                     id: action.id,
                     annotation: {},
                     lastUpdated: action.receivedAt
@@ -117,7 +112,6 @@ const singleAnnotation = (
             return Object.assign({}, state, {
                     isFetching: false,
                     isClean: true,
-                    message: undefined,
                     id: action.id,
                     pendingUpdates: state.pendingUpdates - 1,
                     annotation: action.annotation,
@@ -128,7 +122,6 @@ const singleAnnotation = (
             return Object.assign({}, state, {
                     isFetching: false,
                     isClean: false,
-                    message: action.message,
                     lastUpdated: action.receivedAt
                   })
 
@@ -137,7 +130,6 @@ const singleAnnotation = (
                     isFetching: false,
                     isClean: false,
                     pendingUpdates: state.pendingUpdates - 1,
-                    message: action.message,
                     lastUpdated: action.receivedAt
                   })
 

@@ -7,6 +7,13 @@ export const requestSearchAnnotations = (searchTerm) => ({
     searchTerm
 })
 
+export const REQUEST_MORE_ANNOTATIONS = 'REQUEST_MORE_ANNOTATIONS';
+
+export const requestMoreAnnotations = () => ({
+    type: REQUEST_MORE_ANNOTATIONS
+})
+
+
 export const RECEIVE_SEARCH_ANNOTATIONS = 'RECEIVE_SEARCH_ANNOTATIONS';
 
 export const receiveSearchAnnotations = (json) => ({
@@ -31,6 +38,29 @@ export const searchAnnotations = (searchTermRaw) => {
         dispatch(requestSearchAnnotations(searchTerm));
 
         return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/search?q=${searchTerm}`)
+            .then(
+                response => {
+                    if (!response.ok) {
+                        throw new Error(response.statusText)
+                    }
+                    return response.json()
+                }
+            )
+            .then(json => dispatch(receiveSearchAnnotations(json)) )
+            .catch(error => {
+                dispatch(receiveSearchAnnotationsFailed(error))
+            })
+    }
+}
+
+export const moreAnnotations = () => {
+
+    return function(dispatch, getState) {
+        dispatch(requestMoreAnnotations());
+
+        let state = getState().manageAnnotations
+
+        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/search?q=${state.searchTerm}&seekId=${state.seekId}&seekLastUpdated=${state.seekLastUpdated}`)
             .then(
                 response => {
                     if (!response.ok) {

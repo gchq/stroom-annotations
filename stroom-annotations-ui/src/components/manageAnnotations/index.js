@@ -12,8 +12,13 @@ import ErrorDisplay from '../errorDisplay'
 import SnackbarDisplay from '../snackbarDisplay'
 import CreateAnnotation from '../createAnnotation'
 import SearchBar from 'material-ui-search-bar'
+import IconButton from 'material-ui/IconButton'
+import MoreHorizIcon from 'material-ui/svg-icons/navigation/more-horiz'
 
-import { searchAnnotations } from '../../actions/searchAnnotations'
+import {
+    searchAnnotations,
+    moreAnnotations
+} from '../../actions/searchAnnotations'
 
 import {
     Table,
@@ -57,12 +62,32 @@ class ManageAnnotations extends Component {
     }
 
 
-    handleRowSelection = (selectedRows) => {
+    handleRowSelection(selectedRows) {
         let annotation = this.props.annotations[selectedRows]
         this.props.history.push(`/singleEdit/${annotation.id}`)
     };
 
-    render (props) {
+    fetchMore() {
+        this.props.moreAnnotations()
+    }
+
+    render () {
+        const styles = {
+            moreDiv: {
+                display: 'flex',
+                justifyContent: 'space-around'
+            },
+            largeIcon: {
+                width: 60,
+                height: 60,
+            },
+            large: {
+                width: 120,
+                height: 120,
+                padding: 30,
+            },
+        };
+
         return (
             <div className='app'>
                 <AppBar
@@ -102,6 +127,13 @@ class ManageAnnotations extends Component {
                             {this.renderRows()}
                         </TableBody>
                     </Table>
+                    <div style={styles.moreDiv}>
+                        <IconButton style={styles.large}
+                                    iconStyle={styles.largeIcon}
+                                    onClick={this.fetchMore.bind(this)}>
+                            <MoreHorizIcon />
+                        </IconButton>
+                    </div>
                 </Paper>
             </div>
         )
@@ -114,6 +146,7 @@ export default ManageAnnotations = connect(
         searchTerm: state.manageAnnotations.searchTerm
     }),
     {
-        searchAnnotations
+        searchAnnotations,
+        moreAnnotations
     }
 )(withRouter(ManageAnnotations));

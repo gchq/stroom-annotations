@@ -23,8 +23,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class AnnotationsResourcesIT {
 
@@ -169,14 +168,17 @@ public class AnnotationsResourcesIT {
     @Test
     public void testSearch() {
         // Generate an UUID we can embed into the content of some annotations so we can find them
-        final List<String> searchTerms = IntStream.range(0, 10)
+        final int NUMBER_SEARCH_TERMS = 4;
+        final int NUMBER_PAGES_EXPECTED = 3;
+        final int ANNOTATIONS_PER_SEARCH_TERM = AnnotationsResource.SEARCH_PAGE_LIMIT * NUMBER_PAGES_EXPECTED;
+        final List<String> searchTerms = IntStream.range(0, NUMBER_SEARCH_TERMS)
                 .mapToObj(i -> UUID.randomUUID().toString())
                 .collect(Collectors.toList());
 
         // Create some test data for each search term
         final Map<String, Set<AnnotationDTO>> annotationsBySearchTerm = new HashMap<>();
         for (final String searchTerm : searchTerms) {
-            final Set<AnnotationDTO> annotations = IntStream.range(0, 10)
+            final Set<AnnotationDTO> annotations = IntStream.range(0, ANNOTATIONS_PER_SEARCH_TERM)
                     .mapToObj(i -> UUID.randomUUID().toString()) // Generate an ID
                     .map(uuid -> new AnnotationDTO.Builder().id(uuid)
                             .content(UUID.randomUUID().toString() + searchTerm)
@@ -190,8 +192,20 @@ public class AnnotationsResourcesIT {
         }
 
         annotationsBySearchTerm.forEach((searchTerm, annotationsSet) -> {
-            final List<AnnotationDTO> resultsList = searchAnnotation(searchTerm);
-            final Set<AnnotationDTO> resultsSet = new HashSet<>(resultsList);
+            final Set<AnnotationDTO> resultsSet = new HashSet<>();
+
+            // Get all the expected pages
+            List<AnnotationDTO> lastPage = null;
+            for (int page = 0; page < NUMBER_PAGES_EXPECTED; page++) {
+                lastPage = searchAnnotation(searchTerm, lastPage);
+
+                // ensures all of these new results do not already appear in our gathered results
+                for (final AnnotationDTO result: lastPage) {
+                    assertFalse(resultsSet.contains(result));
+                }
+
+                resultsSet.addAll(lastPage);
+            }
 
             assertEquals(annotationsSet, resultsSet);
         });
@@ -273,6 +287,69 @@ public class AnnotationsResourcesIT {
             final HttpResponse<String> response = Unirest
                     .get(getSearchUrl())
                     .queryString("q", queryTerm)
+                    .asString();
+
+            assertEquals(HttpStatus.SC_OK, response.getStatus());
+
+            result = jacksonObjectMapper.readValue(response.getBody(), new TypeReference<List<AnnotationDTO>>(){});
+        } catch (Exception e) {
+            fail(e.getLocalizedMessage());
+        }
+
+        return result;
+    }
+
+    /**
+     * Searches for annotations that contain the queryTerm given,
+     * using pagination that picks up from after the last annotation in the given list
+     * @param queryTerm The term to search for
+     * @param lastPage The results so far, we want the next page
+     * @return The list of annotations found by the service.
+     */
+    private List<AnnotationDTO> searchAnnotation(final String queryTerm,
+                                                 final List<AnnotationDTO> lastPage) {
+        if (null != lastPage) {
+            assertTrue(lastPage.size() > 0);
+            return searchAnnotation(queryTerm, lastPage.get(lastPage.size() - 1));
+        } else {
+            return searchAnnotation(queryTerm);
+        }
+    }
+
+    /**
+     * Searches for annotations that contain the queryTerm given,
+     * using pagination that picks up from after the annotation given
+     * @param queryTerm The term to search for
+     * @param lastAnnotation The last annotation seen in previous results
+     * @return The list of annotations found by the service.
+     */
+    private List<AnnotationDTO> searchAnnotation(final String queryTerm,
+                                                 final AnnotationDTO lastAnnotation) {
+        if (null != lastAnnotation) {
+            return searchAnnotation(queryTerm, lastAnnotation.getId(), lastAnnotation.getLastUpdated());
+        } else {
+            return searchAnnotation(queryTerm);
+        }
+    }
+
+    /**
+     * Searches for annotations that contain the queryTerm given
+     * @param queryTerm The term to search for
+     * @param seekId The last ID seen in a paginated result
+     * @param seekLastUpdated The lastUpdated value seen in the last paginated result
+     * @return The list of annotations found by the service.
+     */
+    private List<AnnotationDTO> searchAnnotation(final String queryTerm,
+                                                 final String seekId,
+                                                 final Long seekLastUpdated) {
+        List<AnnotationDTO> result = null;
+
+        try {
+            final HttpResponse<String> response = Unirest
+                    .get(getSearchUrl())
+                    .queryString("q", queryTerm)
+                    .queryString("seekId", seekId)
+                    .queryString("seekLastUpdated", seekLastUpdated)
                     .asString();
 
             assertEquals(HttpStatus.SC_OK, response.getStatus());

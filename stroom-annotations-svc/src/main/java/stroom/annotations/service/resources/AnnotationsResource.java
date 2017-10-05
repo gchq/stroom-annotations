@@ -32,6 +32,8 @@ public class AnnotationsResource {
 
     public static final String WELCOME_TEXT = "Welcome to the annotations service";
 
+    public static final int SEARCH_PAGE_LIMIT = 10;
+
     public AnnotationsResource() {
     }
 
@@ -66,19 +68,40 @@ public class AnnotationsResource {
     @Timed
     @NotNull
     public final Response search(@Context @NotNull DSLContext database,
-                                 @QueryParam("q") final String q) {
+                                 @QueryParam("q") final String q,
+                                 @QueryParam("seekId") final String seekId,
+                                 @QueryParam("seekLastUpdated") final Long seekLastUpdated) {
 
-        LOGGER.info("Searching the annotations for " + q);
+        LOGGER.info(String.format("Searching the annotations for %s, pagination information (id=%s, lastUpdated=%d)",
+                q, seekId, seekLastUpdated));
 
-        // Find annotations matching either the content or the ID itself
-        final List<AnnotationDTO> dtos = database.selectFrom(ANNOTATIONS_)
-                .where(ANNOTATIONS_.ID.contains(q))
-                .or(ANNOTATIONS_.CONTENT.contains(q))
-                .or(ANNOTATIONS_.ASSIGNTO.contains(q))
-                .fetch() // from database
-                .stream()
-                .map(AnnotationDTOMarshaller::toDTO)
-                .collect(Collectors.toList());
+        final List<AnnotationDTO> dtos;
+        if ((null != seekId) && (null != seekLastUpdated)) {
+            dtos = database.selectFrom(ANNOTATIONS_)
+                    .where(ANNOTATIONS_.ID.contains(q))
+                    .or(ANNOTATIONS_.CONTENT.contains(q))
+                    .or(ANNOTATIONS_.ASSIGNTO.contains(q))
+                    .orderBy(ANNOTATIONS_.LASTUPDATED.desc(),
+                            ANNOTATIONS_.ID.desc())
+                    .seek(ULong.valueOf(seekLastUpdated), seekId)
+                    .limit(SEARCH_PAGE_LIMIT)
+                    .fetch() // from database
+                    .stream()
+                    .map(AnnotationDTOMarshaller::toDTO)
+                    .collect(Collectors.toList());
+        } else {
+            dtos = database.selectFrom(ANNOTATIONS_)
+                    .where(ANNOTATIONS_.ID.contains(q))
+                    .or(ANNOTATIONS_.CONTENT.contains(q))
+                    .or(ANNOTATIONS_.ASSIGNTO.contains(q))
+                    .orderBy(ANNOTATIONS_.LASTUPDATED.desc(),
+                            ANNOTATIONS_.ID.desc())
+                    .limit(SEARCH_PAGE_LIMIT)
+                    .fetch() // from database
+                    .stream()
+                    .map(AnnotationDTOMarshaller::toDTO)
+                    .collect(Collectors.toList());
+        }
 
         return Response.status(Response.Status.OK)
                 .entity(dtos)
