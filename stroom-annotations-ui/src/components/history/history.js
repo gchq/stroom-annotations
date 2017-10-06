@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { connect } from 'react-redux'
+import PropTypes from 'prop-types'
 import moment from 'moment'
 
 import {
@@ -10,7 +10,7 @@ import {
 } from 'material-ui/Stepper'
 import TextField from 'material-ui/TextField'
 
-export class AnnotationHistory extends Component {
+class History extends Component {
     state = {
         stepIndex: -1,
     };
@@ -29,7 +29,7 @@ export class AnnotationHistory extends Component {
             flexDirection: "column"
         }
 
-        return this.props.annotationHistory.history.slice().reverse().map((h, i) => (
+        return this.props.history.slice().reverse().map((h, i) => (
             <Step key={i}>
                 <StepButton onClick={() => this.toggleStep(i)}>
                     {h.operation} by {h.annotation.updatedBy} on {moment(h.annotation.lastUpdated).fromNow()}
@@ -61,7 +61,7 @@ export class AnnotationHistory extends Component {
   render() {
     const {stepIndex} = this.state;
 
-    if (this.props.annotationHistory.history.length > 0) {
+    if (this.props.history.length > 0) {
         return (
             <div>
                 <h1>History</h1>
@@ -81,9 +81,8 @@ export class AnnotationHistory extends Component {
   }
 }
 
-export default connect(
-  (state) => ({
-     annotationHistory: state.annotationHistory
-  }),
-  null
-)(AnnotationHistory)
+History.propTypes = {
+    history: PropTypes.array.isRequired
+}
+
+export default History

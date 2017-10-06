@@ -2,46 +2,52 @@ import fetch from 'isomorphic-fetch'
 
 export const REQUEST_FETCH_ANNOTATION = 'REQUEST_FETCH_ANNOTATION';
 
-export const requestFetchAnnotation = (id) => ({
+export const requestFetchAnnotation = (apiCallId, id) => ({
     type: REQUEST_FETCH_ANNOTATION,
-    id
+    id,
+    apiCallId
 })
 
 export const RECEIVE_FETCH_ANNOTATION = 'RECEIVE_FETCH_ANNOTATION';
 
-export const receiveFetchAnnotation = (id, json) => ({
+export const receiveFetchAnnotation = (apiCallId, id, json) => ({
     type: RECEIVE_FETCH_ANNOTATION,
     id,
     annotation: json,
-    receivedAt: Date.now()
+    apiCallId
 })
 
 export const RECEIVE_FETCH_ANNOTATION_NOT_EXIST = 'RECEIVE_FETCH_ANNOTATION_NOT_EXIST';
 
-export const receiveFetchAnnotationNotExist = (id) => ({
+export const receiveFetchAnnotationNotExist = (apiCallId, id) => ({
     type: RECEIVE_FETCH_ANNOTATION_NOT_EXIST,
     id,
-    receivedAt: Date.now()
+    apiCallId
 })
 
 
 export const RECEIVE_FETCH_ANNOTATION_FAILED = 'RECEIVE_FETCH_ANNOTATION_FAILED';
 
-export const receiveFetchAnnotationFailed = (message) => ({
+export const receiveFetchAnnotationFailed = (apiCallId, message) => ({
     type: RECEIVE_FETCH_ANNOTATION_FAILED,
     message,
-    receivedAt: Date.now()
+               apiCallId
 })
+
+let apiCallId = 0
 
 export const fetchAnnotation = (id) => {
     return function(dispatch) {
-        dispatch(requestFetchAnnotation(id));
+        const thisApiCallId = `fetchAnnotation-${apiCallId}`
+        apiCallId += 1
+
+        dispatch(requestFetchAnnotation(thisApiCallId, id));
 
         return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/single/${id}`)
             .then(
                 response => {
                     if (response.status === 404) {
-                        dispatch(receiveFetchAnnotationNotExist(id))
+                        dispatch(receiveFetchAnnotationNotExist(thisApiCallId, id))
                     } else if (!response.ok) {
                         throw new Error(response.statusText)
                     }
@@ -50,10 +56,10 @@ export const fetchAnnotation = (id) => {
             )
             .then(json => {
                 if (json) {
-                    dispatch(receiveFetchAnnotation(id, json))
+                    dispatch(receiveFetchAnnotation(thisApiCallId, id, json))
                 }
             }).catch(error => {
-                dispatch(receiveFetchAnnotationFailed(error))
+                dispatch(receiveFetchAnnotationFailed(thisApiCallId, error))
             })
     }
 }

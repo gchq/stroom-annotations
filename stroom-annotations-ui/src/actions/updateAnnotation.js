@@ -12,32 +12,38 @@ export const editAnnotation = (id, updates) => ({
 
 export const REQUEST_UPDATE_ANNOTATION = 'REQUEST_UPDATE_ANNOTATION'
 
-export const requestUpdateAnnotation = (id, annotation) => ({
+export const requestUpdateAnnotation = (apiCallId, id, annotation) => ({
     type: REQUEST_UPDATE_ANNOTATION,
     id,
-    annotation
+    annotation,
+    apiCallId
 })
 
 export const RECEIVE_UPDATE_ANNOTATION = 'RECEIVE_UPDATE_ANNOTATION';
  
- export const receiveUpdateAnnotation = (id, annotation) => ({
-     type: RECEIVE_UPDATE_ANNOTATION,
-     id,
-     annotation,
-     receivedAt: Date.now()
- })
+export const receiveUpdateAnnotation = (apiCallId, id, annotation) => ({
+    type: RECEIVE_UPDATE_ANNOTATION,
+    id,
+    annotation,
+    apiCallId
+})
 
- export const RECEIVE_UPDATE_ANNOTATION_FAILED = 'RECEIVE_UPDATE_ANNOTATION_FAILED';
+export const RECEIVE_UPDATE_ANNOTATION_FAILED = 'RECEIVE_UPDATE_ANNOTATION_FAILED';
 
- export const receiveUpdateAnnotationFailed = (message) => ({
-     type: RECEIVE_UPDATE_ANNOTATION_FAILED,
-     message,
-     receivedAt: Date.now()
- })
+export const receiveUpdateAnnotationFailed = (apiCallId, message) => ({
+    type: RECEIVE_UPDATE_ANNOTATION_FAILED,
+    message,
+    apiCallId
+})
+
+let apiCallId = 0
 
 export const updateAnnotation = (id, annotation) => {
     return function(dispatch) {
-        dispatch(requestUpdateAnnotation(id, annotation));
+        const thisApiCallId = `updateAnnotation-${apiCallId}`
+        apiCallId += 1
+
+        dispatch(requestUpdateAnnotation(thisApiCallId, id, annotation));
 
         return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/single/${id}`,
             {
@@ -59,10 +65,10 @@ export const updateAnnotation = (id, annotation) => {
               )
               .then(json => {
                 if (json.id) {
-                    dispatch(receiveUpdateAnnotation(id, json))
+                    dispatch(receiveUpdateAnnotation(thisApiCallId, id, json))
                     dispatch(fetchAnnotationHistory(id))
                 } else {
-                    dispatch(receiveUpdateAnnotationFailed(json.msg))
+                    dispatch(receiveUpdateAnnotationFailed(thisApiCallId, json.msg))
                 }
               })
     }

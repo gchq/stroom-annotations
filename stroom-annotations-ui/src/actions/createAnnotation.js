@@ -4,30 +4,37 @@ import { fetchAnnotationHistory } from './fetchAnnotationHistory'
 
 export const REQUEST_CREATE_ANNOTATION = 'REQUEST_CREATE_ANNOTATION'
 
-export const requestCreateAnnotation = (id) => ({
+export const requestCreateAnnotation = (apiCallId, id) => ({
     type: REQUEST_CREATE_ANNOTATION,
-    id
+    id,
+    apiCallId
 })
 
 export const RECEIVE_CREATE_ANNOTATION = 'RECEIVE_CREATE_ANNOTATION'
 
-export const receiveCreateAnnotation = (id, annotation) => ({
+export const receiveCreateAnnotation = (apiCallId, id, annotation) => ({
     type: RECEIVE_CREATE_ANNOTATION,
     id,
-    annotation
+    annotation,
+    apiCallId
 })
 
 export const RECEIVE_CREATE_ANNOTATION_FAILED = 'RECEIVE_CREATE_ANNOTATION_FAILED'
 
-export const receiveCreateAnnotationFailed = (message) => ({
+export const receiveCreateAnnotationFailed = (apiCallId, message) => ({
     type: RECEIVE_CREATE_ANNOTATION_FAILED,
     message,
-    receivedAt: Date.now()
+    apiCallId
 })
+
+let apiCallId = 0
 
 export const createAnnotation = (id) => {
     return function(dispatch) {
-        dispatch(requestCreateAnnotation(id));
+        const thisApiCallId = `createAnnotation-${apiCallId}`
+        apiCallId += 1
+
+        dispatch(requestCreateAnnotation(thisApiCallId, id));
 
         return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/single/${id}`, {method: "POST"})
             .then(
@@ -40,11 +47,11 @@ export const createAnnotation = (id) => {
             )
             .then(json => {
                 if (json.id) {
-                    dispatch(receiveCreateAnnotation(id, json))
+                    dispatch(receiveCreateAnnotation(thisApiCallId, id, json))
                     dispatch(fetchAnnotationHistory(id))
                 }
             }).catch(error => {
-                dispatch(receiveCreateAnnotationFailed(error.message))
+                dispatch(receiveCreateAnnotationFailed(thisApiCallId, error.message))
             })
     }
 }

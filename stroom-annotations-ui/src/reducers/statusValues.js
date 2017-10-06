@@ -4,7 +4,7 @@ import {
     RECEIVE_FETCH_STATUS_VALUES_FAILED
 } from '../actions/fetchStatusValues'
 
-const defaultState = []
+const defaultState = {}
 
 const statusValues = (
     state = defaultState,

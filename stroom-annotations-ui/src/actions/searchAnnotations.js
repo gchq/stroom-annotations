@@ -2,40 +2,47 @@ import fetch from 'isomorphic-fetch'
 
 export const REQUEST_SEARCH_ANNOTATIONS = 'REQUEST_SEARCH_ANNOTATIONS';
 
-export const requestSearchAnnotations = (searchTerm) => ({
+export const requestSearchAnnotations = (apiCallId, searchTerm) => ({
     type: REQUEST_SEARCH_ANNOTATIONS,
-    searchTerm
+    searchTerm,
+    apiCallId
 })
 
 export const REQUEST_MORE_ANNOTATIONS = 'REQUEST_MORE_ANNOTATIONS';
 
-export const requestMoreAnnotations = () => ({
-    type: REQUEST_MORE_ANNOTATIONS
+export const requestMoreAnnotations = (apiCallId) => ({
+    type: REQUEST_MORE_ANNOTATIONS,
+    apiCallId
 })
 
 
 export const RECEIVE_SEARCH_ANNOTATIONS = 'RECEIVE_SEARCH_ANNOTATIONS';
 
-export const receiveSearchAnnotations = (json) => ({
+export const receiveSearchAnnotations = (apiCallId, json) => ({
     type: RECEIVE_SEARCH_ANNOTATIONS,
     annotations: json,
-    receivedAt: Date.now()
+    apiCallId
 })
 
 export const RECEIVE_SEARCH_ANNOTATIONS_FAILED = 'RECEIVE_SEARCH_ANNOTATIONS_FAILED';
 
-export const receiveSearchAnnotationsFailed = (message) => ({
+export const receiveSearchAnnotationsFailed = (apiCallId, message) => ({
     type: RECEIVE_SEARCH_ANNOTATIONS_FAILED,
     message,
-    receivedAt: Date.now()
+    apiCallId
 })
+
+let apiCallId = 0
 
 export const searchAnnotations = (searchTermRaw) => {
 
     let searchTerm = searchTermRaw ? searchTermRaw : ''
 
     return function(dispatch) {
-        dispatch(requestSearchAnnotations(searchTerm));
+        const thisApiCallId = `searchAnnotations-${apiCallId}`
+        apiCallId += 1
+
+        dispatch(requestSearchAnnotations(thisApiCallId, searchTerm));
 
         return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/search?q=${searchTerm}`)
             .then(
@@ -46,9 +53,9 @@ export const searchAnnotations = (searchTermRaw) => {
                     return response.json()
                 }
             )
-            .then(json => dispatch(receiveSearchAnnotations(json)) )
+            .then(json => dispatch(receiveSearchAnnotations(thisApiCallId, json)) )
             .catch(error => {
-                dispatch(receiveSearchAnnotationsFailed(error))
+                dispatch(receiveSearchAnnotationsFailed(thisApiCallId, error))
             })
     }
 }
@@ -56,7 +63,10 @@ export const searchAnnotations = (searchTermRaw) => {
 export const moreAnnotations = () => {
 
     return function(dispatch, getState) {
-        dispatch(requestMoreAnnotations());
+        const thisApiCallId = `searchAnnotations-${apiCallId}`
+        apiCallId += 1
+
+        dispatch(requestMoreAnnotations(thisApiCallId));
 
         let state = getState().manageAnnotations
 
@@ -69,9 +79,9 @@ export const moreAnnotations = () => {
                     return response.json()
                 }
             )
-            .then(json => dispatch(receiveSearchAnnotations(json)) )
+            .then(json => dispatch(receiveSearchAnnotations(thisApiCallId, json)) )
             .catch(error => {
-                dispatch(receiveSearchAnnotationsFailed(error))
+                dispatch(receiveSearchAnnotationsFailed(thisApiCallId, error))
             })
     }
 }

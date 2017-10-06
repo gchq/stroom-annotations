@@ -2,31 +2,37 @@ import fetch from 'isomorphic-fetch'
 
 export const REQUEST_FETCH_ANNOTATION_HISTORY = 'REQUEST_FETCH_ANNOTATION_HISTORY';
 
-export const requestFetchAnnotationHistory = (id) => ({
+export const requestFetchAnnotationHistory = (apiCallId, id) => ({
     type: REQUEST_FETCH_ANNOTATION_HISTORY,
-    id
+    id,
+    apiCallId
 })
 
 export const RECEIVE_FETCH_ANNOTATION_HISTORY = 'RECEIVE_FETCH_ANNOTATION_HISTORY';
 
-export const receiveFetchAnnotationHistory = (id, json) => ({
+export const receiveFetchAnnotationHistory = (apiCallId, id, json) => ({
     type: RECEIVE_FETCH_ANNOTATION_HISTORY,
     id,
     history: json,
-    receivedAt: Date.now()
+    apiCallId
 })
 
 export const RECEIVE_FETCH_ANNOTATION_HISTORY_FAILED = 'RECEIVE_FETCH_ANNOTATION_HISTORY_FAILED';
 
-export const receiveFetchAnnotationHistoryFailed = (message) => ({
+export const receiveFetchAnnotationHistoryFailed = (apiCallId, message) => ({
     type: RECEIVE_FETCH_ANNOTATION_HISTORY_FAILED,
     message,
-    receivedAt: Date.now()
+    apiCallId
 })
+
+let apiCallId = 0
 
 export const fetchAnnotationHistory = (id) => {
     return function(dispatch) {
-        dispatch(requestFetchAnnotationHistory(id));
+        const thisApiCallId = `fetchAnnotationHistory-${apiCallId}`
+        apiCallId += 1
+
+        dispatch(requestFetchAnnotationHistory(thisApiCallId, id));
 
         return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/single/${id}/history`)
               .then(
@@ -36,13 +42,13 @@ export const fetchAnnotationHistory = (id) => {
                 // causing an loop of 'Unexpected batch number' errors.
                 // https://github.com/facebook/react/issues/6895
                 error => {
-                    dispatch(receiveFetchAnnotationHistoryFailed('An error occured.', error))
+                    dispatch(receiveFetchAnnotationHistoryFailed(thisApiCallId, error))
                     return undefined;
                 }
               )
               .then(json => {
                 if (json) {
-                    dispatch(receiveFetchAnnotationHistory(id, json))
+                    dispatch(receiveFetchAnnotationHistory(thisApiCallId, id, json))
                 }
               })
     }

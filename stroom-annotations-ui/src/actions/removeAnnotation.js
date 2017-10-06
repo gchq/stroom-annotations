@@ -4,29 +4,36 @@ import { fetchAnnotationHistory } from './fetchAnnotationHistory'
 
 export const REQUEST_REMOVE_ANNOTATION = 'REQUEST_REMOVE_ANNOTATION'
 
-export const requestRemoveAnnotation = (id) => ({
+export const requestRemoveAnnotation = (apiCallId, id) => ({
     type: REQUEST_REMOVE_ANNOTATION,
-    id
+    id,
+    apiCallId
 })
 
 export const RECEIVE_REMOVE_ANNOTATION = 'RECEIVE_REMOVE_ANNOTATION'
 
-export const receiveRemoveAnnotation = (id) => ({
+export const receiveRemoveAnnotation = (apiCallId, id) => ({
     type: RECEIVE_REMOVE_ANNOTATION,
-    id
+    id,
+    apiCallId
 })
 
 export const RECEIVE_REMOVE_ANNOTATION_FAILED = 'RECEIVE_REMOVE_ANNOTATION_FAILED'
 
-export const receiveRemoveAnnotationFailed = (message) => ({
+export const receiveRemoveAnnotationFailed = (apiCallId, message) => ({
     type: RECEIVE_REMOVE_ANNOTATION_FAILED,
     message,
-    receivedAt: Date.now()
+    apiCallId
 })
+
+let apiCallId = 0
 
 export const removeAnnotation = (id) => {
     return function(dispatch) {
-        dispatch(requestRemoveAnnotation(id));
+        const thisApiCallId = `removeAnnotation-${apiCallId}`
+        apiCallId += 1
+
+        dispatch(requestRemoveAnnotation(thisApiCallId, id));
 
         return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/single/${id}`,
             {
@@ -35,10 +42,10 @@ export const removeAnnotation = (id) => {
         )
               .then(
                 response => {
-                    dispatch(receiveRemoveAnnotation(id))
+                    dispatch(receiveRemoveAnnotation(thisApiCallId, id))
                     dispatch(fetchAnnotationHistory(id))
                 },
-                error => dispatch(receiveRemoveAnnotationFailed(error))
+                error => dispatch(receiveRemoveAnnotationFailed(thisApiCallId, error))
               )
     }
 }

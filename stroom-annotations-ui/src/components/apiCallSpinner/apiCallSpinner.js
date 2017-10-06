@@ -1,10 +1,10 @@
 import React from 'react'
-import { connect } from 'react-redux'
+import PropTypes from 'prop-types'
 
 import CircularProgress from 'material-ui/CircularProgress';
 
-export const PendingUpdatesSpinner = (props) => {
-    if (props.isSpinning) {
+const ApiCallSpinner = ({isSpinning}) => {
+    if (isSpinning) {
         const spinnerStyle = {
             position: 'absolute',
             bottom: '50px',
@@ -21,9 +21,8 @@ export const PendingUpdatesSpinner = (props) => {
     }
 }
 
-export default connect(
-    (state) => ({
-        isSpinning: (state.singleAnnotation.pendingUpdates > 0) || state.singleAnnotation.isFetching || state.manageAnnotations.isFetching || state.annotationHistory.isFetching,
-    }),
-    null
-)(PendingUpdatesSpinner);
+ApiCallSpinner.propTypes = {
+    isSpinning: PropTypes.bool.isRequired
+}
+
+export default ApiCallSpinner

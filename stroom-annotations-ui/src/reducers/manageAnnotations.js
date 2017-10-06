@@ -14,11 +14,11 @@ import {
 } from '../actions/removeAnnotation'
 
 const defaultState = {
-    isFetching: false,
     searchTerm: '',
+    annotations: [],
     seekId: undefined,
     seekLastUpdated: undefined,
-    annotations: []
+    canRequestMore: false
 }
 
 const manageAnnotations = (
@@ -27,64 +27,43 @@ const manageAnnotations = (
  ) => {
     switch(action.type) {
         case RECEIVE_REMOVE_ANNOTATION: {
-            let annotations = state.annotations.filter(a => a.id !== action.id)
             return Object.assign({}, state, {
-                    isFetching: false,
-                    lastUpdated: action.receivedAt,
-                    annotations
+                    annotations : state.annotations.filter(a => a.id !== action.id)
                 })
         }
         case RECEIVE_CREATE_ANNOTATION: {
             return Object.assign({}, state, {
-                isFetching: false,
-                lastUpdated: action.receivedAt,
                 annotations: [
-                    ...state.annotations,
-                    action.annotation
+                    action.annotation,
+                    ...state.annotations
                 ]
             })
         }
         case REQUEST_SEARCH_ANNOTATIONS: {
             return Object.assign({}, state, {
-                isFetching: true,
                 searchTerm: action.searchTerm,
-                seekId: undefined,
-                seekLastUpdated: undefined,
-                annotations: []
+                annotations: [],
+                canRequestMore: false
             })
         }
         case REQUEST_MORE_ANNOTATIONS: {
             return Object.assign({}, state, {
-                    isFetching: true
-                  })
+                canRequestMore: false
+            })
         }
         case RECEIVE_SEARCH_ANNOTATIONS: {
-            let seekId = undefined
-            let seekLastUpdated = undefined
-
-            if (action.annotations.length > 0) {
-                seekId = action.annotations[action.annotations.length - 1].id
-                seekLastUpdated = action.annotations[action.annotations.length - 1].lastUpdated
-            }
-
             return Object.assign({}, state, {
-                isFetching: false,
                 annotations: [
                     ...state.annotations,
                     ...action.annotations
                 ],
-                seekId,
-                seekLastUpdated,
-                lastUpdated: action.receivedAt
+                canRequestMore: (action.annotations.length > 0)
             })
         }
         case RECEIVE_SEARCH_ANNOTATIONS_FAILED: {
             return Object.assign({}, state, {
-                    isFetching: false,
                     annotations: [],
-                    lastUpdated: action.receivedAt,
-                    seekId: undefined,
-                    seekLastUpdated: undefined
+                    canRequestMore: false
                   })
         }
         default:
@@ -93,4 +72,19 @@ const manageAnnotations = (
 
 }
 
-export default manageAnnotations
+const addSeekInformation = (state) => {
+    let seekId = undefined
+    let seekLastUpdated = undefined
+
+    if (state.annotations.length > 0) {
+        seekId = state.annotations[state.annotations.length - 1].id
+        seekLastUpdated = state.annotations[state.annotations.length - 1].lastUpdated
+    }
+
+    return Object.assign({}, state, {
+        seekId,
+        seekLastUpdated
+    })
+}
+
+export default (state, action) => addSeekInformation(manageAnnotations(state, action))

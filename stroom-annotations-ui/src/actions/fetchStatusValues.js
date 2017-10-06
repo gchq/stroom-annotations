@@ -2,30 +2,36 @@ import fetch from 'isomorphic-fetch'
 
 export const REQUEST_FETCH_STATUS_VALUES = 'REQUEST_FETCH_STATUS_VALUES';
 
-export const requestFetchStatusValues = (id) => ({
+export const requestFetchStatusValues = (apiCallId, id) => ({
     type: REQUEST_FETCH_STATUS_VALUES,
-    id
+    id,
+    apiCallId
 })
 
 export const RECEIVE_FETCH_STATUS_VALUES = 'RECEIVE_FETCH_STATUS_VALUES';
 
-export const receiveFetchStatusValues = (values) => ({
+export const receiveFetchStatusValues = (apiCallId, values) => ({
     type: RECEIVE_FETCH_STATUS_VALUES,
     values,
-    receivedAt: Date.now()
+    apiCallId
 })
 
 export const RECEIVE_FETCH_STATUS_VALUES_FAILED = 'RECEIVE_FETCH_STATUS_VALUES_FAILED';
 
-export const receiveFetchStatusValuesFailed = (message) => ({
+export const receiveFetchStatusValuesFailed = (apiCallId, message) => ({
     type: RECEIVE_FETCH_STATUS_VALUES_FAILED,
     message,
-    receivedAt: Date.now()
+    apiCallId
 })
+
+let apiCallId = 0
 
 export const fetchStatusValues = (id) => {
     return function(dispatch) {
-        dispatch(requestFetchStatusValues(id));
+        const thisApiCallId = `fetchStatusValues-${apiCallId}`
+        apiCallId += 1
+
+        dispatch(requestFetchStatusValues(thisApiCallId, id));
 
         return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/static/statusValues`)
               .then(
@@ -38,9 +44,9 @@ export const fetchStatusValues = (id) => {
               )
               .then(json => {
                 if (json) {
-                    dispatch(receiveFetchStatusValues(json))
+                    dispatch(receiveFetchStatusValues(thisApiCallId, json))
                 } else {
-                    dispatch(receiveFetchStatusValuesFailed(json.msg))
+                    dispatch(receiveFetchStatusValuesFailed(thisApiCallId, json.msg))
                 }
               })
     }
