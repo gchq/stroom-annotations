@@ -75,12 +75,6 @@ public class AnnotationsResource {
         LOGGER.info(String.format("Searching the annotations for %s, pagination information (id=%s, lastUpdated=%d)",
                 q, seekId, seekLastUpdated));
 
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
         final List<AnnotationDTO> dtos;
         if ((null != seekId) && (null != seekLastUpdated)) {
             dtos = database.selectFrom(ANNOTATIONS_)
@@ -125,12 +119,6 @@ public class AnnotationsResource {
                 .where(ANNOTATIONS_.ID.equal(id))
                 .fetchAny();
 
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
         if (null != result) {
             final AnnotationDTO annotationDTO = AnnotationDTOMarshaller.toDTO(result);
 
@@ -159,13 +147,6 @@ public class AnnotationsResource {
                 .stream()
                 .map(AnnotationDTOMarshaller::toDTO)
                 .collect(Collectors.toList());
-
-
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
 
         if (results.size() > 0) {
             return Response.status(Response.Status.OK)
