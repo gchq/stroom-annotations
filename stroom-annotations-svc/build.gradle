@@ -74,7 +74,9 @@ tasks.withType(Test) {
 }
 
 dependencies {
+    compile urlDependencies.get(urlLibs.eventLogging)
     compile project(':stroom-annotations-persistence')
+    compile deps.kafka
     compile deps.dropwizard_core
     compile deps.dropwizard_flyway
     compile deps.dropwizard_jooq

@@ -1,3 +1,7 @@
+kafka:
+  bootstrapServers: localhost:9092
+  loggingTopic: logging
+
 server:
   adminMinThreads: 1
   adminMaxThreads: 10

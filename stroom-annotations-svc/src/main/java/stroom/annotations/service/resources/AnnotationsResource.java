@@ -5,9 +5,9 @@ import io.dropwizard.validation.Validated;
 import org.hibernate.validator.constraints.Length;
 import org.jooq.DSLContext;
 import org.jooq.types.ULong;
+import stroom.annotations.service.audit.AuditService;
+import stroom.annotations.service.audit.Audited;
 import stroom.annotations.service.model.*;
-import stroom.db.annotations.tables.AnnotationsHistory;
-import stroom.db.annotations.tables.records.AnnotationsHistoryRecord;
 import stroom.db.annotations.tables.records.AnnotationsRecord;
 
 import javax.validation.constraints.NotNull;
@@ -34,7 +34,10 @@ public class AnnotationsResource {
 
     public static final int SEARCH_PAGE_LIMIT = 10;
 
-    public AnnotationsResource() {
+    private final AuditService auditService;
+
+    public AnnotationsResource(final AuditService auditService) {
+        this.auditService = auditService;
     }
 
     @GET
@@ -67,6 +70,7 @@ public class AnnotationsResource {
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
     @NotNull
+    @Audited
     public final Response search(@Context @NotNull DSLContext database,
                                  @QueryParam("q") final String q,
                                  @QueryParam("seekId") final String seekId,
@@ -74,6 +78,8 @@ public class AnnotationsResource {
 
         LOGGER.info(String.format("Searching the annotations for %s, pagination information (id=%s, lastUpdated=%d)",
                 q, seekId, seekLastUpdated));
+
+        auditService.userDidSearch(q);
 
         final List<AnnotationDTO> dtos;
         if ((null != seekId) && (null != seekLastUpdated)) {
@@ -113,6 +119,7 @@ public class AnnotationsResource {
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
     @NotNull
+    @Audited
     public final Response get(@Context @NotNull DSLContext database,
                               @Validated @PathParam("id") @NotNull @Length(min=AnnotationDTO.MIN_ID_LENGTH) final String id) {
         final AnnotationsRecord result = database.selectFrom(ANNOTATIONS_)
@@ -139,6 +146,7 @@ public class AnnotationsResource {
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
     @NotNull
+    @Audited
     public final Response getHistory(@Context @NotNull DSLContext database,
                                      @Validated @PathParam("id") @NotNull @Length(min=AnnotationDTO.MIN_ID_LENGTH) final String id) {
         final List<AnnotationHistoryDTO> results = database.selectFrom(ANNOTATIONS_HISTORY)
@@ -166,6 +174,7 @@ public class AnnotationsResource {
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
     @NotNull
+    @Audited
     public final Response create(@Context @NotNull DSLContext database,
                                  @Validated @PathParam("id") @NotNull @Length(min=AnnotationDTO.MIN_ID_LENGTH) final String id) {
 
@@ -197,6 +206,7 @@ public class AnnotationsResource {
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
     @NotNull
+    @Audited
     public final Response update(@Context @NotNull DSLContext database,
                                  @Validated @PathParam("id") @NotNull @Length(min=AnnotationDTO.MIN_ID_LENGTH) final String id,
                                  final AnnotationDTO annotation) {
@@ -228,6 +238,7 @@ public class AnnotationsResource {
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
     @NotNull
+    @Audited
     public final Response remove(@Context @NotNull DSLContext database,
                                  @Validated @PathParam("id") @NotNull @Length(min=AnnotationDTO.MIN_ID_LENGTH) final String id) {
         // Take the history snapshot before deletion happens

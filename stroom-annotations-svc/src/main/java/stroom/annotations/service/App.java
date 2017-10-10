@@ -2,7 +2,9 @@ package stroom.annotations.service;
 
 import com.bendb.dropwizard.jooq.JooqBundle;
 import com.bendb.dropwizard.jooq.JooqFactory;
+import com.google.inject.Provides;
 import io.dropwizard.Application;
+import io.dropwizard.Bundle;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
 import io.dropwizard.db.DataSourceFactory;
@@ -17,6 +19,9 @@ import org.flywaydb.core.Flyway;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
+import stroom.annotations.service.audit.AuditFeature;
+import stroom.annotations.service.audit.AuditService;
+import stroom.annotations.service.audit.AuditServiceImpl;
 import stroom.annotations.service.health.AnnotationsHealthCheck;
 import stroom.annotations.service.resources.AnnotationsResource;
 
@@ -55,7 +60,8 @@ public class App extends Application<Config> {
 
     @Override
     public void run(Config configuration, Environment environment) throws Exception {
-        final AnnotationsResource annotationsResource = new AnnotationsResource();
+        final AuditService auditService = new AuditServiceImpl(configuration.getKafka());
+        final AnnotationsResource annotationsResource = new AnnotationsResource(auditService);
 
         // Register DB health check
         final PooledDataSourceFactory dsf = jooqBundle.getDataSourceFactory(configuration);
@@ -68,6 +74,7 @@ public class App extends Application<Config> {
         environment.healthChecks().register(dialect.getName(), new AnnotationsHealthCheck(dslContext, validationQuery));
 
         environment.jersey().register(annotationsResource);
+        environment.jersey().register(AuditFeature.class);
 
         configureCors(environment);
         migrate(configuration, environment);
@@ -95,7 +102,6 @@ public class App extends Application<Config> {
 
         bootstrap.addBundle(this.jooqBundle);
         bootstrap.addBundle(this.flywayBundle);
-
     }
 
     private static final void migrate(Config config, Environment environment) {

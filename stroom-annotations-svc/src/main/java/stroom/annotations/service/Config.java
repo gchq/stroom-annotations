@@ -25,6 +25,9 @@ public class Config extends Configuration {
     @JsonProperty("jooq")
     private JooqFactory jooqFactory = new JooqFactory();
 
+    @JsonProperty("kafka")
+    private KafkaConfig kafka = new KafkaConfig();
+
     public final DataSourceFactory getDataSourceFactory() {
         return this.dataSourceFactory;
     }
@@ -35,5 +38,34 @@ public class Config extends Configuration {
 
     public final JooqFactory getJooqFactory() {
         return this.jooqFactory;
+    }
+
+    public final KafkaConfig getKafka() {
+        return this.kafka;
+    }
+
+    public static class KafkaConfig {
+        @JsonProperty
+        private String bootstrapServers;
+
+        @JsonProperty
+        private String loggingTopic;
+
+        public String getBootstrapServers() {
+            return bootstrapServers;
+        }
+
+        public String getLoggingTopic() {
+            return loggingTopic;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("KafkaConfig{");
+            sb.append("bootstrapServers='").append(bootstrapServers).append('\'');
+            sb.append(", loggingTopic='").append(loggingTopic).append('\'');
+            sb.append('}');
+            return sb.toString();
+        }
     }
 }
