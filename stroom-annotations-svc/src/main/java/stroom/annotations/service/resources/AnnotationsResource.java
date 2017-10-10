@@ -5,7 +5,6 @@ import io.dropwizard.validation.Validated;
 import org.hibernate.validator.constraints.Length;
 import org.jooq.DSLContext;
 import org.jooq.types.ULong;
-import stroom.annotations.service.audit.AuditService;
 import stroom.annotations.service.audit.Audited;
 import stroom.annotations.service.model.*;
 import stroom.db.annotations.tables.records.AnnotationsRecord;
@@ -34,10 +33,7 @@ public class AnnotationsResource {
 
     public static final int SEARCH_PAGE_LIMIT = 10;
 
-    private final AuditService auditService;
-
-    public AnnotationsResource(final AuditService auditService) {
-        this.auditService = auditService;
+    public AnnotationsResource() {
     }
 
     @GET
@@ -78,8 +74,6 @@ public class AnnotationsResource {
 
         LOGGER.info(String.format("Searching the annotations for %s, pagination information (id=%s, lastUpdated=%d)",
                 q, seekId, seekLastUpdated));
-
-        auditService.userDidSearch(q);
 
         final List<AnnotationDTO> dtos;
         if ((null != seekId) && (null != seekLastUpdated)) {

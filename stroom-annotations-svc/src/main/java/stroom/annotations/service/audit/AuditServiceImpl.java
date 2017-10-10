@@ -1,26 +1,30 @@
 package stroom.annotations.service.audit;
 
-import org.apache.kafka.clients.producer.*;
-import stroom.annotations.service.Config;
 
+import org.apache.kafka.clients.producer.*;
+import stroom.annotations.service.KafkaConfig;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.nio.charset.Charset;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.logging.Logger;
 
+@Singleton
 public class AuditServiceImpl implements AuditService {
     private static final Logger LOGGER = Logger.getLogger(AuditServiceImpl.class.getName());
 
     private volatile Producer<String, byte[]> producer = null;
 
-    private final Config.KafkaConfig config;
+    @Inject
+    private KafkaConfig config;
 
     private static final Integer PARTITION = 0;
     private static final String KEY = "0";
 
-    public AuditServiceImpl(final Config.KafkaConfig config) {
-        this.config = config;
+    public AuditServiceImpl(){
     }
 
     @Override

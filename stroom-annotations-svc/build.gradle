@@ -84,7 +84,6 @@ dependencies {
     compile deps.dropwizard_auth_jwt
     compile deps.bcrypt
     compile deps.jose4j
-    compile deps.guice
     compile deps.slf4j
     compile deps.shiro_core
     compile deps.flyway_core

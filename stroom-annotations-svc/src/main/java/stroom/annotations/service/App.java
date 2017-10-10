@@ -2,9 +2,7 @@ package stroom.annotations.service;
 
 import com.bendb.dropwizard.jooq.JooqBundle;
 import com.bendb.dropwizard.jooq.JooqFactory;
-import com.google.inject.Provides;
 import io.dropwizard.Application;
-import io.dropwizard.Bundle;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
 import io.dropwizard.db.DataSourceFactory;
@@ -16,12 +14,11 @@ import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.flywaydb.core.Flyway;
+import org.jooq.Configuration;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 import stroom.annotations.service.audit.AuditFeature;
-import stroom.annotations.service.audit.AuditService;
-import stroom.annotations.service.audit.AuditServiceImpl;
 import stroom.annotations.service.health.AnnotationsHealthCheck;
 import stroom.annotations.service.resources.AnnotationsResource;
 
@@ -31,7 +28,6 @@ import javax.sql.DataSource;
 import java.util.EnumSet;
 
 public class App extends Application<Config> {
-
     private final JooqBundle jooqBundle = new JooqBundle<Config>() {
         public DataSourceFactory getDataSourceFactory(Config configuration) {
             return configuration.getDataSourceFactory();
@@ -60,11 +56,10 @@ public class App extends Application<Config> {
 
     @Override
     public void run(Config configuration, Environment environment) throws Exception {
-        final AuditService auditService = new AuditServiceImpl(configuration.getKafka());
-        final AnnotationsResource annotationsResource = new AnnotationsResource(auditService);
 
         // Register DB health check
         final PooledDataSourceFactory dsf = jooqBundle.getDataSourceFactory(configuration);
+        final Configuration jooqConfig = this.jooqBundle.getConfiguration();
         final SQLDialect dialect = configuration.getJooqFactory().getDialect().get();
         final ManagedDataSource dataSource = dsf
                 .build(environment.metrics(), dialect.getName());
@@ -73,7 +68,8 @@ public class App extends Application<Config> {
         environment.lifecycle().manage(dataSource);
         environment.healthChecks().register(dialect.getName(), new AnnotationsHealthCheck(dslContext, validationQuery));
 
-        environment.jersey().register(annotationsResource);
+        environment.jersey().register(new stroom.annotations.service.Module(configuration, jooqConfig));
+        environment.jersey().register(AnnotationsResource.class);
         environment.jersey().register(AuditFeature.class);
 
         configureCors(environment);
