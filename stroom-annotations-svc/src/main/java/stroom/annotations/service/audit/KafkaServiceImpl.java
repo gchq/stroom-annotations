@@ -52,13 +52,6 @@ public class KafkaServiceImpl implements KafkaService {
         final Future<RecordMetadata> future = producer.send(record, (recordMetadata, exception) -> {
             LOGGER.finer("Record sent to Kafka");
         });
-
-//        try {
-//            future.get();
-//        } catch (InterruptedException | ExecutionException e) {
-//            e.printStackTrace();
-//            LOGGER.warning("Could not flush logging kafka");
-//        }
     }
 
     private void initProducer() {
