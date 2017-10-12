@@ -13,26 +13,23 @@ import java.util.concurrent.Future;
 import java.util.logging.Logger;
 
 @Singleton
-public class AuditServiceImpl implements AuditService {
-    private static final Logger LOGGER = Logger.getLogger(AuditServiceImpl.class.getName());
+public class KafkaServiceImpl implements KafkaService {
+    private static final Logger LOGGER = Logger.getLogger(KafkaServiceImpl.class.getName());
 
     private volatile Producer<String, byte[]> producer = null;
 
-    @Inject
     private KafkaConfig config;
 
     private static final Integer PARTITION = 0;
     private static final String KEY = "0";
 
-    public AuditServiceImpl(){
+    @Inject
+    public KafkaServiceImpl(final KafkaConfig config) {
+        this.config = config;
     }
 
     @Override
-    public void userDidSearch(final String searchTerm) {
-        sendLog(String.format("User Searched for Term %s", searchTerm));
-    }
-
-    private void sendLog(final String auditLog) {
+    public void log(final String sendMessage) {
 
         try {
             initProducer();
@@ -50,18 +47,18 @@ public class AuditServiceImpl implements AuditService {
                         PARTITION,
                         System.currentTimeMillis(),
                         KEY,
-                        auditLog.getBytes(Charset.defaultCharset()));
+                        sendMessage.getBytes(Charset.defaultCharset()));
 
-        Future<RecordMetadata> future = producer.send(record, (recordMetadata, exception) -> {
-            LOGGER.info("Record sent to Kafka");
+        final Future<RecordMetadata> future = producer.send(record, (recordMetadata, exception) -> {
+            LOGGER.finer("Record sent to Kafka");
         });
 
-        try {
-            future.get();
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-            LOGGER.warning("Could not flush logging kafka");
-        }
+//        try {
+//            future.get();
+//        } catch (InterruptedException | ExecutionException e) {
+//            e.printStackTrace();
+//            LOGGER.warning("Could not flush logging kafka");
+//        }
     }
 
     private void initProducer() {

@@ -8,10 +8,12 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 import io.dropwizard.testing.ConfigOverride;
 import io.dropwizard.testing.junit.DropwizardAppRule;
 import org.apache.http.HttpStatus;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.junit.*;
 import stroom.annotations.service.App;
+import stroom.annotations.service.Config;
 import stroom.annotations.service.model.AnnotationDTO;
 import stroom.annotations.service.model.AnnotationHistoryDTO;
 import stroom.annotations.service.model.HistoryOperation;
@@ -20,17 +22,21 @@ import stroom.annotations.service.model.Status;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.Assert.*;
 
 public class AnnotationsResourcesIT {
+    private static final Logger LOGGER = Logger.getLogger(AnnotationsResourcesIT.class.getName());
 
     @ClassRule
-    public static final DropwizardAppRule appRule = new DropwizardAppRule(App.class, "config.yml", new ConfigOverride[0]);
+    public static final DropwizardAppRule<Config> appRule = new DropwizardAppRule<>(App.class, "config.yml");
 
     private static String annotationsUrl;
+
+    private static KafkaTestConsumer kafkaTestConsumer;
 
     private static final com.fasterxml.jackson.databind.ObjectMapper jacksonObjectMapper =
             new com.fasterxml.jackson.databind.ObjectMapper();
@@ -50,7 +56,10 @@ public class AnnotationsResourcesIT {
     @BeforeClass
     public static void setupClass() {
         int appPort = appRule.getLocalPort();
+
         annotationsUrl = "http://localhost:" + appPort + "/annotations/v1";
+
+        kafkaTestConsumer = new KafkaTestConsumer(appRule.getConfiguration().getAudit().getKafka());
 
         Unirest.setObjectMapper(new com.mashape.unirest.http.ObjectMapper() {
             private com.fasterxml.jackson.databind.ObjectMapper jacksonObjectMapper
@@ -74,13 +83,40 @@ public class AnnotationsResourcesIT {
         });
     }
 
+    @AfterClass
+    public static void afterClass() {
+        kafkaTestConsumer.close();
+    }
+
+    @Before
+    public void beforeTest() {
+        kafkaTestConsumer.getRecords(1);
+    }
+
+    @After
+    public void afterTest() {
+        kafkaTestConsumer.commitSync();
+    }
+
+    private void checkAuditLogs(final int expected) {
+        final List<ConsumerRecord<String, String>> records = kafkaTestConsumer.getRecords(expected);
+
+        for (ConsumerRecord<String, String> record : records) {
+            LOGGER.info(String.format("offset = %d, key = %s, value = %s%n", record.offset(), record.key(), record.value()));
+        }
+
+        LOGGER.info(String.format("Expected %d records, received %d", expected, records.size()));
+
+        assertEquals(expected, records.size());
+    }
+
     @Test
     public void testWelcome() throws UnirestException {
         final HttpResponse<String> response = Unirest
                 .get(annotationsUrl + "/static/welcome")
                 .asString();
 
-        assertEquals(AnnotationsResource.WELCOME_TEXT, response.getBody());
+        assertEquals(AnnotationsResourceImpl.WELCOME_TEXT, response.getBody());
     }
 
     @Test
@@ -101,12 +137,16 @@ public class AnnotationsResourcesIT {
     public void testCreateAnnotation() throws UnirestException, IOException {
         final String id = UUID.randomUUID().toString();
         createAnnotation(id);
+
+        // Create
+        checkAuditLogs(1);
     }
 
     @Test
     public void testCreateUpdateAndGetAnnotation() {
         // Create some test data
-        final Map<String, AnnotationDTO> annotations = IntStream.range(0, 10)
+        final int RECORDS_TO_CREATE = 10;
+        final Map<String, AnnotationDTO> annotations = IntStream.range(0, RECORDS_TO_CREATE)
                 .mapToObj(i -> UUID.randomUUID().toString())
                 .map(uuid -> new AnnotationDTO.Builder().id(uuid)
                         .content(UUID.randomUUID().toString())
@@ -122,6 +162,9 @@ public class AnnotationsResourcesIT {
             final AnnotationDTO annotationResponse = getAnnotation(id);
             assertEquals(annotation.getContent(), annotationResponse.getContent());
         });
+
+        // Records * create, update, get
+        checkAuditLogs(3 * RECORDS_TO_CREATE);
     }
 
     @Test
@@ -134,6 +177,9 @@ public class AnnotationsResourcesIT {
                 .get(getAnnotationUrl(id))
                 .asString();
         assertEquals(HttpStatus.SC_NOT_FOUND, result.getStatus());
+
+        // Create, Get, Delete, Get
+        checkAuditLogs(4);
     }
 
     @Test
@@ -163,6 +209,9 @@ public class AnnotationsResourcesIT {
             assertEquals(annotationHistory.get(index), result.get(index + 1).getAnnotation());
         });
         assertEquals(HistoryOperation.DELETE, result.get(6).getOperation());
+
+        // Createm, X updates, delete, getHistory
+        checkAuditLogs(3 + numberUpdates);
     }
 
     @Test
@@ -170,7 +219,8 @@ public class AnnotationsResourcesIT {
         // Generate an UUID we can embed into the content of some annotations so we can find them
         final int NUMBER_SEARCH_TERMS = 4;
         final int NUMBER_PAGES_EXPECTED = 3;
-        final int ANNOTATIONS_PER_SEARCH_TERM = AnnotationsResource.SEARCH_PAGE_LIMIT * NUMBER_PAGES_EXPECTED;
+        final int ANNOTATIONS_PER_SEARCH_TERM = AnnotationsResourceImpl.SEARCH_PAGE_LIMIT * NUMBER_PAGES_EXPECTED;
+        final int TOTAL_ANNOTATIONS = ANNOTATIONS_PER_SEARCH_TERM * NUMBER_SEARCH_TERMS;
         final List<String> searchTerms = IntStream.range(0, NUMBER_SEARCH_TERMS)
                 .mapToObj(i -> UUID.randomUUID().toString())
                 .collect(Collectors.toList());
@@ -209,6 +259,8 @@ public class AnnotationsResourcesIT {
 
             assertEquals(annotationsSet, resultsSet);
         });
+
+        checkAuditLogs((2 * TOTAL_ANNOTATIONS) + (NUMBER_SEARCH_TERMS * NUMBER_PAGES_EXPECTED));
     }
 
     /**

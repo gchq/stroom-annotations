@@ -46,7 +46,7 @@ before_script:
   - git clone https://github.com/gchq/stroom-resources.git
   - pushd stroom-resources/dev-resources/compose/containers
   # Start all the services we need to run the integration tests in stroom
-  - docker-compose -f stroomAnnotationsDb.yml up -d
+  - docker-compose -f annotationsServiceDbKafkaZk.yml up -d
   - popd
   - popd
 

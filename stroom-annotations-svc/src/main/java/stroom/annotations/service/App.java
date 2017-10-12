@@ -18,9 +18,9 @@ import org.jooq.Configuration;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
-import stroom.annotations.service.audit.AuditFeature;
+import stroom.annotations.service.audit.*;
 import stroom.annotations.service.health.AnnotationsHealthCheck;
-import stroom.annotations.service.resources.AnnotationsResource;
+import stroom.annotations.service.resources.AuditedAnnotationsResourceImpl;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.FilterRegistration;
@@ -65,19 +65,22 @@ public class App extends Application<Config> {
                 .build(environment.metrics(), dialect.getName());
         final String validationQuery = dsf.getValidationQuery();
         final DSLContext dslContext = DSL.using(dataSource, dialect);
+
+        final KafkaService kafkaService = new KafkaServiceImpl(configuration.getAudit().getKafka());
+        final AuditExecutor auditExecutor = new AuditExecutorImpl(kafkaService);
         environment.lifecycle().manage(dataSource);
+        environment.lifecycle().manage(auditExecutor);
         environment.healthChecks().register(dialect.getName(), new AnnotationsHealthCheck(dslContext, validationQuery));
 
-        environment.jersey().register(new stroom.annotations.service.Module(configuration, jooqConfig));
-        environment.jersey().register(AnnotationsResource.class);
-        environment.jersey().register(AuditFeature.class);
+        environment.jersey().register(new stroom.annotations.service.Module(configuration, jooqConfig, auditExecutor));
+        environment.jersey().register(AuditedAnnotationsResourceImpl.class);
 
         configureCors(environment);
         migrate(configuration, environment);
     }
 
 
-    private static final void configureCors(Environment environment) {
+    private static void configureCors(Environment environment) {
         FilterRegistration.Dynamic cors = environment.servlets().addFilter("CORS", CrossOriginFilter.class);
         cors.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, new String[]{"/*"});
         cors.setInitParameter("allowedMethods", "GET,PUT,POST,DELETE,OPTIONS");
@@ -100,7 +103,7 @@ public class App extends Application<Config> {
         bootstrap.addBundle(this.flywayBundle);
     }
 
-    private static final void migrate(Config config, Environment environment) {
+    private static void migrate(Config config, Environment environment) {
         ManagedDataSource dataSource = config.getDataSourceFactory().build(environment.metrics(), "flywayDataSource");
         Flyway flyway = config.getFlywayFactory().build((DataSource) dataSource);
         flyway.migrate();

@@ -25,8 +25,8 @@ public class Config extends Configuration {
     @JsonProperty("jooq")
     private JooqFactory jooqFactory = new JooqFactory();
 
-    @JsonProperty("kafka")
-    private KafkaConfig kafka = new KafkaConfig();
+    @JsonProperty("audit")
+    private AuditConfig audit = new AuditConfig();
 
     public final DataSourceFactory getDataSourceFactory() {
         return this.dataSourceFactory;
@@ -40,7 +40,7 @@ public class Config extends Configuration {
         return this.jooqFactory;
     }
 
-    public final KafkaConfig getKafka() {
-        return this.kafka;
+    public final AuditConfig getAudit() {
+        return this.audit;
     }
 }
