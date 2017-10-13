@@ -1,10 +1,14 @@
 import { connect } from 'react-redux'
 
+import { fetchAnnotationHistory } from '../../actions/fetchAnnotationHistory'
+
 import History from './history'
 
 export default connect(
-  (state) => ({
-     history: state.history
-  }),
-  null
+    (state) => ({
+        annotationHistory: state.history
+    }),
+    {
+        fetchAnnotationHistory
+    }
 )(History)

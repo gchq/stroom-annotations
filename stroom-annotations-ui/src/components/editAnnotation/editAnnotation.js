@@ -57,6 +57,14 @@ class EditAnnotation extends Component {
         this.props.editAnnotation(this.props.annotation.id, { status })
     }
 
+    handleViewHistory() {
+        if (this.props.allowNavigation) {
+            this.props.history.push(`/historyWithNav/${this.props.annotation.id}`)
+        } else {
+            this.props.history.push(`/history/${this.props.annotation.id}`)
+        }
+    }
+
     render() {
         const actions = [
             <FlatButton
@@ -107,6 +115,11 @@ class EditAnnotation extends Component {
                             onClick={this.handleOpen.bind(this)}
                             className='edit-annotation__remove-button'
                             />
+                    <RaisedButton
+                        label="View History"
+                        primary={true}
+                        onClick={this.handleViewHistory.bind(this)}
+                        />
                 </div>
 
                 <Dialog
@@ -124,7 +137,10 @@ class EditAnnotation extends Component {
 }
 
 EditAnnotation.propTypes = {
+    history: PropTypes.object.isRequired,
+
     annotation: PropTypes.object.isRequired,
+    allowNavigation: PropTypes.bool.isRequired,
 
     editAnnotation: PropTypes.func.isRequired,
     updateAnnotation: PropTypes.func.isRequired,

@@ -6,7 +6,6 @@ import EditAnnotation from '../editAnnotation';
 import ApiCallSpinner from '../apiCallSpinner'
 import ErrorDisplay from '../errorDisplay'
 import SnackbarDisplay from '../snackbarDisplay'
-import History from '../history'
 
 import IconButton from 'material-ui/IconButton'
 import BackIcon from 'material-ui/svg-icons/navigation/arrow-back'
@@ -16,11 +15,19 @@ import Subheader from 'material-ui/Subheader'
 import Paper from 'material-ui/Paper'
 
 import '../appStyle/app.css'
+import './singleAnnotation.css'
 
-class SingleAnnotation extends Component {
+class SingleAnnotationPage extends Component {
     componentDidMount() {
         this.props.fetchAnnotation(this.props.annotationId)
-        this.props.fetchAnnotationHistory(this.props.annotationId)
+    }
+
+    handleViewHistory() {
+        if (this.props.allowNavigation) {
+            this.props.history.push(`/historyWithNav/${this.props.annotationId}`)
+        } else {
+            this.props.history.push(`/history/${this.props.annotationId}`)
+        }
     }
 
     render() {
@@ -32,15 +39,27 @@ class SingleAnnotation extends Component {
         } else if (!this.props.isClean) {
             annotationComponent = <Subheader>Waiting...</Subheader>
         } else {
-            annotationComponent = <RaisedButton
-                                      label="Create Annotation"
-                                      primary={true}
-                                      onClick={() => this.props.createAnnotation(this.props.annotationId)}
-                                      />
+            annotationComponent = (
+                <div>
+                    <RaisedButton
+                        label="Create Annotation"
+                        primary={true}
+                        onClick={() => this.props.createAnnotation(this.props.annotationId)}
+                        className='single-annotation__create-button'
+                        />
+
+                    <RaisedButton
+                        label="View History"
+                        primary={true}
+                        onClick={this.handleViewHistory.bind(this)}
+                        className='single-annotation__history-button'
+                        />
+                </div>
+            )
         }
 
         // Only present navigation icon if we are NOT a dialog
-        let iconElementLeft = this.props.isDialog ? <div /> : <IconButton><BackIcon /></IconButton>;
+        let iconElementLeft = this.props.allowNavigation ? <IconButton><BackIcon /></IconButton> : <div />
 
         // Indicate if the annotation information is clean
         let title = `Annotation on ${this.props.annotationId}`
@@ -60,17 +79,16 @@ class SingleAnnotation extends Component {
                 <ApiCallSpinner />
                 <Paper className='app--body' zDepth={0}>
                     {annotationComponent}
-                    <History />
                 </Paper>
             </div>
         );
     }
 }
 
-SingleAnnotation.propTypes = {
+SingleAnnotationPage.propTypes = {
     // set from routing
     annotationId: PropTypes.string.isRequired,
-    isDialog: PropTypes.bool.isRequired,
+    allowNavigation: PropTypes.bool.isRequired,
 
     // set by react router
     history: PropTypes.object.isRequired,
@@ -81,8 +99,7 @@ SingleAnnotation.propTypes = {
 
     // Connected to redux actions
     createAnnotation: PropTypes.func.isRequired,
-    fetchAnnotation: PropTypes.func.isRequired,
-    fetchAnnotationHistory: PropTypes.func.isRequired
+    fetchAnnotation: PropTypes.func.isRequired
 }
 
-export default SingleAnnotation
+export default SingleAnnotationPage

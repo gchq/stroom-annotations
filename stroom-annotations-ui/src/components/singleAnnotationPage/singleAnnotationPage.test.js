@@ -8,7 +8,7 @@ configure({ adapter: new Adapter() });
 
 import SingleAnnotation from './singleAnnotation';
 
-describe('SingleAnnotation', () => {
+describe('SingleAnnotationPage', () => {
     it('renders without crashing', () => {
         const annotation = {
             id: '1',

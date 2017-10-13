@@ -15,6 +15,12 @@ class History extends Component {
         stepIndex: -1,
     };
 
+    componentDidMount() {
+        if (this.props.annotationId) {
+            this.props.fetchAnnotationHistory(this.props.annotationId)
+        }
+    }
+
     toggleStep(i) {
         if (this.state.stepIndex === i) {
             this.setState({stepIndex: -1})
@@ -29,7 +35,7 @@ class History extends Component {
             flexDirection: "column"
         }
 
-        return this.props.history.slice().reverse().map((h, i) => (
+        return this.props.annotationHistory.slice().reverse().map((h, i) => (
             <Step key={i}>
                 <StepButton onClick={() => this.toggleStep(i)}>
                     {h.operation} by {h.annotation.updatedBy} on {moment(h.annotation.lastUpdated).fromNow()}
@@ -61,7 +67,7 @@ class History extends Component {
   render() {
     const {stepIndex} = this.state;
 
-    if (this.props.history.length > 0) {
+    if (this.props.annotationHistory.length > 0) {
         return (
             <div>
                 <h1>History</h1>
@@ -82,7 +88,10 @@ class History extends Component {
 }
 
 History.propTypes = {
-    history: PropTypes.array.isRequired
+    // set from routing
+    annotationId: PropTypes.string.isRequired,
+
+    annotationHistory: PropTypes.array.isRequired
 }
 
 export default History

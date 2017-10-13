@@ -24,9 +24,9 @@ import {
 
 import '../appStyle/app.css'
 import '../appStyle/dialog.css'
-import './manageAnnotations.css'
+import './manageAnnotationsPage.css'
 
-class ManageAnnotations extends Component {
+class ManageAnnotationsPage extends Component {
     state = {
         selectedId: undefined,
         removeDialogOpen: false
@@ -57,7 +57,7 @@ class ManageAnnotations extends Component {
 
     handleRowSelection(selectedRows) {
         let annotation = this.props.annotations[selectedRows]
-        this.props.history.push(`/singleEdit/${annotation.id}`)
+        this.props.history.push(`/singleWithNav/${annotation.id}`)
     };
 
     fetchMore() {
@@ -140,7 +140,7 @@ class ManageAnnotations extends Component {
     }
 }
 
-ManageAnnotations.propTypes = {
+ManageAnnotationsPage.propTypes = {
     annotations: PropTypes.array.isRequired,
     searchTerm: PropTypes.string.isRequired,
     canRequestMore: PropTypes.bool.isRequired,
@@ -149,4 +149,4 @@ ManageAnnotations.propTypes = {
     moreAnnotations: PropTypes.func.isRequired
 }
 
-export default ManageAnnotations
+export default ManageAnnotationsPage

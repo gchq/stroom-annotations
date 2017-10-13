@@ -18,10 +18,11 @@ export const requestMoreAnnotations = (apiCallId) => ({
 
 export const RECEIVE_SEARCH_ANNOTATIONS = 'RECEIVE_SEARCH_ANNOTATIONS';
 
-export const receiveSearchAnnotations = (apiCallId, json) => ({
+export const receiveSearchAnnotations = (apiCallId, json, append) => ({
     type: RECEIVE_SEARCH_ANNOTATIONS,
     annotations: json,
-    apiCallId
+    apiCallId,
+    append
 })
 
 export const RECEIVE_SEARCH_ANNOTATIONS_FAILED = 'RECEIVE_SEARCH_ANNOTATIONS_FAILED';
@@ -53,7 +54,7 @@ export const searchAnnotations = (searchTermRaw) => {
                     return response.json()
                 }
             )
-            .then(json => dispatch(receiveSearchAnnotations(thisApiCallId, json)) )
+            .then(json => dispatch(receiveSearchAnnotations(thisApiCallId, json, false)) )
             .catch(error => {
                 dispatch(receiveSearchAnnotationsFailed(thisApiCallId, error))
             })
@@ -79,7 +80,7 @@ export const moreAnnotations = () => {
                     return response.json()
                 }
             )
-            .then(json => dispatch(receiveSearchAnnotations(thisApiCallId, json)) )
+            .then(json => dispatch(receiveSearchAnnotations(thisApiCallId, json, true)) )
             .catch(error => {
                 dispatch(receiveSearchAnnotationsFailed(thisApiCallId, error))
             })

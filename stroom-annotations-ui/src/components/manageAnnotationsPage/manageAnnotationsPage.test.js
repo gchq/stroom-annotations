@@ -6,12 +6,12 @@ import Adapter from 'enzyme-adapter-react-15';
 
 configure({ adapter: new Adapter() });
 
-import ManageAnnotations from './manageAnnotations';
+import ManageAnnotationsPage from './manageAnnotationsPage';
 
-describe('ManageAnnotations', () => {
+describe('ManageAnnotationsPage', () => {
     it('renders without crashing', () => {
         shallow(
-            <ManageAnnotations
+            <ManageAnnotationsPage
                 annotations={[]}
                 searchTerm='find me'
                 canRequestMore={true}

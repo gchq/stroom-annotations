@@ -15,6 +15,8 @@ import java.util.Properties;
 
 @JsonTypeName("kafka")
 public class KafkaLogbackAppenderFactory<E extends DeferredProcessingAware> extends AbstractAppenderFactory<E> {
+    public static final String APPENDER_NAME = "kafkaAudit";
+
     @JsonProperty
     private String topic;
 
@@ -48,6 +50,7 @@ public class KafkaLogbackAppenderFactory<E extends DeferredProcessingAware> exte
         appender.addFilter(levelFilterFactory.build(threshold));
         getFilterFactories().forEach(f -> appender.addFilter(f.build()));
         appender.start();
+        appender.setName(APPENDER_NAME);
 
         return appender;
         //return wrapAsync(appender, asyncAppenderFactory);

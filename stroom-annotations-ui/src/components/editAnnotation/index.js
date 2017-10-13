@@ -1,4 +1,5 @@
 import { connect } from 'react-redux'
+import { withRouter } from 'react-router'
 
 import {
     updateAnnotation,
@@ -11,11 +12,12 @@ import EditAnnotation from './editAnnotation'
 
 export default connect(
   (state) => ({
-     annotation: state.singleAnnotation.annotation
+     annotation: state.singleAnnotation.annotation,
+     allowNavigation: state.ui.allowNavigation
   }),
   {
      editAnnotation,
      updateAnnotation,
      removeAnnotation
   }
-)(EditAnnotation)
+)(withRouter(EditAnnotation))

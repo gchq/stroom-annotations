@@ -1,5 +1,7 @@
 package stroom.annotations.service.resources;
 
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.Appender;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.mashape.unirest.http.HttpResponse;
@@ -8,12 +10,15 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 import io.dropwizard.testing.junit.DropwizardAppRule;
 import org.apache.http.HttpStatus;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.junit.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import stroom.annotations.service.App;
 import stroom.annotations.service.Config;
 import stroom.annotations.service.audit.AnnotationsEventLoggingService;
+import stroom.annotations.service.audit.KafkaLogbackAppender;
+import stroom.annotations.service.audit.KafkaLogbackAppenderFactory;
 import stroom.annotations.service.model.AnnotationDTO;
 import stroom.annotations.service.model.AnnotationHistoryDTO;
 import stroom.annotations.service.model.HistoryOperation;
@@ -56,12 +61,25 @@ public class AnnotationsResourcesIT {
     public static void setupClass() {
         int appPort = appRule.getLocalPort();
 
+        // Extract the kafka config by digging through the logger
         final Logger auditLogger = LoggerFactory.getLogger(AnnotationsEventLoggingService.AUDIT_LOGGER_NAME);
 
+        assertTrue(auditLogger instanceof ch.qos.logback.classic.Logger);
+        final ch.qos.logback.classic.Logger auditLoggerLB = (ch.qos.logback.classic.Logger) auditLogger;
+
+        final Appender<ILoggingEvent> appender = auditLoggerLB.getAppender(KafkaLogbackAppenderFactory.APPENDER_NAME);
+        assertNotNull(appender);
+        assertTrue(appender instanceof KafkaLogbackAppender);
+        KafkaLogbackAppender<?> kafkaLogbackAppender = (KafkaLogbackAppender<?>) appender;
+
+        final String bootstrapServers = kafkaLogbackAppender.getProducerConfig().getProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG);
+        final String topic = kafkaLogbackAppender.getTopic();
+        assertNotNull(bootstrapServers);
+        assertNotNull(topic);
 
         annotationsUrl = "http://localhost:" + appPort + "/annotations/v1";
 
-        kafkaTestConsumer = new KafkaTestConsumer("localhost:9092", "audit");
+        kafkaTestConsumer = new KafkaTestConsumer(bootstrapServers, topic);
 
         Unirest.setObjectMapper(new com.mashape.unirest.http.ObjectMapper() {
             private com.fasterxml.jackson.databind.ObjectMapper jacksonObjectMapper

@@ -7,6 +7,7 @@ import statusValues from './statusValues'
 import snackbarMessages from './snackbarMessages'
 import errorMessages from './errorMessages'
 import apiCalls from './apiCalls'
+import ui from './ui'
 
 const annotationsApp = combineReducers({
     singleAnnotation,
@@ -15,7 +16,8 @@ const annotationsApp = combineReducers({
     statusValues,
     snackbarMessages,
     errorMessages,
-    apiCalls
+    apiCalls,
+    ui
 })
 
 export default annotationsApp

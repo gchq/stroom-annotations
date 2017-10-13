@@ -19,13 +19,18 @@ import {blue600, amber900} from 'material-ui/styles/colors'
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import getMuiTheme from 'material-ui/styles/getMuiTheme'
 
-import SingleAnnotation from './components/singleAnnotation'
-import ManageAnnotations from './components/manageAnnotations'
-import NotFound from './components/notFound'
+import AnnotationHistoryPage from './components/annotationHistoryPage'
+import SingleAnnotationPage from './components/singleAnnotationPage'
+import ManageAnnotationsPage from './components/manageAnnotationsPage'
+import NotFoundPage from './components/notFoundPage'
 
 import reducer from './reducers'
 
 import { fetchStatusValues } from './actions/fetchStatusValues'
+import {
+    setAllowNavigation,
+    setAnnotationId
+} from './actions/setupUi'
 
 const loggerMiddleware = createLogger()
 
@@ -47,13 +52,33 @@ const store = createStore(
 // Just needs to be done once for the whole app
 store.dispatch(fetchStatusValues())
 
-// If opened as a dialog, do not present navigational items in the header
-const SingleAnnotationMuiDialog = ({ match }) => {
-    return <SingleAnnotation annotationId={match.params.annotationId} isDialog={true} />
+const ManageAnnotationsRoutedPage = ({ match }) => {
+    store.dispatch(setAllowNavigation(true));
+    return <ManageAnnotationsPage />
 }
 
-const SingleAnnotationMuiPage = ({ match }) => {
-    return <SingleAnnotation annotationId={match.params.annotationId} isDialog={false} />
+const SingleAnnotationRoutedPageWithNav = ({ match }) => {
+    store.dispatch(setAnnotationId(match.params.annotationId));
+    store.dispatch(setAllowNavigation(true));
+    return <SingleAnnotationPage />
+}
+
+const SingleAnnotationRoutedPageWithoutNav = ({ match }) => {
+    store.dispatch(setAnnotationId(match.params.annotationId));
+    store.dispatch(setAllowNavigation(false));
+    return <SingleAnnotationPage />
+}
+
+const AnnotationHistoryRoutedPageWithNav = ({ match }) => {
+    store.dispatch(setAnnotationId(match.params.annotationId));
+    store.dispatch(setAllowNavigation(true));
+    return <AnnotationHistoryPage />
+}
+
+const AnnotationHistoryRoutedPageWithoutNav = ({ match }) => {
+    store.dispatch(setAnnotationId(match.params.annotationId));
+    store.dispatch(setAllowNavigation(false));
+    return <AnnotationHistoryPage />
 }
 
 render(
@@ -61,12 +86,13 @@ render(
         <Provider store={store}>
             <Router>
                 <Switch>
-                    <Route exact={true} path="/single/" component={NotFound} />
-                    <Route exact={true} path="/singleEdit/" component={NotFound} />
-                    <Route exact={true} path="/single/:annotationId?" component={SingleAnnotationMuiDialog} />
-                    <Route exact={true} path="/singleEdit/:annotationId?" component={SingleAnnotationMuiPage} />
-                    <Route exact={true} path="/" component={ManageAnnotations} />
-                    <Route path="*" component={NotFound}/>
+                    <Route exact={true} path="/single/" component={NotFoundPage} />
+                    <Route exact={true} path="/singleWithNav/:annotationId?" component={SingleAnnotationRoutedPageWithNav} />
+                    <Route exact={true} path="/single/:annotationId?" component={SingleAnnotationRoutedPageWithoutNav} />
+                    <Route exact={true} path="/historyWithNav/:annotationId?" component={AnnotationHistoryRoutedPageWithNav} />
+                    <Route exact={true} path="/history/:annotationId?" component={AnnotationHistoryRoutedPageWithoutNav} />
+                    <Route exact={true} path="/" component={ManageAnnotationsRoutedPage} />
+                    <Route path="*" component={NotFoundPage}/>
                 </Switch>
             </Router>
         </Provider>

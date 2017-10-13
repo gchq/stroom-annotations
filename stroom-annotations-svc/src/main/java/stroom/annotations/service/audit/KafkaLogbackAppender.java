@@ -46,6 +46,14 @@ public class KafkaLogbackAppender<E> extends ContextAwareBase implements Appende
         this.producerConfig.forEach((o, o2) -> System.out.println(String.format("\t%s - %s", o, o2)));
     }
 
+    public Properties getProducerConfig() {
+        return producerConfig;
+    }
+
+    public String getTopic() {
+        return topic;
+    }
+
     @Override
     public void start() {
 

@@ -6,9 +6,9 @@ import Adapter from 'enzyme-adapter-react-15';
 
 configure({ adapter: new Adapter() });
 
-import NotFound from './notFound';
+import NotFoundPage from './notFoundPage';
 
-describe('NotFound', () => {
+describe('NotFoundPage', () => {
     it('renders without crashing', () => {
         shallow(<NotFound />);
     });

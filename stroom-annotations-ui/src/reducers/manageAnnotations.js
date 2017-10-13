@@ -52,11 +52,18 @@ const manageAnnotations = (
             })
         }
         case RECEIVE_SEARCH_ANNOTATIONS: {
-            return Object.assign({}, state, {
-                annotations: [
+            let annotations = undefined;
+            if (action.append) {
+                annotations = [
                     ...state.annotations,
                     ...action.annotations
-                ],
+                ]
+            } else {
+                annotations = action.annotations
+            }
+
+            return Object.assign({}, state, {
+                annotations,
                 canRequestMore: (action.annotations.length > 0)
             })
         }

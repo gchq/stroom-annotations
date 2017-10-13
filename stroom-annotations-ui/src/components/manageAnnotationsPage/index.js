@@ -1,7 +1,7 @@
 import { connect } from 'react-redux'
 import { withRouter } from 'react-router'
 
-import ManageAnnotations from './manageAnnotations'
+import ManageAnnotationsPage from './manageAnnotationsPage'
 
 import {
     searchAnnotations,
@@ -18,4 +18,4 @@ export default connect(
         searchAnnotations,
         moreAnnotations
     }
-)(withRouter(ManageAnnotations));
+)(withRouter(ManageAnnotationsPage));
