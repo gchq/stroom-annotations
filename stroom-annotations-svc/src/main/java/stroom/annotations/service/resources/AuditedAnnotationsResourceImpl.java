@@ -194,7 +194,11 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
 
             final Event.EventDetail.Update update = new Event.EventDetail.Update();
             eventDetail.setUpdate(update);
-            eventDetail.getUpdate().getOutcome().setSuccess(null != exception);
+
+            final Outcome outcome = new Outcome();
+            update.setOutcome(outcome);
+
+            outcome.setSuccess(null != exception);
 
             update.getData().add(getDataForId(id));
 

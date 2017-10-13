@@ -2,6 +2,8 @@ package stroom.annotations.service.resources;
 
 import org.jooq.DSLContext;
 import org.jooq.types.ULong;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import stroom.annotations.service.model.*;
 import stroom.db.annotations.tables.records.AnnotationsRecord;
 
@@ -9,14 +11,14 @@ import javax.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static stroom.db.annotations.Tables.ANNOTATIONS_;
 import static stroom.db.annotations.Tables.ANNOTATIONS_HISTORY;
 
 public class AnnotationsResourceImpl implements AnnotationsResource {
-    private static final Logger LOGGER = Logger.getLogger(AnnotationsResource.class.getName());
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AnnotationsResourceImpl.class);
 
     static final String WELCOME_TEXT = "Welcome to the annotations service";
 
@@ -235,6 +237,6 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
 
 
 
-        LOGGER.fine(String.format("History Point Taken for Annotation %s - rowsAffected: %d", id, rowsAffected));
+        LOGGER.trace(String.format("History Point Taken for Annotation %s - rowsAffected: %d", id, rowsAffected));
     }
 }

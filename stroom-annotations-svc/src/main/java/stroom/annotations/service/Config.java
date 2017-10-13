@@ -25,9 +25,6 @@ public class Config extends Configuration {
     @JsonProperty("jooq")
     private JooqFactory jooqFactory = new JooqFactory();
 
-    @JsonProperty("audit")
-    private AuditConfig audit = new AuditConfig();
-
     public final DataSourceFactory getDataSourceFactory() {
         return this.dataSourceFactory;
     }
@@ -38,9 +35,5 @@ public class Config extends Configuration {
 
     public final JooqFactory getJooqFactory() {
         return this.jooqFactory;
-    }
-
-    public final AuditConfig getAudit() {
-        return this.audit;
     }
 }

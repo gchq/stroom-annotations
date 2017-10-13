@@ -1,9 +1,3 @@
-audit:
-  enabled: true
-  kafka:
-    bootstrapServers: localhost:9092
-    loggingTopic: logging
-
 server:
   adminMinThreads: 1
   adminMaxThreads: 10
@@ -34,6 +28,13 @@ logging:
     io.dropwizard: INFO
     org.eclipse.jetty: INFO
     org.flywaydb: INFO
+    "AUDIT":
+      level: INFO
+      appenders:
+        - type: kafka
+          topic: audit
+          producerConfig:
+           - bootstrap.servers=localhost:9092
   appenders:
     - type: console
       logFormat: "%-6level [%d{HH:mm:ss.SSS}] [%t] %logger{5} - %X{code} %msg %n"

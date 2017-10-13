@@ -10,6 +10,8 @@ import event.logging.impl.DefaultEventSerializer;
 import event.logging.impl.EventSerializer;
 import event.logging.util.DeviceUtil;
 import event.logging.util.EventLoggingUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Resource;
 import javax.inject.Inject;
@@ -19,11 +21,13 @@ import javax.ws.rs.core.SecurityContext;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Date;
-import java.util.logging.Logger;
 
 public class AnnotationsEventLoggingService extends DefaultEventLoggingService implements EventLoggingService {
 
-    private static final Logger LOGGER = Logger.getLogger(AnnotationsEventLoggingService.class.getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(AnnotationsEventLoggingService.class);
+
+    public static final String AUDIT_LOGGER_NAME = "AUDIT";
+    private static final Logger AUDIT_LOGGER = LoggerFactory.getLogger(AUDIT_LOGGER_NAME);
 
     private static final String SYSTEM = "Stroom";
     private static final String ENVIRONMENT = "";
@@ -40,11 +44,9 @@ public class AnnotationsEventLoggingService extends DefaultEventLoggingService i
     @Resource
     private SecurityContext security;
 
-    private final AuditExecutor auditExecutor;
-
     @Inject
-    public AnnotationsEventLoggingService(final AuditExecutor auditExecutor) {
-        this.auditExecutor = auditExecutor;
+    public AnnotationsEventLoggingService() {
+
     }
 
     @Override
@@ -52,7 +54,7 @@ public class AnnotationsEventLoggingService extends DefaultEventLoggingService i
         String data = this.eventSerializer.serialize(event);
         String trimmed = data.trim();
         if (trimmed.length() > 0) {
-            auditExecutor.accept(trimmed);
+            AUDIT_LOGGER.info(trimmed);
         }
     }
 
@@ -131,7 +133,7 @@ public class AnnotationsEventLoggingService extends DefaultEventLoggingService i
                     try {
                         inetAddress = InetAddress.getByName(ip);
                     } catch (final UnknownHostException e) {
-                        LOGGER.warning("Problem getting client InetAddress:" + e.getLocalizedMessage());
+                        LOGGER.warn("Problem getting client InetAddress:", e);
                     }
 
                     Device client = null;
@@ -145,7 +147,7 @@ public class AnnotationsEventLoggingService extends DefaultEventLoggingService i
                     return client;
                 }
             } catch (final Exception e) {
-                LOGGER.warning("Problem getting client IP address and host name: " + e.getLocalizedMessage());
+                LOGGER.warn("Problem getting client IP address and host name", e);
             }
         }
 
@@ -154,14 +156,14 @@ public class AnnotationsEventLoggingService extends DefaultEventLoggingService i
 
     private User getUser() {
         try {
-            final String userId = security.getUserPrincipal().getName();
+            final String userId = "StroomUser"; //security.getUserPrincipal().getName();
             if (userId != null) {
                 final User user = new User();
                 user.setId(userId);
                 return user;
             }
         } catch (final Exception e) {
-            LOGGER.warning("Problem getting current user: " + e.getLocalizedMessage());
+            LOGGER.warn("Problem getting current user", e);
         }
 
         return null;
@@ -174,7 +176,7 @@ public class AnnotationsEventLoggingService extends DefaultEventLoggingService i
             try {
                 inetAddress = InetAddress.getLocalHost();
             } catch (final UnknownHostException e) {
-                LOGGER.warning("Problem getting device from InetAddress: " + e.getLocalizedMessage());
+                LOGGER.warn("Problem getting device from InetAddress", e);
             }
 
             if (inetAddress != null) {
@@ -188,7 +190,7 @@ public class AnnotationsEventLoggingService extends DefaultEventLoggingService i
                         try {
                             inetAddress = InetAddress.getByName(ip);
                         } catch (final UnknownHostException e) {
-                            LOGGER.warning("Problem getting client InetAddress: " + e.getLocalizedMessage());
+                            LOGGER.warn("Problem getting client InetAddress", e);
                         }
 
                         if (inetAddress != null) {

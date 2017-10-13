@@ -1,9 +1,9 @@
 package stroom.annotations.service.resources;
 
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import stroom.annotations.service.KafkaConfig;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -14,19 +14,22 @@ public class KafkaTestConsumer {
 
     private final KafkaConsumer<String, String> consumer;
 
-    public KafkaTestConsumer(final KafkaConfig config) {
+    public KafkaTestConsumer(final String bootstrapServers, final String topic) {
         Properties props = new Properties();
-        props.put("bootstrap.servers", config.getBootstrapServers());
-        props.put("group.id", "test");
-        props.put("enable.auto.commit", "false");
-        props.put("key.deserializer", org.apache.kafka.common.serialization.StringDeserializer.class.getName());
-        props.put("value.deserializer", org.apache.kafka.common.serialization.StringDeserializer.class.getName());
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "test");
+        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+                org.apache.kafka.common.serialization.StringDeserializer.class.getName());
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+                org.apache.kafka.common.serialization.StringDeserializer.class.getName());
         consumer = new KafkaConsumer<>(props);
-        consumer.subscribe(Collections.singletonList(config.getLoggingTopic()));
+        consumer.subscribe(Collections.singletonList(topic));
     }
 
     public List<ConsumerRecord<String, String>> getRecords(int expected) {
         List<ConsumerRecord<String, String>> records = new ArrayList<>();
+
 
         // This will be run at the end of tests, so it's a one shot
         int attempts = 5;

@@ -78,6 +78,7 @@ dependencies {
     compile project(':stroom-annotations-persistence')
     compile deps.kafka
     compile deps.dropwizard_core
+    compile deps.slf4j
     compile deps.dropwizard_flyway
     compile deps.dropwizard_jooq
     compile deps.dropwizard_auth

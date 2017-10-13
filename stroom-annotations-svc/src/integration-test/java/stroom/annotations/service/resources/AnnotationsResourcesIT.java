@@ -5,15 +5,15 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
-import io.dropwizard.testing.ConfigOverride;
 import io.dropwizard.testing.junit.DropwizardAppRule;
 import org.apache.http.HttpStatus;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.junit.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import stroom.annotations.service.App;
 import stroom.annotations.service.Config;
+import stroom.annotations.service.audit.AnnotationsEventLoggingService;
 import stroom.annotations.service.model.AnnotationDTO;
 import stroom.annotations.service.model.AnnotationHistoryDTO;
 import stroom.annotations.service.model.HistoryOperation;
@@ -22,14 +22,13 @@ import stroom.annotations.service.model.Status;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.Assert.*;
 
 public class AnnotationsResourcesIT {
-    private static final Logger LOGGER = Logger.getLogger(AnnotationsResourcesIT.class.getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(AnnotationsResourcesIT.class);
 
     @ClassRule
     public static final DropwizardAppRule<Config> appRule = new DropwizardAppRule<>(App.class, "config.yml");
@@ -57,9 +56,12 @@ public class AnnotationsResourcesIT {
     public static void setupClass() {
         int appPort = appRule.getLocalPort();
 
+        final Logger auditLogger = LoggerFactory.getLogger(AnnotationsEventLoggingService.AUDIT_LOGGER_NAME);
+
+
         annotationsUrl = "http://localhost:" + appPort + "/annotations/v1";
 
-        kafkaTestConsumer = new KafkaTestConsumer(appRule.getConfiguration().getAudit().getKafka());
+        kafkaTestConsumer = new KafkaTestConsumer("localhost:9092", "audit");
 
         Unirest.setObjectMapper(new com.mashape.unirest.http.ObjectMapper() {
             private com.fasterxml.jackson.databind.ObjectMapper jacksonObjectMapper
@@ -81,6 +83,8 @@ public class AnnotationsResourcesIT {
                 }
             }
         });
+
+        kafkaTestConsumer.getRecords(1);
     }
 
     @AfterClass
@@ -90,7 +94,6 @@ public class AnnotationsResourcesIT {
 
     @Before
     public void beforeTest() {
-        kafkaTestConsumer.getRecords(1);
     }
 
     @After

@@ -10,24 +10,18 @@ import stroom.annotations.service.resources.AnnotationsResourceImpl;
 public class Module extends AbstractBinder {
     private final Config config;
     private final Configuration jooqConfig;
-    private final AuditExecutor auditExecutor;
 
     public Module(final Config config,
-                  final Configuration jooqConfig,
-                  final AuditExecutor auditExecutor) {
+                  final Configuration jooqConfig) {
         this.config = config;
         this.jooqConfig = jooqConfig;
-        this.auditExecutor = auditExecutor;
 
     }
 
     protected void configure() {
-        bind(KafkaServiceImpl.class).to(KafkaService.class);
-        bind(config.getAudit()).to(AuditConfig.class);
-        bind(config.getAudit().getKafka()).to(KafkaConfig.class);
+        bind(config).to(Config.class);
         bind(jooqConfig).to(Configuration.class);
         bind(AnnotationsResourceImpl.class).to(AnnotationsResource.class);
         bind(AnnotationsEventLoggingService.class).to(EventLoggingService.class);
-        bind(auditExecutor).to(AuditExecutor.class);
     }
 }

@@ -66,13 +66,10 @@ public class App extends Application<Config> {
         final String validationQuery = dsf.getValidationQuery();
         final DSLContext dslContext = DSL.using(dataSource, dialect);
 
-        final KafkaService kafkaService = new KafkaServiceImpl(configuration.getAudit().getKafka());
-        final AuditExecutor auditExecutor = new AuditExecutorImpl(kafkaService);
         environment.lifecycle().manage(dataSource);
-        environment.lifecycle().manage(auditExecutor);
         environment.healthChecks().register(dialect.getName(), new AnnotationsHealthCheck(dslContext, validationQuery));
 
-        environment.jersey().register(new stroom.annotations.service.Module(configuration, jooqConfig, auditExecutor));
+        environment.jersey().register(new stroom.annotations.service.Module(configuration, jooqConfig));
         environment.jersey().register(AuditedAnnotationsResourceImpl.class);
 
         configureCors(environment);
