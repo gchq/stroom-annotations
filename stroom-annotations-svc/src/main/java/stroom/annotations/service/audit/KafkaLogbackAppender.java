@@ -42,8 +42,6 @@ public class KafkaLogbackAppender<E> extends ContextAwareBase implements Appende
                 org.apache.kafka.common.serialization.ByteArraySerializer.class.getName());
 
         this.producerConfig.putAll(producerConfig);
-
-        this.producerConfig.forEach((o, o2) -> System.out.println(String.format("\t%s - %s", o, o2)));
     }
 
     public Properties getProducerConfig() {
