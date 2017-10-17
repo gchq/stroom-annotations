@@ -31,15 +31,14 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response search(final DSLContext database,
-                           final String q,
+    public Response search(final String q,
                            final String seekId,
                            final Long seekLastUpdated) {
-        Response response = null;
+        Response response;
         Exception exception = null;
         
         try {
-            response = annotationsResource.search(database, q, seekId, seekLastUpdated);
+            response = annotationsResource.search(q, seekId, seekLastUpdated);
 
             return response;
         } catch (Exception e) {
@@ -92,13 +91,12 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response get(final DSLContext database,
-                        final String id) {
-        Response response = null;
+    public Response get(final String id) {
+        Response response;
         Exception exception = null;
         
         try {
-            response =  annotationsResource.get(database, id);
+            response =  annotationsResource.get( id);
 
             return response;
         } catch (Exception e) {
@@ -119,13 +117,12 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response getHistory(final DSLContext database,
-                               final String id) {
-        Response response = null;
+    public Response getHistory(final String id) {
+        Response response;
         Exception exception = null;
 
         try {
-            response =  annotationsResource.getHistory(database, id);
+            response =  annotationsResource.getHistory(id);
 
             return response;
         } catch (Exception e) {
@@ -145,13 +142,12 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response create(final DSLContext database,
-                           final String id) {
-        Response response = null;
+    public Response create(final String id) {
+        Response response;
         Exception exception = null;
 
         try {
-            response =  annotationsResource.create(database, id);
+            response =  annotationsResource.create(id);
 
             return response;
         } catch (Exception e) {
@@ -172,14 +168,13 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response update(final DSLContext database,
-                           final String id,
+    public Response update(final String id,
                            final AnnotationDTO annotation) {
-        Response response = null;
+        Response response;
         Exception exception = null;
 
         try {
-            response =  annotationsResource.update(database, id, annotation);
+            response =  annotationsResource.update(id, annotation);
 
             return response;
         } catch (Exception e) {
@@ -207,13 +202,12 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response remove(final DSLContext database,
-                           final String id) {
-        Response response = null;
+    public Response remove(final String id) {
+        Response response;
         Exception exception = null;
 
         try {
-            response =  annotationsResource.remove(database, id);
+            response =  annotationsResource.remove(id);
 
             return response;
         } catch (Exception e) {

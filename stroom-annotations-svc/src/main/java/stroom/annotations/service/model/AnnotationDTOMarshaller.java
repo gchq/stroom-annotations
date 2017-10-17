@@ -1,5 +1,6 @@
 package stroom.annotations.service.model;
 
+import stroom.annotations.service.hibernate.Annotation;
 import stroom.db.annotations.tables.records.AnnotationsHistoryRecord;
 import stroom.db.annotations.tables.records.AnnotationsRecord;
 
@@ -7,6 +8,18 @@ public final class AnnotationDTOMarshaller {
     private AnnotationDTOMarshaller() {
 
     }
+
+    public static AnnotationDTO toDTO(final Annotation record) {
+        return new AnnotationDTO.Builder()
+                .id(record.getId())
+                .status(record.getStatus())
+                .assignTo(record.getAssignTo())
+                .content(record.getContent())
+                .updatedBy(record.getUpdatedBy())
+                .lastUpdated(record.getLastUpdated())
+                .build();
+    }
+
 
     public static AnnotationDTO toDTO(final AnnotationsRecord record) {
         return new AnnotationDTO.Builder()

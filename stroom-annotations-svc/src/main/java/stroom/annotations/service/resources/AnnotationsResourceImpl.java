@@ -7,6 +7,8 @@ import org.slf4j.LoggerFactory;
 import stroom.annotations.service.model.*;
 import stroom.db.annotations.tables.records.AnnotationsRecord;
 
+import javax.validation.constraints.NotNull;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.List;
@@ -23,6 +25,10 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
     static final String WELCOME_TEXT = "Welcome to the annotations service";
 
     static final int SEARCH_PAGE_LIMIT = 10;
+
+    @Context
+    @NotNull
+    private DSLContext database;
 
     public AnnotationsResourceImpl() {
     }
@@ -42,8 +48,7 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
                 .build();
     }
 
-    public final Response search(final DSLContext database,
-                                 final String q,
+    public final Response search(final String q,
                                  final String seekId,
                                  final Long seekLastUpdated) {
 
@@ -83,8 +88,7 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
                 .build();
     }
 
-    public final Response get(final DSLContext database,
-                              final String id) {
+    public final Response get(final String id) {
         final AnnotationsRecord result = database.selectFrom(ANNOTATIONS_)
                 .where(ANNOTATIONS_.ID.equal(id))
                 .fetchAny();
@@ -104,8 +108,7 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
         }
     }
 
-    public final Response getHistory(final DSLContext database,
-                                     final String id) {
+    public final Response getHistory(final String id) {
         final List<AnnotationHistoryDTO> results = database.selectFrom(ANNOTATIONS_HISTORY)
                 .where(ANNOTATIONS_HISTORY.ANNOTATIONID.equal(id))
                 .fetch()
@@ -126,8 +129,7 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
         }
     }
 
-    public final Response create(final DSLContext database,
-                                 final String id) {
+    public final Response create(final String id) {
 
         final int result = database.insertInto(ANNOTATIONS_)
                 .set(ANNOTATIONS_.ID, id)
@@ -141,7 +143,7 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
         takeAnnotationHistory(database, id, HistoryOperation.CREATE);
 
         if (result > 0) {
-            return get(database, id);
+            return get( id);
         } else {
             return Response.status(Response.Status.NOT_FOUND)
                     .entity(ResponseMsgDTO.msg("No annotation created")
@@ -151,8 +153,7 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
         }
     }
 
-    public final Response update(final DSLContext database,
-                                 final String id,
+    public final Response update(final String id,
                                  final AnnotationDTO annotation) {
         final int result = database.update(ANNOTATIONS_)
                 .set(ANNOTATIONS_.LASTUPDATED, ULong.valueOf(System.currentTimeMillis()))
@@ -165,7 +166,7 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
         takeAnnotationHistory(database, id, HistoryOperation.UPDATE);
 
         if (result > 0) {
-            return get(database, id);
+            return get(id);
         } else {
             return Response.status(Response.Status.NOT_FOUND)
                     .entity(ResponseMsgDTO.msg("No annotation updated")
@@ -175,8 +176,7 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
         }
     }
 
-    public final Response remove(final DSLContext database,
-                                 final String id) {
+    public final Response remove(final String id) {
         // Take the history snapshot before deletion happens
         takeAnnotationHistory(database, id, HistoryOperation.DELETE);
 

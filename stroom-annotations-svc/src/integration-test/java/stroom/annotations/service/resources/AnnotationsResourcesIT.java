@@ -1,7 +1,5 @@
 package stroom.annotations.service.resources;
 
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.Appender;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.mashape.unirest.http.HttpResponse;
@@ -10,19 +8,18 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 import io.dropwizard.testing.junit.DropwizardAppRule;
 import org.apache.http.HttpStatus;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.junit.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import stroom.annotations.service.App;
 import stroom.annotations.service.Config;
-import stroom.annotations.service.audit.AnnotationsEventLoggingService;
-import stroom.annotations.service.audit.KafkaLogbackAppender;
-import stroom.annotations.service.audit.KafkaLogbackAppenderFactory;
+import stroom.annotations.service.hibernate.Annotation;
 import stroom.annotations.service.model.AnnotationDTO;
 import stroom.annotations.service.model.AnnotationHistoryDTO;
 import stroom.annotations.service.model.HistoryOperation;
 import stroom.annotations.service.model.Status;
+import stroom.datasource.api.v2.DataSource;
+import stroom.query.api.v2.*;
 
 import java.io.IOException;
 import java.util.*;
@@ -40,7 +37,9 @@ public class AnnotationsResourcesIT {
 
     private static String annotationsUrl;
 
-    private static KafkaTestConsumer kafkaTestConsumer;
+    private static String queryUrl;
+
+    private static KafkaAuditTestConsumer kafkaTestConsumer;
 
     private static final com.fasterxml.jackson.databind.ObjectMapper jacksonObjectMapper =
             new com.fasterxml.jackson.databind.ObjectMapper();
@@ -57,29 +56,26 @@ public class AnnotationsResourcesIT {
         return String.format("%s/search", annotationsUrl);
     }
 
+    private static String getQueryDataSourceUrl() {
+        return String.format("%s/dataSource", queryUrl);
+    }
+
+    private static String getQuerySearchUrl() {
+        return String.format("%s/search", queryUrl);
+    }
+
+    private static String getQueryDestroyUrl() {
+        return String.format("%s/destroy", queryUrl);
+    }
+
     @BeforeClass
     public static void setupClass() {
         int appPort = appRule.getLocalPort();
 
-        // Extract the kafka config by digging through the logger
-        final Logger auditLogger = LoggerFactory.getLogger(AnnotationsEventLoggingService.AUDIT_LOGGER_NAME);
-
-        assertTrue(auditLogger instanceof ch.qos.logback.classic.Logger);
-        final ch.qos.logback.classic.Logger auditLoggerLB = (ch.qos.logback.classic.Logger) auditLogger;
-
-        final Appender<ILoggingEvent> appender = auditLoggerLB.getAppender(KafkaLogbackAppenderFactory.APPENDER_NAME);
-        assertNotNull(appender);
-        assertTrue(appender instanceof KafkaLogbackAppender);
-        KafkaLogbackAppender<?> kafkaLogbackAppender = (KafkaLogbackAppender<?>) appender;
-
-        final String bootstrapServers = kafkaLogbackAppender.getProducerConfig().getProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG);
-        final String topic = kafkaLogbackAppender.getTopic();
-        assertNotNull(bootstrapServers);
-        assertNotNull(topic);
-
         annotationsUrl = "http://localhost:" + appPort + "/annotations/v1";
+        queryUrl = "http://localhost:" + appPort + "/annotationsQuery/v1";
 
-        kafkaTestConsumer = new KafkaTestConsumer(bootstrapServers, topic);
+        kafkaTestConsumer = new KafkaAuditTestConsumer();
 
         Unirest.setObjectMapper(new com.mashape.unirest.http.ObjectMapper() {
             private com.fasterxml.jackson.databind.ObjectMapper jacksonObjectMapper
@@ -284,6 +280,139 @@ public class AnnotationsResourcesIT {
         checkAuditLogs((2 * TOTAL_ANNOTATIONS) + (NUMBER_SEARCH_TERMS * NUMBER_PAGES_EXPECTED));
     }
 
+
+    @Test
+    public void testQuerySearch() {
+        // Generate an UUID we can embed into the content of some annotations so we can find them
+        final int NUMBER_SEARCH_TERMS = 4;
+        final int NUMBER_PAGES_EXPECTED = 3;
+        final int ANNOTATIONS_PER_SEARCH_TERM = AnnotationsResourceImpl.SEARCH_PAGE_LIMIT * NUMBER_PAGES_EXPECTED;
+        final int TOTAL_ANNOTATIONS = ANNOTATIONS_PER_SEARCH_TERM * NUMBER_SEARCH_TERMS;
+        final List<String> searchTerms = IntStream.range(0, NUMBER_SEARCH_TERMS)
+                .mapToObj(i -> UUID.randomUUID().toString())
+                .collect(Collectors.toList());
+
+        // Create some test data for each search term
+        final Map<String, Set<AnnotationDTO>> annotationsBySearchTerm = new HashMap<>();
+        for (final String searchTerm : searchTerms) {
+            final Set<AnnotationDTO> annotations = IntStream.range(0, ANNOTATIONS_PER_SEARCH_TERM)
+                    .mapToObj(i -> UUID.randomUUID().toString()) // Generate an ID
+                    .map(uuid -> new AnnotationDTO.Builder().id(uuid)
+                            .content(UUID.randomUUID().toString() + searchTerm)
+                            .assignTo(UUID.randomUUID().toString())
+                            .status(Status.OPEN_ESCALATED)
+                            .build())
+                    .peek(this::createAnnotation) // add to database
+                    .peek(this::updateAnnotation) // update with initial state
+                    .collect(Collectors.toSet());
+            annotationsBySearchTerm.put(searchTerm, annotations);
+        }
+
+        annotationsBySearchTerm.forEach((searchTerm, annotationsSet) -> {
+            querySearch(searchTerm);
+        });
+
+        checkAuditLogs((2 * TOTAL_ANNOTATIONS) + NUMBER_SEARCH_TERMS);
+    }
+
+    @Test
+    public void testGetDataSource() {
+        final DataSource result = getDataSource();
+
+        LOGGER.info(result.toString());
+
+        checkAuditLogs(1);
+    }
+
+    private DataSource getDataSource() {
+        DataSource result = null;
+
+        try {
+            final HttpResponse<String> response = Unirest
+                    .post(getQueryDataSourceUrl())
+                    .header("accept", "application/json")
+                    .asString();
+
+            assertEquals(HttpStatus.SC_ACCEPTED, response.getStatus());
+
+            result = jacksonObjectMapper.readValue(response.getBody(), DataSource.class);
+        } catch (UnirestException | IOException e) {
+            fail(e.getLocalizedMessage());
+        }
+
+        return result;
+    }
+
+    private SearchResponse querySearch(final String content) {
+        SearchResponse result = null;
+
+        try {
+            DocRef docRef = new DocRef("docRefType", "e40d59ac-e785-11e6-a678-0242ac120005", "docRefName");
+
+            ExpressionOperator expressionOperator = new ExpressionOperator(
+                    true,
+                    ExpressionOperator.Op.OR,
+                    new ExpressionTerm(Annotation.CONTENT, ExpressionTerm.Condition.CONTAINS, content)
+            );
+            QueryKey key = new QueryKey(UUID.randomUUID().toString());
+            Query query = new Query(docRef, expressionOperator);
+            List<ResultRequest> resultRequests = new ArrayList<>();
+            String dateTimeLocale = "en-gb";
+            Boolean incremental = true;
+            final SearchRequest request = new SearchRequest(key, query, resultRequests, dateTimeLocale, incremental);
+
+            final HttpResponse<String> response = Unirest
+                    .post(getQuerySearchUrl())
+                    .header("accept", "application/json")
+                    .header("Content-Type", "application/json")
+                    .body(request)
+                    .asString();
+
+            assertEquals(HttpStatus.SC_ACCEPTED, response.getStatus());
+
+            result = jacksonObjectMapper.readValue(response.getBody(), SearchResponse.class);
+        } catch (UnirestException | IOException e) {
+            fail(e.getLocalizedMessage());
+
+        }
+
+        return result;
+    }
+
+    @Ignore
+    @Test
+    public void testQueryResource() {
+
+        // Generate an UUID we can embed into the content of some annotations so we can find them
+        final int NUMBER_SEARCH_TERMS = 4;
+        final int NUMBER_PAGES_EXPECTED = 3;
+        final int ANNOTATIONS_PER_SEARCH_TERM = AnnotationsResourceImpl.SEARCH_PAGE_LIMIT * NUMBER_PAGES_EXPECTED;
+        final int TOTAL_ANNOTATIONS = ANNOTATIONS_PER_SEARCH_TERM * NUMBER_SEARCH_TERMS;
+        final List<String> searchTerms = IntStream.range(0, NUMBER_SEARCH_TERMS)
+                .mapToObj(i -> UUID.randomUUID().toString())
+                .collect(Collectors.toList());
+
+        // Create some test data for each search term
+        final Map<String, Set<AnnotationDTO>> annotationsBySearchTerm = new HashMap<>();
+        for (final String searchTerm : searchTerms) {
+            final Set<AnnotationDTO> annotations = IntStream.range(0, ANNOTATIONS_PER_SEARCH_TERM)
+                    .mapToObj(i -> UUID.randomUUID().toString()) // Generate an ID
+                    .map(uuid -> new AnnotationDTO.Builder().id(uuid)
+                            .content(UUID.randomUUID().toString() + searchTerm)
+                            .assignTo(UUID.randomUUID().toString())
+                            .status(Status.OPEN_ESCALATED)
+                            .build())
+                    .peek(this::createAnnotation) // add to database
+                    .peek(this::updateAnnotation) // update with initial state
+                    .collect(Collectors.toSet());
+            annotationsBySearchTerm.put(searchTerm, annotations);
+        }
+
+        annotationsBySearchTerm.forEach((searchTerm, annotationsSet) -> {
+
+        });
+    }
+
     /**
      * Various utility functions for making calls to the REST API
      */
@@ -345,6 +474,19 @@ public class AnnotationsResourcesIT {
         } catch (Exception e) {
             fail(e.getLocalizedMessage());
         }
+        return result;
+    }
+
+    private SearchResponse queryAnnotations(final String content) {
+        SearchResponse result = null;
+
+        try {
+
+
+        } catch (Exception e) {
+            fail(e.getLocalizedMessage());
+        }
+
         return result;
     }
 

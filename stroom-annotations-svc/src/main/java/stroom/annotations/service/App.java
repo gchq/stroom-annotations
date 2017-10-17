@@ -10,6 +10,7 @@ import io.dropwizard.db.ManagedDataSource;
 import io.dropwizard.db.PooledDataSourceFactory;
 import io.dropwizard.flyway.FlywayBundle;
 import io.dropwizard.flyway.FlywayFactory;
+import io.dropwizard.hibernate.HibernateBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
@@ -20,7 +21,9 @@ import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 import stroom.annotations.service.audit.*;
 import stroom.annotations.service.health.AnnotationsHealthCheck;
+import stroom.annotations.service.hibernate.Annotation;
 import stroom.annotations.service.resources.AuditedAnnotationsResourceImpl;
+import stroom.annotations.service.resources.AuditedQueryResourceImpl;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.FilterRegistration;
@@ -37,6 +40,13 @@ public class App extends Application<Config> {
             return configuration.getJooqFactory();
         }
 
+    };
+
+    private final HibernateBundle<Config> hibernateBundle = new HibernateBundle<Config>(Annotation.class) {
+        @Override
+        public DataSourceFactory getDataSourceFactory(Config configuration) {
+            return configuration.getDataSourceFactory();
+        }
     };
 
     private final FlywayBundle flywayBundle = new FlywayBundle<Config>() {
@@ -69,8 +79,12 @@ public class App extends Application<Config> {
         environment.lifecycle().manage(dataSource);
         environment.healthChecks().register(dialect.getName(), new AnnotationsHealthCheck(dslContext, validationQuery));
 
-        environment.jersey().register(new stroom.annotations.service.Module(configuration, jooqConfig));
+        environment.jersey().register(
+                new stroom.annotations.service.Module(hibernateBundle.getSessionFactory(),
+                        configuration,
+                        jooqConfig));
         environment.jersey().register(AuditedAnnotationsResourceImpl.class);
+        environment.jersey().register(AuditedQueryResourceImpl.class);
 
         configureCors(environment);
         migrate(configuration, environment);
@@ -98,6 +112,7 @@ public class App extends Application<Config> {
 
         bootstrap.addBundle(this.jooqBundle);
         bootstrap.addBundle(this.flywayBundle);
+        bootstrap.addBundle(this.hibernateBundle);
     }
 
     private static void migrate(Config config, Environment environment) {
