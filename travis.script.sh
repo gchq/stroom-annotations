@@ -1,6 +1,8 @@
 #!/bin/bash
 #TODO: Update this build file to support CRON jobs.
+./gradlew -Pversion=$TRAVIS_TAG clean build shadowJar
 
+# Conditionally tag git and build docker image.
 # The username and password are configured in the travis gui
 docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
 
