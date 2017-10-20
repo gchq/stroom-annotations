@@ -5,6 +5,7 @@ import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.hibernate.SessionFactory;
 import org.jooq.Configuration;
 import stroom.annotations.service.audit.*;
+import stroom.annotations.service.hibernate.Annotation;
 import stroom.annotations.service.resources.AnnotationsResource;
 import stroom.annotations.service.resources.AnnotationsResourceImpl;
 import stroom.annotations.service.resources.QueryResource;
@@ -28,7 +29,7 @@ public class Module extends AbstractBinder {
         bind(config).to(Config.class);
         bind(jooqConfig).to(Configuration.class);
         bind(AnnotationsResourceImpl.class).to(AnnotationsResource.class);
-        bind(new QueryResourceImpl(hibernateSessionFactory)).to(QueryResource.class);
+        bind(new QueryResourceImpl<>(Annotation.class, hibernateSessionFactory)).to(QueryResource.class);
         bind(AnnotationsEventLoggingService.class).to(EventLoggingService.class);
     }
 }

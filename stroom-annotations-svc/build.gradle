@@ -77,6 +77,7 @@ dependencies {
     compile urlDependencies.get(urlLibs.eventLogging)
     compile urlDependencies.get(urlLibs.stroomQueryApi)
     compile urlDependencies.get(urlLibs.stroomQueryCommon)
+    compile urlDependencies.get(urlLibs.stroomExpression)
     compile project(':stroom-annotations-persistence')
     compile deps.kafka
     compile deps.dropwizard_core

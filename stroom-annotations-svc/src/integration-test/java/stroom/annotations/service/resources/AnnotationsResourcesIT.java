@@ -19,6 +19,7 @@ import stroom.annotations.service.model.AnnotationHistoryDTO;
 import stroom.annotations.service.model.HistoryOperation;
 import stroom.annotations.service.model.Status;
 import stroom.datasource.api.v2.DataSource;
+import stroom.datasource.api.v2.DataSourceField;
 import stroom.query.api.v2.*;
 
 import java.io.IOException;
@@ -26,6 +27,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.StreamSupport;
 
 import static org.junit.Assert.*;
 
@@ -288,28 +290,51 @@ public class AnnotationsResourcesIT {
         final int NUMBER_PAGES_EXPECTED = 3;
         final int ANNOTATIONS_PER_SEARCH_TERM = AnnotationsResourceImpl.SEARCH_PAGE_LIMIT * NUMBER_PAGES_EXPECTED;
         final int TOTAL_ANNOTATIONS = ANNOTATIONS_PER_SEARCH_TERM * NUMBER_SEARCH_TERMS;
-        final List<String> searchTerms = IntStream.range(0, NUMBER_SEARCH_TERMS)
+        final List<String> contentSearchTerms = IntStream.range(0, NUMBER_SEARCH_TERMS)
                 .mapToObj(i -> UUID.randomUUID().toString())
                 .collect(Collectors.toList());
 
         // Create some test data for each search term
         final Map<String, Set<AnnotationDTO>> annotationsBySearchTerm = new HashMap<>();
-        for (final String searchTerm : searchTerms) {
+        for (final String contentSearchTerm : contentSearchTerms) {
             final Set<AnnotationDTO> annotations = IntStream.range(0, ANNOTATIONS_PER_SEARCH_TERM)
                     .mapToObj(i -> UUID.randomUUID().toString()) // Generate an ID
                     .map(uuid -> new AnnotationDTO.Builder().id(uuid)
-                            .content(UUID.randomUUID().toString() + searchTerm)
-                            .assignTo(UUID.randomUUID().toString())
+                            .content("Some Content - " + UUID.randomUUID().toString() + contentSearchTerm)
+                            .assignTo("Some Guy - " + UUID.randomUUID().toString())
                             .status(Status.OPEN_ESCALATED)
                             .build())
                     .peek(this::createAnnotation) // add to database
                     .peek(this::updateAnnotation) // update with initial state
                     .collect(Collectors.toSet());
-            annotationsBySearchTerm.put(searchTerm, annotations);
+            annotationsBySearchTerm.put(contentSearchTerm, annotations);
         }
 
-        annotationsBySearchTerm.forEach((searchTerm, annotationsSet) -> {
-            querySearch(searchTerm);
+        annotationsBySearchTerm.forEach((contentSearchTerm, annotationsSet) -> {
+            final ExpressionOperator expressionOperator = new ExpressionOperator(
+                    true,
+                    ExpressionOperator.Op.OR,
+                    new ExpressionTerm(Annotation.CONTENT, ExpressionTerm.Condition.CONTAINS, contentSearchTerm)
+            );
+
+            SearchResponse searchResponse = querySearch(expressionOperator);
+
+            for (final Result result : searchResponse.getResults()) {
+                LOGGER.info("Test Result " + result.toString() + " " + result.getClass().getName());
+
+                if (result instanceof TableResult) {
+                    final TableResult tableResult = (TableResult) result;
+                    tableResult.getRows().forEach(row ->
+                            LOGGER.info("Row: " + row)
+                    );
+                } else if (result instanceof FlatResult) {
+                    final FlatResult flatResult = (FlatResult) result;
+                    flatResult.getValues().forEach(values -> {
+                        LOGGER.info("Values");
+                        values.forEach(o -> LOGGER.info("\t" + o));
+                    });
+                }
+            }
         });
 
         checkAuditLogs((2 * TOTAL_ANNOTATIONS) + NUMBER_SEARCH_TERMS);
@@ -319,7 +344,16 @@ public class AnnotationsResourcesIT {
     public void testGetDataSource() {
         final DataSource result = getDataSource();
 
-        LOGGER.info(result.toString());
+        final Set<String> resultFieldNames = result.getFields().stream()
+                .map(DataSourceField::getName)
+                .collect(Collectors.toSet());
+
+        assertTrue(resultFieldNames.contains(Annotation.ID));
+        assertTrue(resultFieldNames.contains(Annotation.CONTENT));
+        assertTrue(resultFieldNames.contains(Annotation.ASSIGN_TO));
+        assertTrue(resultFieldNames.contains(Annotation.LAST_UPDATED));
+        assertTrue(resultFieldNames.contains(Annotation.UPDATED_BY));
+        assertTrue(resultFieldNames.contains(Annotation.STATUS));
 
         checkAuditLogs(1);
     }
@@ -343,23 +377,40 @@ public class AnnotationsResourcesIT {
         return result;
     }
 
-    private SearchResponse querySearch(final String content) {
+    private SearchResponse querySearch(final ExpressionOperator expressionOperator) {
         SearchResponse result = null;
 
         try {
-            DocRef docRef = new DocRef("docRefType", "e40d59ac-e785-11e6-a678-0242ac120005", "docRefName");
-
-            ExpressionOperator expressionOperator = new ExpressionOperator(
-                    true,
-                    ExpressionOperator.Op.OR,
-                    new ExpressionTerm(Annotation.CONTENT, ExpressionTerm.Condition.CONTAINS, content)
-            );
-            QueryKey key = new QueryKey(UUID.randomUUID().toString());
-            Query query = new Query(docRef, expressionOperator);
-            List<ResultRequest> resultRequests = new ArrayList<>();
-            String dateTimeLocale = "en-gb";
-            Boolean incremental = true;
-            final SearchRequest request = new SearchRequest(key, query, resultRequests, dateTimeLocale, incremental);
+            final SearchRequest request = new SearchRequest.Builder()
+                    .query()
+                        .dataSource()
+                            .name("docRefName")
+                            .uuid(UUID.randomUUID().toString())
+                            .type("docRefType")
+                            .end()
+                        .expression(expressionOperator)
+                        .end()
+                    .key(UUID.randomUUID().toString())
+                    .dateTimeLocale("en-gb")
+                    .incremental(true)
+                    .addResultRequest()
+                        .fetch(ResultRequest.Fetch.ALL)
+                        .componentId("componentId")
+                        .addMapping()
+                            .queryId("someQueryId")
+                            .extractValues(false)
+                            .showDetail(false)
+                            .addField(Annotation.ID, "${" + Annotation.ID + "}").end()
+                            .addField(Annotation.ASSIGN_TO, "${" + Annotation.ASSIGN_TO + "}").end()
+                            .extractionPipeline()
+                                .uuid("docRefUui2")
+                                .name("docRefName2")
+                                .type("docRefType2")
+                                .end()
+                            .addMaxResults(10)
+                            .end()
+                        .end()
+                    .build();
 
             final HttpResponse<String> response = Unirest
                     .post(getQuerySearchUrl())
@@ -369,6 +420,8 @@ public class AnnotationsResourcesIT {
                     .asString();
 
             assertEquals(HttpStatus.SC_ACCEPTED, response.getStatus());
+
+            LOGGER.info("Query Search Results Body", response.getBody());
 
             result = jacksonObjectMapper.readValue(response.getBody(), SearchResponse.class);
         } catch (UnirestException | IOException e) {

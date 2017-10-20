@@ -1,8 +1,12 @@
 package stroom.annotations.service.hibernate;
 
 import stroom.annotations.service.model.Status;
+import stroom.datasource.api.v2.DataSourceField;
+import stroom.query.api.v2.ExpressionTerm;
 
 import javax.persistence.*;
+import java.util.Arrays;
+import java.util.function.Supplier;
 
 @Entity(name="annotations")
 public class Annotation {
@@ -25,8 +29,26 @@ public class Annotation {
 
     private String content;
 
+    public static class IdField implements Supplier<DataSourceField> {
+
+        @Override
+        public DataSourceField get() {
+            return new DataSourceField(
+                    DataSourceField.DataSourceFieldType.ID,
+                    Annotation.ID,
+                    true,
+                    Arrays.asList(
+                            ExpressionTerm.Condition.EQUALS,
+                            ExpressionTerm.Condition.IN,
+                            ExpressionTerm.Condition.IN_DICTIONARY
+                    )
+            );
+        }
+    }
+
     @Id
     @Column(name=ID)
+    @IsDataSourceField(fieldSupplier = IdField.class)
     public String getId() {
         return id;
     }
@@ -35,8 +57,26 @@ public class Annotation {
         this.id = id;
     }
 
+    public static class StatusField implements Supplier<DataSourceField> {
+
+        @Override
+        public DataSourceField get() {
+            return new DataSourceField(
+                    DataSourceField.DataSourceFieldType.FIELD,
+                    Annotation.STATUS,
+                    true,
+                    Arrays.asList(
+                            ExpressionTerm.Condition.EQUALS,
+                            ExpressionTerm.Condition.IN,
+                            ExpressionTerm.Condition.IN_DICTIONARY
+                    )
+            );
+        }
+    }
+
     @Enumerated(EnumType.STRING)
     @Column(name=STATUS)
+    @IsDataSourceField(fieldSupplier = StatusField.class)
     public Status getStatus() {
         return status;
     }
@@ -45,7 +85,26 @@ public class Annotation {
         this.status = status;
     }
 
+    public static class AssignToField implements Supplier<DataSourceField> {
+
+        @Override
+        public DataSourceField get() {
+            return new DataSourceField(
+                    DataSourceField.DataSourceFieldType.FIELD,
+                    Annotation.ASSIGN_TO,
+                    true,
+                    Arrays.asList(
+                            ExpressionTerm.Condition.EQUALS,
+                            ExpressionTerm.Condition.CONTAINS,
+                            ExpressionTerm.Condition.IN,
+                            ExpressionTerm.Condition.IN_DICTIONARY
+                    )
+            );
+        }
+    }
+
     @Column(name=ASSIGN_TO)
+    @IsDataSourceField(fieldSupplier = AssignToField.class)
     public String getAssignTo() {
         return assignTo;
     }
@@ -54,7 +113,28 @@ public class Annotation {
         this.assignTo = assignTo;
     }
 
+    public static class LastUpdatedField implements Supplier<DataSourceField> {
+
+        @Override
+        public DataSourceField get() {
+            return new DataSourceField(
+                    DataSourceField.DataSourceFieldType.DATE_FIELD,
+                    Annotation.LAST_UPDATED,
+                    true,
+                    Arrays.asList(
+                            ExpressionTerm.Condition.BETWEEN,
+                            ExpressionTerm.Condition.EQUALS,
+                            ExpressionTerm.Condition.GREATER_THAN,
+                            ExpressionTerm.Condition.GREATER_THAN_OR_EQUAL_TO,
+                            ExpressionTerm.Condition.LESS_THAN,
+                            ExpressionTerm.Condition.LESS_THAN_OR_EQUAL_TO
+                    )
+            );
+        }
+    }
+
     @Column(name=LAST_UPDATED)
+    @IsDataSourceField(fieldSupplier = LastUpdatedField.class)
     public Long getLastUpdated() {
         return lastUpdated;
     }
@@ -63,7 +143,24 @@ public class Annotation {
         this.lastUpdated = lastUpdated;
     }
 
+    public static class ContentField implements Supplier<DataSourceField> {
+
+        @Override
+        public DataSourceField get() {
+            return new DataSourceField(
+                    DataSourceField.DataSourceFieldType.FIELD,
+                    Annotation.CONTENT,
+                    true,
+                    Arrays.asList(
+                            ExpressionTerm.Condition.EQUALS,
+                            ExpressionTerm.Condition.CONTAINS
+                    )
+            );
+        }
+    }
+
     @Column(name=CONTENT)
+    @IsDataSourceField(fieldSupplier = ContentField.class)
     public String getContent() {
         return content;
     }
@@ -72,7 +169,26 @@ public class Annotation {
         this.content = content;
     }
 
+    public static class UpdatedByField implements Supplier<DataSourceField> {
+
+        @Override
+        public DataSourceField get() {
+            return new DataSourceField(
+                    DataSourceField.DataSourceFieldType.FIELD,
+                    Annotation.UPDATED_BY,
+                    true,
+                    Arrays.asList(
+                            ExpressionTerm.Condition.EQUALS,
+                            ExpressionTerm.Condition.CONTAINS,
+                            ExpressionTerm.Condition.IN,
+                            ExpressionTerm.Condition.IN_DICTIONARY
+                    )
+            );
+        }
+    }
+
     @Column(name=UPDATED_BY)
+    @IsDataSourceField(fieldSupplier = UpdatedByField.class)
     public String getUpdatedBy() {
         return updatedBy;
     }
