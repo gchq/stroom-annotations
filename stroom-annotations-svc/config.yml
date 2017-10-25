@@ -29,7 +29,7 @@ logging:
     org.eclipse.jetty: INFO
     org.flywaydb: INFO
     "AUDIT":
-      level: ERROR
+      level: INFO
       appenders:
         - type: kafka
           topic: audit

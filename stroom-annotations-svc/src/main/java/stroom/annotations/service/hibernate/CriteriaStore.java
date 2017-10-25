@@ -4,6 +4,7 @@ import stroom.mapreduce.v2.UnsafePairQueue;
 import stroom.query.api.v2.TableSettings;
 import stroom.query.common.v2.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -35,6 +36,9 @@ public class CriteriaStore implements Store {
         final CoprocessorSettingsMap.CoprocessorKey coprocessorKey = coprocessorSettingsMap.getCoprocessorKey(componentId);
         if (coprocessorKey == null) {
             return null;
+        }
+        if (null == payloadMap) {
+            return new Data(new HashMap<>(), 0, 0);
         }
 
         TableCoprocessorSettings tableCoprocessorSettings = (TableCoprocessorSettings) coprocessorSettingsMap.getMap()

@@ -59,7 +59,7 @@ public class QueryResourceImpl<T> implements QueryResource {
     @Override
     public Response getDataSource(final DocRef docRef) {
         return Response
-                .accepted(new DataSource(this.fields))
+                .ok(new DataSource(this.fields))
                 .build();
     }
 
@@ -81,160 +81,15 @@ public class QueryResourceImpl<T> implements QueryResource {
         final SearchResponse searchResponse = projectResults(request, tuples);
 
         return Response
-                .accepted(searchResponse)
+                .ok(searchResponse)
                 .build();
     }
 
-    private SearchResponse projectResults(final SearchRequest searchRequest,
-                                        final List<Tuple> tuples) {
-        tuples.forEach(a -> {
-            LOGGER.info("Result Found " + a);
-            for (int x=0; x<this.fields.size(); x++) {
-                final Object value = a.get(x);
-                LOGGER.info(String.format("%s: %s", this.fields.get(x).getName(), value));
-
-            }
-
-        });
-
-        // TODO: possibly the mapping from the componentId to the coprocessorsettings map is a bit odd.
-        final CoprocessorSettingsMap coprocessorSettingsMap = CoprocessorSettingsMap.create(searchRequest);
-
-        Map<CoprocessorSettingsMap.CoprocessorKey, Coprocessor> coprocessorMap = new HashMap<>();
-        // TODO: Mapping to this is complicated! it'd be nice not to have to do this.
-        final FieldIndexMap fieldIndexMap = new FieldIndexMap(true);
-
-        // Compile all of the result component options to optimise pattern matching etc.
-        if (coprocessorSettingsMap.getMap() != null) {
-            for (final Map.Entry<CoprocessorSettingsMap.CoprocessorKey, CoprocessorSettings> entry : coprocessorSettingsMap.getMap().entrySet()) {
-                final CoprocessorSettingsMap.CoprocessorKey coprocessorId = entry.getKey();
-                final CoprocessorSettings coprocessorSettings = entry.getValue();
-
-                // Create a parameter map.
-                final Map<String, String> paramMap = Collections.emptyMap();
-                if (searchRequest.getQuery().getParams() != null) {
-                    for (final Param param : searchRequest.getQuery().getParams()) {
-                        paramMap.put(param.getKey(), param.getValue());
-                    }
-                }
-
-                final Coprocessor coprocessor = createCoprocessor(
-                        coprocessorSettings, fieldIndexMap, paramMap, new HasTerminate() {
-                            //TODO do something about this
-                            @Override
-                            public void terminate() {
-                                System.out.println("terminating");
-                            }
-
-                            @Override
-                            public boolean isTerminated() {
-                                return false;
-                            }
-                        });
-
-                if (coprocessor != null) {
-                    coprocessorMap.put(coprocessorId, coprocessor);
-                }
-            }
-        }
-
-        //TODO TableCoprocessor is doing a lot of work to pre-process and aggregate the datas
-
-        for (Tuple criteriaDataPoint : tuples) {
-            String[] dataArray = new String[fieldIndexMap.size()];
-
-            //TODO should probably drive this off a new fieldIndexMap.getEntries() method or similar
-            //then we only loop round fields we car about
-            for (int x=0; x<this.fields.size(); x++) {
-                final Object value = criteriaDataPoint.get(x);
-                final String fieldName = this.fields.get(x).getName();
-
-                int posInDataArray = fieldIndexMap.get(fieldName);
-                //if the fieldIndexMap returns -1 the field has not been requested
-                if (posInDataArray != -1) {
-                    dataArray[posInDataArray] = value.toString();
-                }
-            }
-
-            LOGGER.info("Data Array" + Arrays.stream(dataArray)
-                    .map(s -> ", " + s)
-                    .reduce("", (s, s2) -> s + s2, (s, s2) -> s + s2));
-
-            coprocessorMap.entrySet().forEach(coprocessor -> {
-                coprocessor.getValue().receive(dataArray);
-            });
-        }
-
-        // TODO putting things into a payload and taking them out again is a waste of time in this case. We could use a queue instead and that'd be fine.
-        //TODO: 'Payload' is a cluster specific name - what lucene ships back from a node.
-        // Produce payloads for each coprocessor.
-        Map<CoprocessorSettingsMap.CoprocessorKey, Payload> payloadMap = null;
-        if (coprocessorMap != null && coprocessorMap.size() > 0) {
-            for (final Map.Entry<CoprocessorSettingsMap.CoprocessorKey, Coprocessor> entry : coprocessorMap.entrySet()) {
-                final Payload payload = entry.getValue().createPayload();
-                if (payload != null) {
-                    if (payloadMap == null) {
-                        payloadMap = new HashMap<>();
-                    }
-                    payloadMap.put(entry.getKey(), payload);
-                }
-            }
-        }
-
-
-        // Construct the store
-        CriteriaStore store = new CriteriaStore(Collections.singletonList(10), new StoreSize(Collections.singletonList(10)));
-        store.process(coprocessorSettingsMap);
-        store.coprocessorMap(coprocessorMap);
-        store.payloadMap(payloadMap);
-
-        // defaultMaxResultsSizes could be obtained from the StatisticsStore but at this point that object is ephemeral.
-        // It seems a little pointless to put it into the StatisticsStore only to get it out again so for now
-        // we'll just get it straight from the config.
-
-        final SearchResponseCreator searchResponseCreator = new SearchResponseCreator(store);
-
-        LOGGER.info("Creating Results");
-
-        final SearchResponse searchResponse = searchResponseCreator.create(searchRequest);
-
-        for (final Result result : searchResponse.getResults()) {
-            LOGGER.info("Result " + result.toString() + " " + result.getClass().getName());
-
-            if (result instanceof TableResult) {
-                final TableResult tableResult = (TableResult) result;
-                tableResult.getRows().forEach(row ->
-                    LOGGER.info("Row: " + row)
-                );
-            } else if (result instanceof FlatResult) {
-                final FlatResult flatResult = (FlatResult) result;
-                flatResult.getValues().forEach(values -> {
-                    LOGGER.info("Values");
-                    values.forEach(o -> LOGGER.info("\t" + o));
-                });
-            }
-        }
-
-        if (null != searchResponse.getErrors()) {
-            LOGGER.info("Showing Errors");
-            searchResponse.getErrors().forEach(LOGGER::warn);
-        }
-
-        LOGGER.info("And done");
-
-        return searchResponse;
-    }
-
-    //TODO This lives in stroom and should have a copy here
-    public static Coprocessor createCoprocessor(final CoprocessorSettings settings,
-                                                final FieldIndexMap fieldIndexMap, final Map<String, String> paramMap, final HasTerminate taskMonitor) {
-        if (settings instanceof TableCoprocessorSettings) {
-            final TableCoprocessorSettings tableCoprocessorSettings = (TableCoprocessorSettings) settings;
-            final TableCoprocessor tableCoprocessor = new TableCoprocessor(
-                    tableCoprocessorSettings, fieldIndexMap, taskMonitor, paramMap);
-            return tableCoprocessor;
-        }
-        return null;
+    @Override
+    public Response destroy(final QueryKey queryKey) {
+        return Response
+                .ok(Boolean.TRUE)
+                .build();
     }
 
     private Predicate getPredicate(final CriteriaBuilder cb,
@@ -311,10 +166,107 @@ public class QueryResourceImpl<T> implements QueryResource {
         return null;
     }
 
-    @Override
-    public Response destroy(final QueryKey queryKey) {
-        return Response
-                .accepted(Boolean.TRUE)
-                .build();
+    // TODO I copied this from 'stats', but can't make head or tail of it to try and move it into somewhere more sensible
+    private SearchResponse projectResults(final SearchRequest searchRequest,
+                                          final List<Tuple> tuples) {
+
+        // TODO: possibly the mapping from the componentId to the coprocessorsettings map is a bit odd.
+        final CoprocessorSettingsMap coprocessorSettingsMap = CoprocessorSettingsMap.create(searchRequest);
+
+        final Map<CoprocessorSettingsMap.CoprocessorKey, Coprocessor> coprocessorMap = new HashMap<>();
+
+        // TODO: Mapping to this is complicated! it'd be nice not to have to do this.
+        final FieldIndexMap fieldIndexMap = new FieldIndexMap(true);
+
+        // Compile all of the result component options to optimise pattern matching etc.
+        if (coprocessorSettingsMap.getMap() != null) {
+            for (final Map.Entry<CoprocessorSettingsMap.CoprocessorKey, CoprocessorSettings> entry : coprocessorSettingsMap.getMap().entrySet()) {
+                final CoprocessorSettingsMap.CoprocessorKey coprocessorId = entry.getKey();
+                final CoprocessorSettings coprocessorSettings = entry.getValue();
+
+                // Create a parameter map.
+                final Map<String, String> paramMap;
+                if (searchRequest.getQuery().getParams() != null) {
+                    paramMap = searchRequest.getQuery().getParams().stream()
+                            .collect(Collectors.toMap(Param::getKey, Param::getValue));
+                } else {
+                    paramMap = Collections.emptyMap();
+                }
+
+                if (coprocessorSettings instanceof TableCoprocessorSettings) {
+                    final TableCoprocessorSettings tableCoprocessorSettings = (TableCoprocessorSettings) coprocessorSettings;
+                    final HasTerminate taskMonitor = new HasTerminate() {
+                        //TODO do something about this
+                        @Override
+                        public void terminate() {
+                            System.out.println("terminating");
+                        }
+
+                        @Override
+                        public boolean isTerminated() {
+                            return false;
+                        }
+                    };
+                    final Coprocessor coprocessor = new TableCoprocessor(
+                            tableCoprocessorSettings, fieldIndexMap, taskMonitor, paramMap);
+
+                    coprocessorMap.put(coprocessorId, coprocessor);
+                }
+            }
+        }
+
+        //TODO TableCoprocessor is doing a lot of work to pre-process and aggregate the datas
+
+        for (Tuple criteriaDataPoint : tuples) {
+            String[] dataArray = new String[fieldIndexMap.size()];
+
+            //TODO should probably drive this off a new fieldIndexMap.getEntries() method or similar
+            //then we only loop round fields we car about
+            for (int x=0; x<this.fields.size(); x++) {
+                final Object value = criteriaDataPoint.get(x);
+                final String fieldName = this.fields.get(x).getName();
+
+                int posInDataArray = fieldIndexMap.get(fieldName);
+                //if the fieldIndexMap returns -1 the field has not been requested
+                if (posInDataArray != -1) {
+                    dataArray[posInDataArray] = value.toString();
+                }
+            }
+
+            coprocessorMap.entrySet().forEach(coprocessor -> {
+                coprocessor.getValue().receive(dataArray);
+            });
+        }
+
+        // TODO putting things into a payload and taking them out again is a waste of time in this case. We could use a queue instead and that'd be fine.
+        //TODO: 'Payload' is a cluster specific name - what lucene ships back from a node.
+        // Produce payloads for each coprocessor.
+        Map<CoprocessorSettingsMap.CoprocessorKey, Payload> payloadMap = null;
+        if (coprocessorMap != null && coprocessorMap.size() > 0) {
+            for (final Map.Entry<CoprocessorSettingsMap.CoprocessorKey, Coprocessor> entry : coprocessorMap.entrySet()) {
+                final Payload payload = entry.getValue().createPayload();
+                if (payload != null) {
+                    if (payloadMap == null) {
+                        payloadMap = new HashMap<>();
+                    }
+                    payloadMap.put(entry.getKey(), payload);
+                }
+            }
+        }
+
+        // Construct the store
+        final List<Integer> storeSize = Collections.singletonList(tuples.size());
+        CriteriaStore store = new CriteriaStore(storeSize, new StoreSize(storeSize));
+        store.process(coprocessorSettingsMap);
+        store.coprocessorMap(coprocessorMap);
+        store.payloadMap(payloadMap);
+
+        // defaultMaxResultsSizes could be obtained from the StatisticsStore but at this point that object is ephemeral.
+        // It seems a little pointless to put it into the StatisticsStore only to get it out again so for now
+        // we'll just get it straight from the config.
+
+        final SearchResponseCreator searchResponseCreator = new SearchResponseCreator(store);
+
+        return searchResponseCreator.create(searchRequest);
     }
 }
