@@ -29,13 +29,14 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static io.dropwizard.testing.ResourceHelpers.resourceFilePath;
 import static org.junit.Assert.*;
 
 public class AnnotationsResourcesIT {
     private static final Logger LOGGER = LoggerFactory.getLogger(AnnotationsResourcesIT.class);
 
     @ClassRule
-    public static final DropwizardAppRule<Config> appRule = new DropwizardAppRule<>(App.class, "config.yml");
+    public static final DropwizardAppRule<Config> appRule = new DropwizardAppRule<>(App.class, resourceFilePath("config.yml"));
 
     private static String annotationsUrl;
 

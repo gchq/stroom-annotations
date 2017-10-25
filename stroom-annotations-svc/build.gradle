@@ -62,6 +62,9 @@ configurations {
 task integrationTest(type: Test) {
     testClassesDir = sourceSets.integrationTest.output.classesDir
     classpath = sourceSets.integrationTest.runtimeClasspath
+    testLogging {
+        events "standardOut", "started", "passed", "skipped", "failed"
+    }
 }
 
 // These lines pull the integration test task into our build process.

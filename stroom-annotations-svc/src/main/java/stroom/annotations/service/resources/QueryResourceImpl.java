@@ -126,7 +126,7 @@ public class QueryResourceImpl<T> implements QueryResource {
                 }
                 case IN: {
                     final String[] parts = term.getValue().split(",");
-                    return root.get(term.getField()).in(parts);
+                    return root.get(term.getField()).in((Object[]) parts);
                 }
                 case IN_DICTIONARY: {
                     // Not sure how to handle this yet
