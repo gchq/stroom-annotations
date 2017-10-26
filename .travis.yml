@@ -4,6 +4,9 @@ group: edge
 jdk: oraclejdk8
 sudo: required # To ensure we get a VM rather than a container for more memory and for all the apt-get stuff
 
+services:
+  - docker
+
 env:
   global:
     # $TAGPERM environment variable
@@ -12,12 +15,6 @@ env:
     # also see: https://docs.travis-ci.com/user/encryption-keys/#Usage
     # and: https://docs.travis-ci.com/user/best-practices-security/
     - secure: "p04UfQL9fsTU0jaTqcnjarh+gxsBJGGIXJUTLs1VOQ2jXsl4+ThDnaR+xfNKxeJx7jaLeidiaKF8Ax/kP8w7l79IiTtfPMOVH+oMJkWVKC81fd9M0g+N+0n5b9eXJImWRQppDd8VmFMCJX0XgFMIRSFjWfWNf3NIPKwir7jpdX9n6ZYZcULpOKX567qT8TZKbLsH/atGOWphEKwwlpkYdVBwnACxWcQ395UkbPo+57R5uH5FzDBM7X/TBByVCS7MburDjLlDXGw38YEMKwaFMx0bvuTMb8N1TCONuFHiCROoxzY2lvZNHbRKd2tbXhCA+9lbHtAvPMBFzE9p0LbuTegbxACd3xILteKfIZ52ZCoUQPJwItkCNHHM49l/kLD1Cz4dTjw9RnziqctAk3kvYDQ3dIUlr6GTQXiQ1Td55+77nKI2GcdFtIB5+JdM2W4KbR7e2shFvaoVHXIT9cskf1/F/8VpT8718KB91dm1CMvsrWb1pXgRmjLFNT8lMkKTAgOajHfQFfTI4/hQzQ6W/n+S3zfNzSBW6PccnS3iviqHd+9r/pkXQE6n20Rq8eez2yY2BZwGWgHP9PCVZTaAzr7cot0g8/djLQ2d/AAkqvqtDZQdyKhsTkY1E78pYOmyG6hit5UdSubEliIyONLsYU6DquBIGonznSTSqZhO+FU="
-#Don't think we need to manually install docker/compose at it comes built in
-before_install:
-    #Print out the current versions before we change them
-  - echo "Docker Versions"
-  - docker --version
-  - docker-compose --version
 
 install: echo "skip 'gradle assemble' step to speed up build"
 
