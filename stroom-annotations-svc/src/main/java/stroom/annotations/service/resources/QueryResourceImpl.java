@@ -95,6 +95,10 @@ public class QueryResourceImpl<T> implements QueryResource {
     private Predicate getPredicate(final CriteriaBuilder cb,
                                    final Root<T> root,
                                    final ExpressionItem item) {
+        if (!item.enabled()) {
+            return null;
+        }
+
         if (item instanceof ExpressionTerm) {
             final ExpressionTerm term = (ExpressionTerm) item;
 
@@ -139,6 +143,7 @@ public class QueryResourceImpl<T> implements QueryResource {
 
             final Predicate[] children = operator.getChildren().stream()
                     .map(c -> getPredicate(cb, root, c))
+                    .filter(Objects::nonNull)
                     .toArray(Predicate[]::new);
 
             switch (operator.getOp()) {

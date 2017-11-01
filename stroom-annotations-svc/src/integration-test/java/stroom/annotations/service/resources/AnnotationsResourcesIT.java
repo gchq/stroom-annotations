@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import stroom.annotations.service.App;
 import stroom.annotations.service.Config;
+import stroom.annotations.service.audit.FifoLogbackAppender;
 import stroom.annotations.service.hibernate.Annotation;
 import stroom.annotations.service.model.AnnotationDTO;
 import stroom.annotations.service.model.AnnotationHistoryDTO;
@@ -41,8 +42,6 @@ public class AnnotationsResourcesIT {
     private static String annotationsUrl;
 
     private static String queryUrl;
-
-    private static KafkaAuditTestConsumer kafkaTestConsumer;
 
     private static final com.fasterxml.jackson.databind.ObjectMapper jacksonObjectMapper =
             new com.fasterxml.jackson.databind.ObjectMapper();
@@ -78,8 +77,6 @@ public class AnnotationsResourcesIT {
         annotationsUrl = "http://localhost:" + appPort + "/annotations/v1";
         queryUrl = "http://localhost:" + appPort + "/annotationsQuery/v1";
 
-        kafkaTestConsumer = new KafkaAuditTestConsumer();
-
         Unirest.setObjectMapper(new com.mashape.unirest.http.ObjectMapper() {
             private com.fasterxml.jackson.databind.ObjectMapper jacksonObjectMapper
                     = new com.fasterxml.jackson.databind.ObjectMapper();
@@ -100,30 +97,15 @@ public class AnnotationsResourcesIT {
                 }
             }
         });
-
-        kafkaTestConsumer.getRecords(1);
-    }
-
-    @AfterClass
-    public static void afterClass() {
-        kafkaTestConsumer.close();
     }
 
     @Before
     public void beforeTest() {
-    }
-
-    @After
-    public void afterTest() {
-        kafkaTestConsumer.commitSync();
+        FifoLogbackAppender.popLogs();
     }
 
     private void checkAuditLogs(final int expected) {
-        final List<ConsumerRecord<String, String>> records = kafkaTestConsumer.getRecords(expected);
-
-        for (ConsumerRecord<String, String> record : records) {
-            LOGGER.info(String.format("offset = %d, key = %s, value = %s%n", record.offset(), record.key(), record.value()));
-        }
+        final List<Object> records = FifoLogbackAppender.popLogs();
 
         LOGGER.info(String.format("Expected %d records, received %d", expected, records.size()));
 
