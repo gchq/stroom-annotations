@@ -28,7 +28,7 @@ deploy:
   provider: releases
   api_key:
     secure: Xv5WGPYWWM24rkmQ0EgLsRW29THsJjzBcTujv4HXDpgeevkF3CDs+avsrv+24OGc+FD9fA0H+N3rKfsXFK9axxIskyVQ0wEgchPiuODpn7o0FZ+AFCiijh79oRVtFzRanEQXS8CVmx6Td6gtQo+7hUacRPA547b1k2tf4uXDFaxIs8WFIaOzgMINjzgP8L9E6m968a4gt/iuPjaCMp03GJsyqt+/lzRFu2wKtiTKw5KYfny9mg/gNXGBcYtrt9nN9SueEmYQP+NKOQHiGLjTWJ8ItGK+8AzDKjDKPirrkBoT40c6XPgZlzWWOMf1rvDNz+10ATEB2cxeQw08CmiKAnP3/f/KgpEmsVIXs5hrvy2Pvgyz6Ndzg0qn5XmhuUtclbdIBTW3CdIWujVbStBTErAvjoUyKhgpthyt8qMkWT5BShXBwnzOoQ+ujscs55Plkzv+fOQKcZgdQikE/8ZEIu2+7p4PAXWZKkVE1kQUyVD3yNlgN3ux5zPnHknHnfyOIRXDZayiWgNefiCB/9KW8OZ6qOnT2Ji+AMBFvL30udcFwD0T8veEIXphYr4CijgZbEVZwWDkOwDnK9EzPO5P9RXzvQP5ilVqLEvxTMggA4NVN2LPl31Qy+lhC4Ya/wtfqAP/jbzxkTI2U12Xo0+VbiYWShsXIHf3KzOMFGjpvl4=
-    file: stroom-annotations-svc/build/libs/stroom-annotations-service-all.jar
+  file: stroom-annotations-svc/build/libs/stroom-annotations-service-all.jar
   skip_cleanup: true
   on:
     repo: gchq/stroom-annotations
