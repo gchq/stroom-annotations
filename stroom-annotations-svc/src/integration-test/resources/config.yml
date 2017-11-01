@@ -22,20 +22,18 @@ database:
     hibernate.hbm2ddl.auto: update
 
 logging:
-  level: ${LOGGING_LEVEL:- ERROR}
+  level: OFF
   loggers:
     stroom: DEBUG
     io.dropwizard: INFO
     org.eclipse.jetty: INFO
     org.flywaydb: INFO
-    "AUDIT":
+    AUDIT:
       level: INFO
       appenders:
         - type: fifo
   appenders:
     - type: console
-      logFormat: "%-6level [%d{HH:mm:ss.SSS}] [%t] %logger{5} - %X{code} %msg %n"
-      timeZone: UTC
 
 jooq:
   dialect: MYSQL

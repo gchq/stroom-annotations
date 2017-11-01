@@ -328,11 +328,6 @@ public class AnnotationsResourcesIT {
                 }
             });
 
-            LOGGER.debug("Pages of Annotation IDs");
-            for (String s : resultsSet) {
-                LOGGER.debug("\t" + s);
-            }
-
             assertEquals(expectedAnnotationIds, resultsSet);
         });
 
