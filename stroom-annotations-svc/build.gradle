@@ -78,10 +78,16 @@ tasks.withType(Test) {
 
 dependencies {
     compile urlDependencies.get(urlLibs.eventLogging)
-    compile urlDependencies.get(urlLibs.stroomQueryApi)
-    compile urlDependencies.get(urlLibs.stroomQueryCommon)
+    //compile urlDependencies.get(urlLibs.stroomQueryApi)
+    //compile urlDependencies.get(urlLibs.stroomQueryCommon)
     compile urlDependencies.get(urlLibs.stroomExpression)
     compile project(':stroom-annotations-persistence')
+
+    compile "stroom:stroom-query-api:JOE"
+    compile "stroom:stroom-query-common:JOE"
+    compile "stroom:stroom-query-audit:JOE"
+    compile "stroom:stroom-query-hibernate:JOE"
+
     compile deps.kafka
     compile deps.dropwizard_core
     compile deps.slf4j

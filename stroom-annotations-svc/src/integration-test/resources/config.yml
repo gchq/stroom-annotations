@@ -34,6 +34,8 @@ logging:
         - type: fifo
   appenders:
     - type: console
+      logFormat: "%-6level [%d{HH:mm:ss.SSS}] [%t] %logger{5} - %X{code} %msg %n"
+      timeZone: UTC
 
 jooq:
   dialect: MYSQL

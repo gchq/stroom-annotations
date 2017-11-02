@@ -10,7 +10,6 @@ import io.dropwizard.db.ManagedDataSource;
 import io.dropwizard.db.PooledDataSourceFactory;
 import io.dropwizard.flyway.FlywayBundle;
 import io.dropwizard.flyway.FlywayFactory;
-import io.dropwizard.hibernate.HibernateBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
@@ -19,34 +18,25 @@ import org.jooq.Configuration;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
-import stroom.annotations.service.audit.*;
 import stroom.annotations.service.health.AnnotationsHealthCheck;
 import stroom.annotations.service.hibernate.Annotation;
 import stroom.annotations.service.resources.AuditedAnnotationsResourceImpl;
-import stroom.annotations.service.resources.AuditedQueryResourceImpl;
+import stroom.query.hibernate.AuditedCriteriaQueryBundle;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.FilterRegistration;
-import javax.sql.DataSource;
 import java.util.EnumSet;
 
 public class App extends Application<Config> {
-    private final JooqBundle jooqBundle = new JooqBundle<Config>() {
+    private final JooqBundle<Config> jooqBundle = new JooqBundle<Config>() {
         public DataSourceFactory getDataSourceFactory(Config configuration) {
             return configuration.getDataSourceFactory();
         }
 
-        public JooqFactory getJooqFactory(Config configuration) {
+        public JooqFactory getJooqFactory(final Config configuration) {
             return configuration.getJooqFactory();
         }
 
-    };
-
-    private final HibernateBundle<Config> hibernateBundle = new HibernateBundle<Config>(Annotation.class) {
-        @Override
-        public DataSourceFactory getDataSourceFactory(Config configuration) {
-            return configuration.getDataSourceFactory();
-        }
     };
 
     private final FlywayBundle flywayBundle = new FlywayBundle<Config>() {
@@ -54,18 +44,25 @@ public class App extends Application<Config> {
             return config.getDataSourceFactory();
         }
 
-
-        public FlywayFactory getFlywayFactory(Config config) {
+        public FlywayFactory getFlywayFactory(final Config config) {
             return config.getFlywayFactory();
         }
     };
 
-    public static void main(String[] args) throws Exception {
+    private final AuditedCriteriaQueryBundle<Config, Annotation> auditedQueryBundle =
+            new AuditedCriteriaQueryBundle<Config, Annotation>(Annotation.class) {
+        @Override
+        protected DataSourceFactory getDataSourceFactory(final Config configuration) {
+            return configuration.getDataSourceFactory();
+        }
+    };
+
+    public static void main(final String[] args) throws Exception {
         new App().run(args);
     }
 
     @Override
-    public void run(Config configuration, Environment environment) throws Exception {
+    public void run(final Config configuration, final Environment environment) throws Exception {
 
         // Register DB health check
         final PooledDataSourceFactory dsf = jooqBundle.getDataSourceFactory(configuration);
@@ -79,12 +76,8 @@ public class App extends Application<Config> {
         environment.lifecycle().manage(dataSource);
         environment.healthChecks().register(dialect.getName(), new AnnotationsHealthCheck(dslContext, validationQuery));
 
-        environment.jersey().register(
-                new stroom.annotations.service.Module(hibernateBundle.getSessionFactory(),
-                        configuration,
-                        jooqConfig));
+        environment.jersey().register(new Module(configuration, jooqConfig));
         environment.jersey().register(AuditedAnnotationsResourceImpl.class);
-        environment.jersey().register(AuditedQueryResourceImpl.class);
 
         configureCors(environment);
         migrate(configuration, environment);
@@ -102,7 +95,7 @@ public class App extends Application<Config> {
     }
 
     @Override
-    public void initialize(Bootstrap<Config> bootstrap) {
+    public void initialize(final Bootstrap<Config> bootstrap) {
         super.initialize(bootstrap);
 
         // This allows us to use templating in the YAML configuration.
@@ -112,13 +105,15 @@ public class App extends Application<Config> {
 
         bootstrap.addBundle(this.jooqBundle);
         bootstrap.addBundle(this.flywayBundle);
-        bootstrap.addBundle(this.hibernateBundle);
+        bootstrap.addBundle(this.auditedQueryBundle);
     }
 
-    private static void migrate(Config config, Environment environment) {
-        ManagedDataSource dataSource = config.getDataSourceFactory().build(environment.metrics(), "flywayDataSource");
-        Flyway flyway = config.getFlywayFactory().build((DataSource) dataSource);
-        flyway.migrate();
+    private static void migrate(final Config config, final Environment environment) {
+        final ManagedDataSource dataSource = config.getDataSourceFactory()
+                .build(environment.metrics(), "flywayDataSource");
+        config.getFlywayFactory()
+                .build(dataSource)
+                .migrate();
     }
 
 }

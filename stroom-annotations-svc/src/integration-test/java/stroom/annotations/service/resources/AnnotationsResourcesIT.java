@@ -13,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import stroom.annotations.service.App;
 import stroom.annotations.service.Config;
-import stroom.annotations.service.audit.FifoLogbackAppender;
 import stroom.annotations.service.hibernate.Annotation;
 import stroom.annotations.service.model.AnnotationDTO;
 import stroom.annotations.service.model.AnnotationHistoryDTO;
@@ -22,6 +21,7 @@ import stroom.annotations.service.model.Status;
 import stroom.datasource.api.v2.DataSource;
 import stroom.datasource.api.v2.DataSourceField;
 import stroom.query.api.v2.*;
+import stroom.query.audit.FifoLogbackAppender;
 
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
@@ -75,7 +75,7 @@ public class AnnotationsResourcesIT {
         int appPort = appRule.getLocalPort();
 
         annotationsUrl = "http://localhost:" + appPort + "/annotations/v1";
-        queryUrl = "http://localhost:" + appPort + "/annotationsQuery/v1";
+        queryUrl = "http://localhost:" + appPort + "/queryApi/v1";
 
         Unirest.setObjectMapper(new com.mashape.unirest.http.ObjectMapper() {
             private com.fasterxml.jackson.databind.ObjectMapper jacksonObjectMapper

@@ -126,7 +126,7 @@ ext.urlLibs = [
     eventLogging: "event-logging-$versions.eventLogging",
     stroomQueryApi: "stroom-query-api-$versions.stroomQuery",
     stroomQueryCommon: "stroom-query-common-$versions.stroomQuery",
-    stroomExpression: "stroom-expression-$versions.stroomExpression"
+    stroomExpression: "stroom-expression-$versions.stroomExpression",
 ]
 
 urlDependencies {

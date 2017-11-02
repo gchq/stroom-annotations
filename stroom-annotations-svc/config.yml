@@ -34,7 +34,7 @@ logging:
         - type: kafka
           topic: audit
           producerConfig:
-           - bootstrap.servers=localhost:9092
+           - bootstrap.servers=${KAFKA_BOOTSTRAP_SERVERS:- localhost:9092}
   appenders:
     - type: console
       logFormat: "%-6level [%d{HH:mm:ss.SSS}] [%t] %logger{5} - %X{code} %msg %n"

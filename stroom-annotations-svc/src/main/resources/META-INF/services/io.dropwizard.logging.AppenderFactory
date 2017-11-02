@@ -1,2 +1,0 @@
-stroom.annotations.service.audit.KafkaLogbackAppenderFactory
-stroom.annotations.service.audit.FifoLogbackAppenderFactory

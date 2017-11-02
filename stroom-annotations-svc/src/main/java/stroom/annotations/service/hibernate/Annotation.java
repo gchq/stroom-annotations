@@ -3,6 +3,7 @@ package stroom.annotations.service.hibernate;
 import stroom.annotations.service.model.Status;
 import stroom.datasource.api.v2.DataSourceField;
 import stroom.query.api.v2.ExpressionTerm;
+import stroom.query.hibernate.IsDataSourceField;
 
 import javax.persistence.*;
 import java.util.Arrays;
