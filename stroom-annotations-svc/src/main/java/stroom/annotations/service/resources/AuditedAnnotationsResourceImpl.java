@@ -21,19 +21,19 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response welcome() {
+    public Response welcome() throws AnnotationsException {
         return annotationsResource.welcome();
     }
 
     @Override
-    public Response statusValues() {
+    public Response statusValues() throws AnnotationsException {
         return annotationsResource.statusValues();
     }
 
     @Override
     public Response search(final String q,
                            final String seekId,
-                           final Long seekLastUpdated) {
+                           final Long seekLastUpdated) throws AnnotationsException {
         Response response;
         Exception exception = null;
         
@@ -41,9 +41,6 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
             response = annotationsResource.search(q, seekId, seekLastUpdated);
 
             return response;
-        } catch (Exception e) {
-            exception = e;
-            throw e;
         } finally {
             final Event event = eventLoggingService.createEvent();
             final Event.EventDetail eventDetail = event.getEventDetail();
@@ -91,7 +88,7 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response get(final String id) {
+    public Response get(final String id) throws AnnotationsException {
         Response response;
         Exception exception = null;
         
@@ -99,9 +96,6 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
             response =  annotationsResource.get( id);
 
             return response;
-        } catch (Exception e) {
-            exception = e;
-            throw e;
         } finally {
             final Event event = eventLoggingService.createEvent();
             final Event.EventDetail eventDetail = event.getEventDetail();
@@ -117,7 +111,7 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response getHistory(final String id) {
+    public Response getHistory(final String id) throws AnnotationsException {
         Response response;
         Exception exception = null;
 
@@ -125,9 +119,6 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
             response =  annotationsResource.getHistory(id);
 
             return response;
-        } catch (Exception e) {
-            exception = e;
-            throw e;
         } finally {
             final Event event = eventLoggingService.createEvent();
             final Event.EventDetail eventDetail = event.getEventDetail();
@@ -142,17 +133,14 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response create(final String id) {
+    public Response create(final String id) throws AnnotationsException {
         Response response;
-        Exception exception = null;
+        AnnotationsException exception = null;
 
         try {
             response =  annotationsResource.create(id);
 
             return response;
-        } catch (Exception e) {
-            exception = e;
-            throw e;
         } finally {
             final Event event = eventLoggingService.createEvent();
             final Event.EventDetail eventDetail = event.getEventDetail();
@@ -169,7 +157,7 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
 
     @Override
     public Response update(final String id,
-                           final AnnotationDTO annotation) {
+                           final AnnotationDTO annotation) throws AnnotationsException {
         Response response;
         Exception exception = null;
 
@@ -177,9 +165,6 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
             response =  annotationsResource.update(id, annotation);
 
             return response;
-        } catch (Exception e) {
-            exception = e;
-            throw e;
         } finally {
             final Event event = eventLoggingService.createEvent();
             final Event.EventDetail eventDetail = event.getEventDetail();
@@ -202,7 +187,7 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response remove(final String id) {
+    public Response remove(final String id) throws AnnotationsException {
         Response response;
         Exception exception = null;
 
@@ -210,9 +195,6 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
             response =  annotationsResource.remove(id);
 
             return response;
-        } catch (Exception e) {
-            exception = e;
-            throw e;
         } finally {
             final Event event = eventLoggingService.createEvent();
             final Event.EventDetail eventDetail = event.getEventDetail();

@@ -108,6 +108,7 @@ dependencies {
 
     testCompile testDeps.junit
     testCompile testDeps.assertj
+    testCompile 'org.apache.directory.studio:org.apache.commons.io:2.4'
 
     integrationTestCompile testDeps.dropwizard_testing
     integrationTestCompile testDeps.moshi

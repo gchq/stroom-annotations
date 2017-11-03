@@ -19,14 +19,14 @@ public interface AnnotationsResource {
     @Produces({MediaType.TEXT_PLAIN})
     @Timed
     @NotNull
-    Response welcome();
+    Response welcome() throws AnnotationsException;
 
     @GET
     @Path("/static/statusValues")
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
     @NotNull
-    Response statusValues();
+    Response statusValues() throws AnnotationsException;
 
     @GET
     @Path("/search")
@@ -35,7 +35,7 @@ public interface AnnotationsResource {
     @NotNull
     Response search(@QueryParam("q") String q,
                     @QueryParam("seekId") String seekId,
-                    @QueryParam("seekLastUpdated") Long seekLastUpdated);
+                    @QueryParam("seekLastUpdated") Long seekLastUpdated) throws AnnotationsException;
 
     @GET
     @Path("/single/{id}")
@@ -45,7 +45,7 @@ public interface AnnotationsResource {
     Response get(@Validated
                  @PathParam("id")
                  @NotNull
-                 @Length(min=AnnotationDTO.MIN_ID_LENGTH) String id);
+                 @Length(min=AnnotationDTO.MIN_ID_LENGTH) String id) throws AnnotationsException;
 
     @GET
     @Path("/single/{id}/history")
@@ -55,7 +55,7 @@ public interface AnnotationsResource {
     Response getHistory(@Validated
                         @PathParam("id")
                         @NotNull
-                        @Length(min=AnnotationDTO.MIN_ID_LENGTH) String id);
+                        @Length(min=AnnotationDTO.MIN_ID_LENGTH) String id) throws AnnotationsException;
 
     @POST
     @Path("/single/{id}")
@@ -65,7 +65,7 @@ public interface AnnotationsResource {
     Response create(@Validated
                     @PathParam("id")
                     @NotNull
-                    @Length(min=AnnotationDTO.MIN_ID_LENGTH) String id);
+                    @Length(min=AnnotationDTO.MIN_ID_LENGTH) String id) throws AnnotationsException;
 
     @PUT
     @Path("/single/{id}")
@@ -77,7 +77,7 @@ public interface AnnotationsResource {
                     @PathParam("id")
                     @NotNull
                     @Length(min=AnnotationDTO.MIN_ID_LENGTH) String id,
-                    AnnotationDTO annotation);
+                    AnnotationDTO annotation) throws AnnotationsException;
 
     @DELETE
     @Path("/single/{id}")
@@ -87,5 +87,5 @@ public interface AnnotationsResource {
     Response remove(@Validated
                     @PathParam("id")
                     @NotNull
-                    @Length(min=AnnotationDTO.MIN_ID_LENGTH) String id);
+                    @Length(min=AnnotationDTO.MIN_ID_LENGTH) String id) throws AnnotationsException;
 }

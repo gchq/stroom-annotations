@@ -3,6 +3,7 @@ package stroom.annotations.service;
 import com.bendb.dropwizard.jooq.JooqBundle;
 import com.bendb.dropwizard.jooq.JooqFactory;
 import io.dropwizard.Application;
+import io.dropwizard.ConfiguredBundle;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
 import io.dropwizard.db.DataSourceFactory;
@@ -13,13 +14,13 @@ import io.dropwizard.flyway.FlywayFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
-import org.flywaydb.core.Flyway;
 import org.jooq.Configuration;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 import stroom.annotations.service.health.AnnotationsHealthCheck;
 import stroom.annotations.service.hibernate.Annotation;
+import stroom.annotations.service.resources.AnnotationsExceptionMapper;
 import stroom.annotations.service.resources.AuditedAnnotationsResourceImpl;
 import stroom.query.hibernate.AuditedCriteriaQueryBundle;
 
@@ -39,14 +40,36 @@ public class App extends Application<Config> {
 
     };
 
-    private final FlywayBundle flywayBundle = new FlywayBundle<Config>() {
-        public DataSourceFactory getDataSourceFactory(Config config) {
-            return config.getDataSourceFactory();
+    // Wrap the flyway bundle so that we can call migrate in the bundles 'run'.
+    // This allows the flyway migration to happen before the hibernate validation
+    private final ConfiguredBundle<Config> flywayBundle = new ConfiguredBundle<Config>() {
+
+        private final FlywayBundle<Config> wrappedBundle = new FlywayBundle<Config>() {
+            public DataSourceFactory getDataSourceFactory(Config config) {
+                return config.getDataSourceFactory();
+            }
+
+            public FlywayFactory getFlywayFactory(final Config config) {
+                return config.getFlywayFactory();
+            }
+        };
+
+        @Override
+        public void run(final Config configuration, final Environment environment) throws Exception {
+            wrappedBundle.run(environment);
+
+            final ManagedDataSource dataSource = configuration.getDataSourceFactory()
+                    .build(environment.metrics(), "flywayDataSource");
+            configuration.getFlywayFactory()
+                    .build(dataSource)
+                    .migrate();
         }
 
-        public FlywayFactory getFlywayFactory(final Config config) {
-            return config.getFlywayFactory();
+        @Override
+        public void initialize(Bootstrap<?> bootstrap) {
+            wrappedBundle.initialize(bootstrap);
         }
+
     };
 
     private final AuditedCriteriaQueryBundle<Config, Annotation> auditedQueryBundle =
@@ -63,6 +86,7 @@ public class App extends Application<Config> {
 
     @Override
     public void run(final Config configuration, final Environment environment) throws Exception {
+        configureCors(environment);
 
         // Register DB health check
         final PooledDataSourceFactory dsf = jooqBundle.getDataSourceFactory(configuration);
@@ -78,9 +102,7 @@ public class App extends Application<Config> {
 
         environment.jersey().register(new Module(configuration, jooqConfig));
         environment.jersey().register(AuditedAnnotationsResourceImpl.class);
-
-        configureCors(environment);
-        migrate(configuration, environment);
+        environment.jersey().register(AnnotationsExceptionMapper.class);
     }
 
 
@@ -107,13 +129,4 @@ public class App extends Application<Config> {
         bootstrap.addBundle(this.flywayBundle);
         bootstrap.addBundle(this.auditedQueryBundle);
     }
-
-    private static void migrate(final Config config, final Environment environment) {
-        final ManagedDataSource dataSource = config.getDataSourceFactory()
-                .build(environment.metrics(), "flywayDataSource");
-        config.getFlywayFactory()
-                .build(dataSource)
-                .migrate();
-    }
-
 }

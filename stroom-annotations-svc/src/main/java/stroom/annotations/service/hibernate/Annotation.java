@@ -210,4 +210,46 @@ public class Annotation {
         sb.append('}');
         return sb.toString();
     }
+
+    public static final class Builder {
+        private final Annotation instance;
+
+        public Builder() {
+            this.instance = new Annotation();
+        }
+
+        public Builder id(final String value) {
+            this.instance.setId(value);
+            return this;
+        }
+
+        public Builder assignTo(final String value) {
+            this.instance.setAssignTo(value);
+            return this;
+        }
+
+        public Builder lastUpdated(final Long value) {
+            this.instance.setLastUpdated(value);
+            return this;
+        }
+
+        public Builder updatedBy(final String value) {
+            this.instance.setUpdatedBy(value);
+            return this;
+        }
+
+        public Builder status(final Status value) {
+            this.instance.setStatus(value);
+            return this;
+        }
+
+        public Builder content(final String value) {
+            this.instance.setContent(value);
+            return this;
+        }
+
+        public Annotation build() {
+            return instance;
+        }
+    }
 }

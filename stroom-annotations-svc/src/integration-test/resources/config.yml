@@ -19,7 +19,7 @@ database:
     charSet: UTF-8
     hibernate.dialect: org.hibernate.dialect.MySQLInnoDBDialect
     hibernate.show_sql: false
-    hibernate.hbm2ddl.auto: update
+    hibernate.hbm2ddl.auto: validate
 
 logging:
   level: OFF
