@@ -57,7 +57,7 @@ ext.versions = [
     eventLogging: 'v3.1.0',
 
     //same version for both stroom-query-api and stroom-query-common
-    stroomQuery: 'v2.0.0-alpha.5',
+    stroomQuery: 'v2.0.0-alpha.7',
     stroomExpression: 'v1.0.0',
 ]
 
@@ -126,6 +126,8 @@ ext.urlLibs = [
     eventLogging: "event-logging-$versions.eventLogging",
     stroomQueryApi: "stroom-query-api-$versions.stroomQuery",
     stroomQueryCommon: "stroom-query-common-$versions.stroomQuery",
+    stroomQueryAudit: "stroom-query-audit-$versions.stroomQuery",
+    stroomQueryHibernate: "stroom-query-hibernate-$versions.stroomQuery",
     stroomExpression: "stroom-expression-$versions.stroomExpression",
 ]
 
@@ -138,6 +140,10 @@ urlDependencies {
             "https://github.com/gchq/stroom-query/releases/download/$versions.stroomQuery/${urlLibs.stroomQueryApi}.jar")
     compile(urlLibs.stroomQueryCommon,
             "https://github.com/gchq/stroom-query/releases/download/$versions.stroomQuery/${urlLibs.stroomQueryCommon}.jar")
+    compile(urlLibs.stroomQueryAudit,
+            "https://github.com/gchq/stroom-query/releases/download/$versions.stroomQuery/${urlLibs.stroomQueryAudit}.jar")
+    compile(urlLibs.stroomQueryHibernate,
+            "https://github.com/gchq/stroom-query/releases/download/$versions.stroomQuery/${urlLibs.stroomQueryHibernate}.jar")
     compile(urlLibs.stroomExpression,
             "https://github.com/gchq/stroom-expression/releases/download/$versions.stroomExpression/${urlLibs.stroomExpression}.jar")
 }
