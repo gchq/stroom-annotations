@@ -1,4 +1,8 @@
 #!/bin/bash
+
+#exit script on any error
+set -e
+
 #TODO: Update this build file to support CRON jobs.
 ./gradlew -Pversion=$TRAVIS_TAG clean build shadowJar
 
