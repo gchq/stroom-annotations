@@ -54,10 +54,10 @@ ext.versions = [
     dropwizard_jooq:'1.1.0-0',
     shiro: '1.3.2',
     curator: '2.12.0',
-    eventLogging: 'v3.1.0',
+    eventLogging: 'v3.1.1_schema-v3.1.2',
 
     //same version for both stroom-query-api and stroom-query-common
-    stroomQuery: 'v2.0.0-alpha.7',
+    stroomQuery: 'v2.0.0-alpha.8',
     stroomExpression: 'v1.0.0',
 ]
 
