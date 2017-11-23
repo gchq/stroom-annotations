@@ -17,5 +17,3 @@
 rootProject.name = 'stroom-annotations'
 include 'stroom-annotations-svc'
 include 'stroom-annotations-ui'
-include 'stroom-annotations-persistence'
-

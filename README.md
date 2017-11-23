@@ -5,7 +5,7 @@ Pre-release version of a Stroom annotation service.
 A service that handles CRUD operations for Annotations and the Annotation Types
 
 ## stroom-persistence
-This module connects to a MariaDB database for storing the annotations. Uses the Flyway module to build the database, then jOOQ to generate the code for interfacing to it.
+This module connects to a MariaDB database for storing the annotations. Uses the Flyway module to build the database
 
 ### Making a database change in dev
 Obviously you'll lose test data if you do this.

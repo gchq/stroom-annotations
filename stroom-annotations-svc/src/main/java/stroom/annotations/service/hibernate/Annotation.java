@@ -223,32 +223,32 @@ public class Annotation extends QueryableEntity {
 
         public Builder id(final String value) {
             this.instance.setId(value);
-            return this;
+            return self();
         }
 
         public Builder assignTo(final String value) {
             this.instance.setAssignTo(value);
-            return this;
+            return self();
         }
 
         public Builder lastUpdated(final Long value) {
             this.instance.setLastUpdated(value);
-            return this;
+            return self();
         }
 
         public Builder updatedBy(final String value) {
             this.instance.setUpdatedBy(value);
-            return this;
+            return self();
         }
 
         public Builder status(final Status value) {
             this.instance.setStatus(value);
-            return this;
+            return self();
         }
 
         public Builder content(final String value) {
             this.instance.setContent(value);
-            return this;
+            return self();
         }
 
         @Override

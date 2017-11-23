@@ -1,22 +1,23 @@
 package stroom.annotations.service.resources;
 
-import org.jooq.DSLContext;
-import org.jooq.types.ULong;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import stroom.annotations.service.hibernate.Annotation;
+import stroom.annotations.service.hibernate.AnnotationHistory;
 import stroom.annotations.service.model.*;
-import stroom.db.annotations.tables.records.AnnotationsRecord;
+import stroom.query.hibernate.QueryableEntity;
 
-import javax.validation.constraints.NotNull;
-import javax.ws.rs.core.Context;
+import javax.inject.Inject;
+import javax.persistence.NoResultException;
+import javax.persistence.criteria.*;
 import javax.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import static stroom.db.annotations.Tables.ANNOTATIONS_;
-import static stroom.db.annotations.Tables.ANNOTATIONS_HISTORY;
 
 public class AnnotationsResourceImpl implements AnnotationsResource {
 
@@ -26,11 +27,11 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
 
     static final int SEARCH_PAGE_LIMIT = 10;
 
-    @Context
-    @NotNull
-    private DSLContext database;
+    private SessionFactory database;
 
-    public AnnotationsResourceImpl() {
+    @Inject
+    public AnnotationsResourceImpl(final SessionFactory database) {
+        this.database = database;
     }
 
     public final Response welcome() throws AnnotationsException {
@@ -50,80 +51,96 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
 
     public final Response search(final String index,
                                  final String q,
-                                 final String seekId,
-                                 final Long seekLastUpdated) throws AnnotationsException {
-        try {
-            LOGGER.info(String.format("Searching the annotations for %s, pagination information (id=%s, lastUpdated=%d)",
-                    q, seekId, seekLastUpdated));
+                                 final Integer seekPosition) throws AnnotationsException {
+        try (final Session session = database.openSession()){
+            LOGGER.info(String.format("Searching the annotations for %s, pagination information (position=%d)",
+                    q, seekPosition));
 
-            final List<AnnotationDTO> dtos;
-            if ((null != seekId) && (null != seekLastUpdated)) {
-                dtos = database.selectFrom(ANNOTATIONS_)
-                        .where(ANNOTATIONS_.ID.contains(q))
-                        .or(ANNOTATIONS_.CONTENT.contains(q))
-                        .or(ANNOTATIONS_.ASSIGNTO.contains(q))
-                        .orderBy(ANNOTATIONS_.LASTUPDATED.desc(),
-                                ANNOTATIONS_.ID.desc())
-                        .seek(ULong.valueOf(seekLastUpdated), seekId)
-                        .limit(SEARCH_PAGE_LIMIT)
-                        .fetch() // from database
-                        .stream()
-                        .map(AnnotationDTOMarshaller::toDTO)
-                        .collect(Collectors.toList());
-            } else {
-                dtos = database.selectFrom(ANNOTATIONS_)
-                        .where(ANNOTATIONS_.ID.contains(q))
-                        .or(ANNOTATIONS_.CONTENT.contains(q))
-                        .or(ANNOTATIONS_.ASSIGNTO.contains(q))
-                        .orderBy(ANNOTATIONS_.LASTUPDATED.desc(),
-                                ANNOTATIONS_.ID.desc())
-                        .limit(SEARCH_PAGE_LIMIT)
-                        .fetch() // from database
-                        .stream()
-                        .map(AnnotationDTOMarshaller::toDTO)
-                        .collect(Collectors.toList());
-            }
+            final CriteriaBuilder cb = session.getCriteriaBuilder();
+
+            final CriteriaQuery<Annotation> cq = cb.createQuery(Annotation.class);
+            final Root<Annotation> root = cq.from(Annotation.class);
+
+            final String likeTerm = String.format("%%%s%%", q);
+
+            cq.where(
+                cb.and(
+                    cb.equal(root.get(QueryableEntity.DATA_SOURCE_UUID), index),
+                    cb.or(
+                        cb.like(root.get(Annotation.ID), likeTerm),
+                        cb.like(root.get(Annotation.CONTENT), likeTerm),
+                        cb.like(root.get(Annotation.ASSIGN_TO), likeTerm)
+                    )
+                )
+            );
+
+            cq.orderBy(cb.desc(root.get(Annotation.ID)));
+
+            final List<AnnotationDTO> dtos = session.createQuery(cq)
+                    .setMaxResults(SEARCH_PAGE_LIMIT)
+                    .setFirstResult((seekPosition != null) ? seekPosition : 0)
+                    .getResultList()
+                    .stream()
+                    .map(AnnotationDTOMarshaller::toDTO)
+                    .collect(Collectors.toList());
 
             return Response.status(Response.Status.OK)
                     .entity(dtos)
                     .build();
 
         } catch (final Exception e) {
+            LOGGER.warn("Failed to search for annotations", e);
             throw new AnnotationsException(e);
         }
     }
 
     public final Response get(final String index,
                               final String id) throws AnnotationsException {
-        try {
-            final AnnotationsRecord result = database.selectFrom(ANNOTATIONS_)
-                    .where(ANNOTATIONS_.ID.equal(id))
-                    .fetchAny();
-
-            if (null != result) {
-                final AnnotationDTO annotationDTO = AnnotationDTOMarshaller.toDTO(result);
-
-                return Response.status(Response.Status.OK)
-                        .entity(annotationDTO)
-                        .build();
-            } else {
-                return Response.status(Response.Status.NOT_FOUND)
-                        .entity(ResponseMsgDTO.msg("No annotation found")
-                                .recordsUpdated(0)
-                                .build())
-                        .build();
-            }
+        try (final Session session = database.openSession()){
+            return get(session, index, id);
         } catch (final Exception e) {
+            LOGGER.warn("Failed to get annotation", e);
             throw new AnnotationsException(e);
         }
     }
 
+    private Annotation getEntity(final Session session, final String index, final String id) {
+        final CriteriaBuilder cb = session.getCriteriaBuilder();
+
+        final CriteriaQuery<Annotation> cq = cb.createQuery(Annotation.class);
+        final Root<Annotation> root = cq.from(Annotation.class);
+        cq.where(cb.and(
+                cb.equal(root.get(Annotation.ID), id),
+                cb.equal(root.get(QueryableEntity.DATA_SOURCE_UUID), index)
+        ));
+
+        return session.createQuery(cq).getSingleResult();
+    }
+
+    private Response get(final Session session, final String index, final String id) {
+        final Annotation result = getEntity(session, index, id);
+
+        final AnnotationDTO annotationDTO = AnnotationDTOMarshaller.toDTO(result);
+
+        return Response.status(Response.Status.OK)
+                .entity(annotationDTO)
+                .build();
+    }
+
     public final Response getHistory(final String index,
                                      final String id) throws AnnotationsException {
-        try {
-            final List<AnnotationHistoryDTO> results = database.selectFrom(ANNOTATIONS_HISTORY)
-                    .where(ANNOTATIONS_HISTORY.ANNOTATIONID.equal(id))
-                    .fetch()
+        try (final Session session = database.openSession()){
+            final CriteriaBuilder cb = session.getCriteriaBuilder();
+            final CriteriaQuery<AnnotationHistory> cq = cb.createQuery(AnnotationHistory.class);
+            final Root<AnnotationHistory> root = cq.from(AnnotationHistory.class);
+
+            cq.where(cb.and(
+                cb.equal(root.get(AnnotationHistory.ANNOTATION_ID), id),
+                cb.equal(root.get(QueryableEntity.DATA_SOURCE_UUID), index)
+            ));
+
+            final List<AnnotationHistoryDTO> results = session.createQuery(cq)
+                    .getResultList()
                     .stream()
                     .map(AnnotationDTOMarshaller::toDTO)
                     .collect(Collectors.toList());
@@ -140,6 +157,7 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
                         .build();
             }
         } catch (final Exception e) {
+            LOGGER.warn("Failed to get history of annotation", e);
             throw new AnnotationsException(e);
         }
     }
@@ -147,124 +165,142 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
     public final Response create(final String index,
                                  final String id) throws AnnotationsException {
 
-        try {
-            final int result = database.insertInto(ANNOTATIONS_)
-                    .set(ANNOTATIONS_.ID, id)
-                    .set(ANNOTATIONS_.LASTUPDATED, ULong.valueOf(System.currentTimeMillis()))
-                    .set(ANNOTATIONS_.ASSIGNTO, AnnotationDTO.DEFAULT_ASSIGNEE)
-                    .set(ANNOTATIONS_.UPDATEDBY, AnnotationDTO.DEFAULT_UPDATED_BY)
-                    .set(ANNOTATIONS_.CONTENT, AnnotationDTO.DEFAULT_CONTENT)
-                    .set(ANNOTATIONS_.STATUS, AnnotationDTO.DEFAULT_STATUS.toString())
-                    .execute();
+        Transaction tx = null;
 
-            takeAnnotationHistory(database, id, HistoryOperation.CREATE);
+        try (final Session session = database.openSession()) {
+            tx = session.beginTransaction();
 
-            if (result > 0) {
-                return get(index, id);
-            } else {
-                return Response.status(Response.Status.NOT_FOUND)
-                        .entity(ResponseMsgDTO.msg("No annotation created")
-                                .recordsUpdated(0)
-                                .build())
-                        .build();
-            }
+            final Annotation annotation = new Annotation.Builder()
+                    .id(id)
+                    .dataSourceUuid(index)
+                    .lastUpdated(System.currentTimeMillis())
+                    .assignTo(AnnotationDTO.DEFAULT_ASSIGNEE)
+                    .updatedBy(AnnotationDTO.DEFAULT_UPDATED_BY)
+                    .content(AnnotationDTO.DEFAULT_CONTENT)
+                    .status(AnnotationDTO.DEFAULT_STATUS)
+                    .build();
+            session.persist(annotation);
+
+            takeAnnotationHistory(session, annotation, HistoryOperation.CREATE);
+
+            tx.commit();
+
+            final AnnotationDTO annotationDTO = AnnotationDTOMarshaller.toDTO(annotation);
+
+            return Response.status(Response.Status.OK)
+                    .entity(annotationDTO)
+                    .build();
         } catch (final Exception e) {
+            if (tx!=null) tx.rollback();
+            LOGGER.warn("Failed to get create annotation", e);
+
             throw new AnnotationsException(e);
         }
     }
 
     public final Response update(final String index,
                                  final String id,
-                                 final AnnotationDTO annotation) throws AnnotationsException {
-        try {
-            final int result = database.update(ANNOTATIONS_)
-                    .set(ANNOTATIONS_.LASTUPDATED, ULong.valueOf(System.currentTimeMillis()))
-                    .set(ANNOTATIONS_.ASSIGNTO, annotation.getAssignTo())
-                    .set(ANNOTATIONS_.CONTENT, annotation.getContent())
-                    .set(ANNOTATIONS_.STATUS, annotation.getStatus().toString())
-                    .where(ANNOTATIONS_.ID.equal(id))
-                    .execute();
+                                 final AnnotationDTO annotationDTO) throws AnnotationsException {
+        Transaction tx = null;
 
-            takeAnnotationHistory(database, id, HistoryOperation.UPDATE);
+        try (final Session session = database.openSession()) {
+            final Annotation annotation = getEntity(session, index, id);
 
-            if (result > 0) {
-                return get(index, id);
-            } else {
-                return Response.status(Response.Status.NOT_FOUND)
-                        .entity(ResponseMsgDTO.msg("No annotation updated")
-                                .recordsUpdated(0)
-                                .build())
-                        .build();
-            }
+            tx = session.beginTransaction();
+
+            session.evict(annotation);
+
+            annotation.setLastUpdated(System.currentTimeMillis());
+            annotation.setAssignTo(annotationDTO.getAssignTo());
+            annotation.setContent(annotationDTO.getContent());
+            annotation.setStatus(annotationDTO.getStatus());
+
+            session.merge(annotation);
+
+            takeAnnotationHistory(session, annotation, HistoryOperation.UPDATE);
+
+            tx.commit();
+
+            return get(session, index, id);
+
         } catch (final Exception e) {
+            if (tx!=null) tx.rollback();
+            LOGGER.warn("Failed to get update annotation", e);
             throw new AnnotationsException(e);
         }
     }
 
     public final Response remove(final String index,
                                  final String id) throws AnnotationsException {
-        try {
+        Transaction tx = null;
+
+        try (final Session session = database.openSession()) {
+
             // Take the history snapshot before deletion happens
-            takeAnnotationHistory(database, id, HistoryOperation.DELETE);
+            takeAnnotationHistoryDelete(session, index, id, HistoryOperation.DELETE);
 
-            final int result = database.deleteFrom(ANNOTATIONS_)
-                    .where(ANNOTATIONS_.ID.equal(id))
-                    .execute();
+            final Annotation annotation = getEntity(session, index, id);
 
+            tx = session.beginTransaction();
 
-            if (result > 0) {
-                return Response.status(Response.Status.OK)
-                        .entity(ResponseMsgDTO.msg("Annotation deleted")
-                                .recordsUpdated(result)
-                                .build())
-                        .build();
-            } else {
-                return Response.status(Response.Status.NOT_FOUND)
-                        .entity(ResponseMsgDTO.msg("No annotation removed")
-                                .recordsUpdated(0)
-                                .build())
-                        .build();
-            }
+            session.delete(annotation);
+
+            tx.commit();
+
+            return Response.status(Response.Status.OK)
+                    .entity(ResponseMsgDTO.msg("Annotation deleted")
+                            .recordsUpdated(1)
+                            .build())
+                    .build();
         } catch (final Exception e) {
+            if (tx!=null) tx.rollback();
+            LOGGER.warn("Failed to get create annotation", e);
             throw new AnnotationsException(e);
         }
     }
 
-    private void takeAnnotationHistory(final DSLContext database,
-                                       final String id,
+    private void takeAnnotationHistory(final Session session,
+                                       final Annotation currentState,
                                        final HistoryOperation operation) {
-        int rowsAffected = 0;
-
-        final AnnotationsRecord currentState = database.selectFrom(ANNOTATIONS_)
-                .where(ANNOTATIONS_.ID.equal(id))
-                .fetchAny();
-
         switch (operation) {
             case CREATE:
-            case UPDATE:
-                rowsAffected = database.insertInto(ANNOTATIONS_HISTORY)
-                        .set(ANNOTATIONS_HISTORY.ANNOTATIONID, currentState.getId())
-                        .set(ANNOTATIONS_HISTORY.OPERATION, operation.toString())
-                        .set(ANNOTATIONS_HISTORY.LASTUPDATED, currentState.getLastupdated())
-                        .set(ANNOTATIONS_HISTORY.ASSIGNTO, currentState.getAssignto())
-                        .set(ANNOTATIONS_HISTORY.UPDATEDBY, currentState.getUpdatedby())
-                        .set(ANNOTATIONS_HISTORY.CONTENT, currentState.getContent())
-                        .set(ANNOTATIONS_HISTORY.STATUS, currentState.getStatus())
-                        .execute();
+            case UPDATE: {
+                final AnnotationHistory history = new AnnotationHistory.Builder()
+                        .dataSourceUuid(currentState.getDataSourceUuid())
+                        .annotationId(currentState.getId())
+                        .operation(operation)
+                        .lastUpdated(currentState.getLastUpdated())
+                        .assignTo(currentState.getAssignTo())
+                        .updatedBy(currentState.getUpdatedBy())
+                        .content(currentState.getContent())
+                        .status(currentState.getStatus())
+                        .build();
+                session.persist(history);
                 break;
-            case DELETE:
-                rowsAffected = database.insertInto(ANNOTATIONS_HISTORY)
-                        .set(ANNOTATIONS_HISTORY.ANNOTATIONID, currentState.getId())
-                        .set(ANNOTATIONS_HISTORY.OPERATION, operation.toString())
-                        .set(ANNOTATIONS_HISTORY.LASTUPDATED, ULong.valueOf(System.currentTimeMillis()))
-                        .set(ANNOTATIONS_HISTORY.ASSIGNTO, currentState.getAssignto())
-                        .set(ANNOTATIONS_HISTORY.UPDATEDBY, AnnotationDTO.DEFAULT_UPDATED_BY)
-                        .set(ANNOTATIONS_HISTORY.CONTENT, currentState.getContent())
-                        .set(ANNOTATIONS_HISTORY.STATUS, currentState.getStatus())
-                        .execute();
-                break;
+            }
         }
 
-        LOGGER.trace(String.format("History Point Taken for Annotation %s - rowsAffected: %d", id, rowsAffected));
+        LOGGER.trace(String.format("History Point Taken for Annotation %s", currentState.getId()));
+    }
+
+    private void takeAnnotationHistoryDelete(final Session session,
+                                       final String index,
+                                       final String id,
+                                       final HistoryOperation operation) {
+        final Annotation currentState = getEntity(session, index, id);
+
+                final AnnotationHistory history = new AnnotationHistory.Builder()
+                        .dataSourceUuid(index)
+                        .annotationId(id)
+                        .operation(HistoryOperation.DELETE)
+                        .lastUpdated(System.currentTimeMillis())
+                        .assignTo(currentState.getAssignTo())
+                        .updatedBy(AnnotationDTO.DEFAULT_UPDATED_BY)
+                        .content(currentState.getContent())
+                        .status(currentState.getStatus())
+                        .build();
+                session.persist(history);
+
+        LOGGER.trace(String.format("History Point Taken for Annotation %s", id));
     }
 }

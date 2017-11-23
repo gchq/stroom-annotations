@@ -1,7 +1,6 @@
 package stroom.annotations.service.resources;
 
 import event.logging.*;
-import org.jooq.DSLContext;
 import stroom.annotations.service.model.AnnotationDTO;
 
 import javax.inject.Inject;
@@ -31,14 +30,14 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response search(final String q,
-                           final String seekId,
-                           final Long seekLastUpdated) throws AnnotationsException {
+    public Response search(final String index,
+                           final String q,
+                           final Integer seekPosition) throws AnnotationsException {
         Response response;
         Exception exception = null;
         
         try {
-            response = annotationsResource.search(q, seekId, seekLastUpdated);
+            response = annotationsResource.search(index, q, seekPosition);
 
             return response;
         } finally {
@@ -67,20 +66,12 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
             qTerm.setValue(q);
             qTerm.setCondition(TermCondition.CONTAINS);
 
-            if (null != seekId) {
+            if (null != seekPosition) {
                 final Term seekIdTerm = new Term();
                 queryTerms.getAdvancedQueryItems().add(seekIdTerm);
-                seekIdTerm.setName("seekId");
-                seekIdTerm.setValue(seekId);
+                seekIdTerm.setName("seekPosition");
+                seekIdTerm.setValue(Integer.toString(seekPosition));
                 seekIdTerm.setCondition(TermCondition.GREATER_THAN);
-            }
-
-            if (null != seekLastUpdated) {
-                final Term seekLastUpdatedTerm = new Term();
-                queryTerms.getAdvancedQueryItems().add(seekLastUpdatedTerm);
-                seekLastUpdatedTerm.setName("seekLastUpdated");
-                seekLastUpdatedTerm.setValue(Long.toString(seekLastUpdated));
-                seekLastUpdatedTerm.setCondition(TermCondition.GREATER_THAN);
             }
 
             eventLoggingService.log(event);
@@ -88,12 +79,12 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response get(final String id) throws AnnotationsException {
+    public Response get(final String index, final String id) throws AnnotationsException {
         Response response;
         Exception exception = null;
         
         try {
-            response =  annotationsResource.get( id);
+            response =  annotationsResource.get(index, id);
 
             return response;
         } finally {
@@ -111,12 +102,12 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response getHistory(final String id) throws AnnotationsException {
+    public Response getHistory(final String index, final String id) throws AnnotationsException {
         Response response;
         Exception exception = null;
 
         try {
-            response =  annotationsResource.getHistory(id);
+            response =  annotationsResource.getHistory(index, id);
 
             return response;
         } finally {
@@ -133,12 +124,12 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response create(final String id) throws AnnotationsException {
+    public Response create(final String index, final String id) throws AnnotationsException {
         Response response;
         AnnotationsException exception = null;
 
         try {
-            response =  annotationsResource.create(id);
+            response =  annotationsResource.create(index, id);
 
             return response;
         } finally {
@@ -156,13 +147,14 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response update(final String id,
+    public Response update(final String index,
+                           final String id,
                            final AnnotationDTO annotation) throws AnnotationsException {
         Response response;
         Exception exception = null;
 
         try {
-            response =  annotationsResource.update(id, annotation);
+            response =  annotationsResource.update(index, id, annotation);
 
             return response;
         } finally {
@@ -187,12 +179,12 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response remove(final String id) throws AnnotationsException {
+    public Response remove(final String index, final String id) throws AnnotationsException {
         Response response;
         Exception exception = null;
 
         try {
-            response =  annotationsResource.remove(id);
+            response =  annotationsResource.remove(index, id);
 
             return response;
         } finally {

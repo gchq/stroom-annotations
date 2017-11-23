@@ -1,6 +1,5 @@
 package stroom.annotations.service;
 
-import com.bendb.dropwizard.jooq.JooqFactory;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dropwizard.Configuration;
 import io.dropwizard.db.DataSourceFactory;
@@ -20,20 +19,11 @@ public class Config extends Configuration {
     @JsonProperty("flyway")
     private FlywayFactory flywayFactory = new FlywayFactory();
 
-    @Valid
-    @NotNull
-    @JsonProperty("jooq")
-    private JooqFactory jooqFactory = new JooqFactory();
-
     public final DataSourceFactory getDataSourceFactory() {
         return this.dataSourceFactory;
     }
 
     public final FlywayFactory getFlywayFactory() {
         return this.flywayFactory;
-    }
-
-    public final JooqFactory getJooqFactory() {
-        return this.jooqFactory;
     }
 }

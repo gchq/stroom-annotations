@@ -34,12 +34,11 @@ public interface AnnotationsResource {
     @Timed
     @NotNull
     Response search(@Validated
-                    @PathParam("id")
+                    @PathParam("index")
                     @NotNull
                     @Length(min=AnnotationDTO.MIN_ID_LENGTH) String index,
                     @QueryParam("q") String q,
-                    @QueryParam("seekId") String seekId,
-                    @QueryParam("seekLastUpdated") Long seekLastUpdated) throws AnnotationsException;
+                    @QueryParam("seekPosition") Integer seekPosition) throws AnnotationsException;
 
     @GET
     @Path("/single/{index}/{id}")
@@ -47,7 +46,7 @@ public interface AnnotationsResource {
     @Timed
     @NotNull
     Response get(@Validated
-                 @PathParam("id")
+                 @PathParam("index")
                  @NotNull
                  @Length(min=AnnotationDTO.MIN_ID_LENGTH) String index,
                  @Validated
@@ -61,7 +60,7 @@ public interface AnnotationsResource {
     @Timed
     @NotNull
     Response getHistory(@Validated
-                        @PathParam("id")
+                        @PathParam("index")
                         @NotNull
                         @Length(min=AnnotationDTO.MIN_ID_LENGTH) String index,
                         @Validated
@@ -75,7 +74,7 @@ public interface AnnotationsResource {
     @Timed
     @NotNull
     Response create(@Validated
-                    @PathParam("id")
+                    @PathParam("index")
                     @NotNull
                     @Length(min=AnnotationDTO.MIN_ID_LENGTH) String index,
                     @Validated
@@ -90,7 +89,7 @@ public interface AnnotationsResource {
     @Timed
     @NotNull
     Response update(@Validated
-                    @PathParam("id")
+                    @PathParam("index")
                     @NotNull
                     @Length(min=AnnotationDTO.MIN_ID_LENGTH) String index,
                     @Validated
@@ -105,7 +104,7 @@ public interface AnnotationsResource {
     @Timed
     @NotNull
     Response remove(@Validated
-                    @PathParam("id")
+                    @PathParam("index")
                     @NotNull
                     @Length(min=AnnotationDTO.MIN_ID_LENGTH) String index,
                     @Validated

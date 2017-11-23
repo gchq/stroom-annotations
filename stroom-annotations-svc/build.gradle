@@ -83,13 +83,11 @@ dependencies {
     compile urlDependencies.get(urlLibs.stroomQueryAudit)
     compile urlDependencies.get(urlLibs.stroomQueryHibernate)
     compile urlDependencies.get(urlLibs.stroomExpression)
-    compile project(':stroom-annotations-persistence')
 
     compile deps.kafka
     compile deps.dropwizard_core
     compile deps.slf4j
     compile deps.dropwizard_flyway
-    compile deps.dropwizard_jooq
     compile deps.dropwizard_hibernate
     compile deps.dropwizard_auth
     compile deps.dropwizard_auth_jwt
