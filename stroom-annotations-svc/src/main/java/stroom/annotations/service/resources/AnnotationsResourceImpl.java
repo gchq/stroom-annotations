@@ -48,7 +48,8 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
                 .build();
     }
 
-    public final Response search(final String q,
+    public final Response search(final String index,
+                                 final String q,
                                  final String seekId,
                                  final Long seekLastUpdated) throws AnnotationsException {
         try {
@@ -92,7 +93,8 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
         }
     }
 
-    public final Response get(final String id) throws AnnotationsException {
+    public final Response get(final String index,
+                              final String id) throws AnnotationsException {
         try {
             final AnnotationsRecord result = database.selectFrom(ANNOTATIONS_)
                     .where(ANNOTATIONS_.ID.equal(id))
@@ -116,7 +118,8 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
         }
     }
 
-    public final Response getHistory(final String id) throws AnnotationsException {
+    public final Response getHistory(final String index,
+                                     final String id) throws AnnotationsException {
         try {
             final List<AnnotationHistoryDTO> results = database.selectFrom(ANNOTATIONS_HISTORY)
                     .where(ANNOTATIONS_HISTORY.ANNOTATIONID.equal(id))
@@ -141,7 +144,8 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
         }
     }
 
-    public final Response create(final String id) throws AnnotationsException {
+    public final Response create(final String index,
+                                 final String id) throws AnnotationsException {
 
         try {
             final int result = database.insertInto(ANNOTATIONS_)
@@ -156,7 +160,7 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
             takeAnnotationHistory(database, id, HistoryOperation.CREATE);
 
             if (result > 0) {
-                return get(id);
+                return get(index, id);
             } else {
                 return Response.status(Response.Status.NOT_FOUND)
                         .entity(ResponseMsgDTO.msg("No annotation created")
@@ -169,7 +173,8 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
         }
     }
 
-    public final Response update(final String id,
+    public final Response update(final String index,
+                                 final String id,
                                  final AnnotationDTO annotation) throws AnnotationsException {
         try {
             final int result = database.update(ANNOTATIONS_)
@@ -183,7 +188,7 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
             takeAnnotationHistory(database, id, HistoryOperation.UPDATE);
 
             if (result > 0) {
-                return get(id);
+                return get(index, id);
             } else {
                 return Response.status(Response.Status.NOT_FOUND)
                         .entity(ResponseMsgDTO.msg("No annotation updated")
@@ -196,7 +201,8 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
         }
     }
 
-    public final Response remove(final String id) throws AnnotationsException {
+    public final Response remove(final String index,
+                                 final String id) throws AnnotationsException {
         try {
             // Take the history snapshot before deletion happens
             takeAnnotationHistory(database, id, HistoryOperation.DELETE);

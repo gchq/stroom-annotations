@@ -29,46 +29,62 @@ public interface AnnotationsResource {
     Response statusValues() throws AnnotationsException;
 
     @GET
-    @Path("/search")
+    @Path("/search/{index}")
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
     @NotNull
-    Response search(@QueryParam("q") String q,
+    Response search(@Validated
+                    @PathParam("id")
+                    @NotNull
+                    @Length(min=AnnotationDTO.MIN_ID_LENGTH) String index,
+                    @QueryParam("q") String q,
                     @QueryParam("seekId") String seekId,
                     @QueryParam("seekLastUpdated") Long seekLastUpdated) throws AnnotationsException;
 
     @GET
-    @Path("/single/{id}")
+    @Path("/single/{index}/{id}")
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
     @NotNull
     Response get(@Validated
                  @PathParam("id")
                  @NotNull
+                 @Length(min=AnnotationDTO.MIN_ID_LENGTH) String index,
+                 @Validated
+                 @PathParam("id")
+                 @NotNull
                  @Length(min=AnnotationDTO.MIN_ID_LENGTH) String id) throws AnnotationsException;
 
     @GET
-    @Path("/single/{id}/history")
+    @Path("/single/{index}/{id}/history")
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
     @NotNull
     Response getHistory(@Validated
                         @PathParam("id")
                         @NotNull
+                        @Length(min=AnnotationDTO.MIN_ID_LENGTH) String index,
+                        @Validated
+                        @PathParam("id")
+                        @NotNull
                         @Length(min=AnnotationDTO.MIN_ID_LENGTH) String id) throws AnnotationsException;
 
     @POST
-    @Path("/single/{id}")
+    @Path("/single/{index}/{id}")
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
     @NotNull
     Response create(@Validated
                     @PathParam("id")
                     @NotNull
+                    @Length(min=AnnotationDTO.MIN_ID_LENGTH) String index,
+                    @Validated
+                    @PathParam("id")
+                    @NotNull
                     @Length(min=AnnotationDTO.MIN_ID_LENGTH) String id) throws AnnotationsException;
 
     @PUT
-    @Path("/single/{id}")
+    @Path("/single/{index}/{id}")
     @Consumes({MediaType.APPLICATION_JSON})
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
@@ -76,15 +92,23 @@ public interface AnnotationsResource {
     Response update(@Validated
                     @PathParam("id")
                     @NotNull
+                    @Length(min=AnnotationDTO.MIN_ID_LENGTH) String index,
+                    @Validated
+                    @PathParam("id")
+                    @NotNull
                     @Length(min=AnnotationDTO.MIN_ID_LENGTH) String id,
                     AnnotationDTO annotation) throws AnnotationsException;
 
     @DELETE
-    @Path("/single/{id}")
+    @Path("/single/{index}/{id}")
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
     @NotNull
     Response remove(@Validated
+                    @PathParam("id")
+                    @NotNull
+                    @Length(min=AnnotationDTO.MIN_ID_LENGTH) String index,
+                    @Validated
                     @PathParam("id")
                     @NotNull
                     @Length(min=AnnotationDTO.MIN_ID_LENGTH) String id) throws AnnotationsException;

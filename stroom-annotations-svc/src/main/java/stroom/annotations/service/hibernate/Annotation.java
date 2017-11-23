@@ -3,14 +3,17 @@ package stroom.annotations.service.hibernate;
 import stroom.annotations.service.model.Status;
 import stroom.datasource.api.v2.DataSourceField;
 import stroom.query.api.v2.ExpressionTerm;
+import stroom.query.audit.QueryResource;
 import stroom.query.hibernate.IsDataSourceField;
+import stroom.query.hibernate.QueryResourceCriteriaImpl;
+import stroom.query.hibernate.QueryableEntity;
 
 import javax.persistence.*;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
 @Entity(name="annotations")
-public class Annotation {
+public class Annotation extends QueryableEntity {
     public static final String ID = "id";
     public static final String STATUS = "status";
     public static final String ASSIGN_TO = "assignTo";
@@ -201,7 +204,8 @@ public class Annotation {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Annotation{");
-        sb.append("id='").append(id).append('\'');
+        sb.append(super.toString()).append('\'');
+        sb.append(", id='").append(assignTo).append('\'');
         sb.append(", assignTo='").append(assignTo).append('\'');
         sb.append(", lastUpdated=").append(lastUpdated);
         sb.append(", updatedBy='").append(updatedBy).append('\'');
@@ -211,11 +215,10 @@ public class Annotation {
         return sb.toString();
     }
 
-    public static final class Builder {
-        private final Annotation instance;
+    public static final class Builder extends QueryableEntity.ABuilder<Annotation, Builder> {
 
         public Builder() {
-            this.instance = new Annotation();
+            super(new Annotation());
         }
 
         public Builder id(final String value) {
@@ -248,8 +251,9 @@ public class Annotation {
             return this;
         }
 
-        public Annotation build() {
-            return instance;
+        @Override
+        protected Builder self() {
+            return this;
         }
     }
 }
