@@ -56,7 +56,7 @@ class CreateAnnotation extends Component {
                 newAnnotationIdError: undefined
             })
 
-            this.props.createAnnotation(this.state.newAnnotationId)
+            this.props.createAnnotation(this.props.indexUuid, this.state.newAnnotationId)
             this.handleCreateDialogClose()
         } catch(e) {
             this.setState({
@@ -108,6 +108,7 @@ class CreateAnnotation extends Component {
 }
 
 CreateAnnotation.propTypes = {
+    indexUuid: PropTypes.string.isRequired,
     createAnnotation: PropTypes.func.isRequired
 }
 

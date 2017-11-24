@@ -19,9 +19,9 @@ class AnnotationHistoryPage extends Component {
 
     handleNavigateBack() {
         if (this.props.allowNavigation) {
-            this.props.history.push(`/singleWithNav/${this.props.annotationId}`)
+            this.props.history.push(`/singleWithNav/${this.props.indexUuid}/${this.props.annotationId}`)
         } else {
-            this.props.history.push(`/single/${this.props.annotationId}`)
+            this.props.history.push(`/single/${this.props.indexUuid}/${this.props.annotationId}`)
         }
     }
 
@@ -51,6 +51,7 @@ class AnnotationHistoryPage extends Component {
 }
 
 AnnotationHistoryPage.propTypes = {
+    indexUuid: PropTypes.string.isRequired,
     annotationId: PropTypes.string.isRequired,
     allowNavigation: PropTypes.bool.isRequired,
 

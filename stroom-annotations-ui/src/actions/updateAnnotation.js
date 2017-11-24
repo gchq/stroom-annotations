@@ -36,14 +36,14 @@ export const receiveUpdateAnnotationFailed = (apiCallId, message) => ({
 
 let apiCallId = 0
 
-export const updateAnnotation = (id, annotation) => {
+export const updateAnnotation = (indexUuid, id, annotation) => {
     return function(dispatch) {
         const thisApiCallId = `updateAnnotation-${apiCallId}`
         apiCallId += 1
 
         dispatch(requestUpdateAnnotation(thisApiCallId, id, annotation));
 
-        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/single/${id}`,
+        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/single/${indexUuid}/${id}`,
             {
                 method: "PUT",
                 headers: {

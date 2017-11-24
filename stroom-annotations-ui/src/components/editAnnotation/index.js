@@ -13,7 +13,8 @@ import EditAnnotation from './editAnnotation'
 export default connect(
   (state) => ({
      annotation: state.singleAnnotation.annotation,
-     allowNavigation: state.ui.allowNavigation
+     allowNavigation: state.ui.allowNavigation,
+     indexUuid: state.ui.indexUuid
   }),
   {
      editAnnotation,

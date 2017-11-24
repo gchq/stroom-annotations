@@ -6,6 +6,7 @@ import History from './history'
 
 export default connect(
     (state) => ({
+        indexUuid: state.ui.indexUuid,
         annotationHistory: state.history
     }),
     {

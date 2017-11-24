@@ -10,6 +10,7 @@ import {
 
 export default connect(
     (state) => ({
+        indexUuid: state.ui.indexUuid,
         canRequestMore: state.manageAnnotations.canRequestMore,
         annotations: state.manageAnnotations.annotations,
         searchTerm: state.manageAnnotations.searchTerm

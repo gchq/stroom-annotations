@@ -10,6 +10,7 @@ export default connect(
     (state) => ({
         isClean: state.singleAnnotation.isClean,
         annotation: state.singleAnnotation.annotation,
+        indexUuid: state.ui.indexUuid,
         annotationId: state.ui.annotationId,
         allowNavigation: state.ui.allowNavigation
     }),

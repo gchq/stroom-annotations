@@ -11,3 +11,10 @@ export const setAnnotationId = (annotationId) => ({
     type: SET_ANNOTATION_ID,
     annotationId
 })
+
+export const SET_INDEX_UUID = 'SET_INDEX_UUID'
+
+export const setIndexUuid = (indexUuid) => ({
+    type: SET_INDEX_UUID,
+    indexUuid
+})

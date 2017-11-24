@@ -27,14 +27,14 @@ export const receiveFetchAnnotationHistoryFailed = (apiCallId, message) => ({
 
 let apiCallId = 0
 
-export const fetchAnnotationHistory = (id) => {
+export const fetchAnnotationHistory = (indexUuid, id) => {
     return function(dispatch) {
         const thisApiCallId = `fetchAnnotationHistory-${apiCallId}`
         apiCallId += 1
 
         dispatch(requestFetchAnnotationHistory(thisApiCallId, id));
 
-        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/single/${id}/history`)
+        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/single/${indexUuid}/${id}/history`)
               .then(
                 response => response.json(),
                 // Do not use catch, because that will also catch

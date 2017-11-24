@@ -33,11 +33,11 @@ class ManageAnnotationsPage extends Component {
     };
 
     componentDidMount() {
-        this.props.searchAnnotations();
+        this.props.searchAnnotations(this.props.indexUuid);
     }
 
     onSearchTermChange(e) {
-        this.props.searchAnnotations(e);
+        this.props.searchAnnotations(this.props.indexUuid, e);
     }
 
     renderRows() {
@@ -57,11 +57,11 @@ class ManageAnnotationsPage extends Component {
 
     handleRowSelection(selectedRows) {
         let annotation = this.props.annotations[selectedRows]
-        this.props.history.push(`/singleWithNav/${annotation.id}`)
+        this.props.history.push(`/singleWithNav/${this.props.indexUuid}/${annotation.id}`)
     };
 
     fetchMore() {
-        this.props.moreAnnotations()
+        this.props.moreAnnotations(this.props.indexUuid)
     }
 
     render () {
@@ -143,6 +143,7 @@ class ManageAnnotationsPage extends Component {
 ManageAnnotationsPage.propTypes = {
     annotations: PropTypes.array.isRequired,
     searchTerm: PropTypes.string.isRequired,
+    indexUuid: PropTypes.string.isRequired,
     canRequestMore: PropTypes.bool.isRequired,
 
     searchAnnotations: PropTypes.func.isRequired,

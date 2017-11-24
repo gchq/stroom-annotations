@@ -17,7 +17,7 @@ class History extends Component {
 
     componentDidMount() {
         if (this.props.annotationId) {
-            this.props.fetchAnnotationHistory(this.props.annotationId)
+            this.props.fetchAnnotationHistory(this.props.indexUuid, this.props.annotationId)
         }
     }
 

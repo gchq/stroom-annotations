@@ -28,8 +28,7 @@ const snackbarMessages = (
             ...state,
             {
                 messageId,
-                message,
-                receivedAt: action.receivedAt
+                message
             }
         ]
         messageId += 1

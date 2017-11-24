@@ -16,8 +16,6 @@ import {
 const defaultState = {
     searchTerm: '',
     annotations: [],
-    seekId: undefined,
-    seekLastUpdated: undefined,
     canRequestMore: false
 }
 
@@ -79,19 +77,4 @@ const manageAnnotations = (
 
 }
 
-const addSeekInformation = (state) => {
-    let seekId = undefined
-    let seekLastUpdated = undefined
-
-    if (state.annotations.length > 0) {
-        seekId = state.annotations[state.annotations.length - 1].id
-        seekLastUpdated = state.annotations[state.annotations.length - 1].lastUpdated
-    }
-
-    return Object.assign({}, state, {
-        seekId,
-        seekLastUpdated
-    })
-}
-
-export default (state, action) => addSeekInformation(manageAnnotations(state, action))
+export default (state, action) => manageAnnotations(state, action)

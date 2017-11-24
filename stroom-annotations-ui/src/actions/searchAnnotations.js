@@ -35,7 +35,7 @@ export const receiveSearchAnnotationsFailed = (apiCallId, message) => ({
 
 let apiCallId = 0
 
-export const searchAnnotations = (searchTermRaw) => {
+export const searchAnnotations = (indexUuid, searchTermRaw) => {
 
     let searchTerm = searchTermRaw ? searchTermRaw : ''
 
@@ -45,7 +45,7 @@ export const searchAnnotations = (searchTermRaw) => {
 
         dispatch(requestSearchAnnotations(thisApiCallId, searchTerm));
 
-        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/search?q=${searchTerm}`)
+        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/search/${indexUuid}/?q=${searchTerm}`)
             .then(
                 response => {
                     if (!response.ok) {
@@ -61,7 +61,7 @@ export const searchAnnotations = (searchTermRaw) => {
     }
 }
 
-export const moreAnnotations = () => {
+export const moreAnnotations = (indexUuid) => {
 
     return function(dispatch, getState) {
         const thisApiCallId = `searchAnnotations-${apiCallId}`
@@ -71,7 +71,7 @@ export const moreAnnotations = () => {
 
         let state = getState().manageAnnotations
 
-        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/search?q=${state.searchTerm}&seekId=${state.seekId}&seekLastUpdated=${state.seekLastUpdated}`)
+        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/search/${indexUuid}/?q=${state.searchTerm}&seekPosition=${state.annotations.length}`)
             .then(
                 response => {
                     if (!response.ok) {

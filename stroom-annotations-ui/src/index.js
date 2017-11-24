@@ -29,7 +29,8 @@ import reducer from './reducers'
 import { fetchStatusValues } from './actions/fetchStatusValues'
 import {
     setAllowNavigation,
-    setAnnotationId
+    setAnnotationId,
+    setIndexUuid
 } from './actions/setupUi'
 
 const loggerMiddleware = createLogger()
@@ -53,29 +54,34 @@ const store = createStore(
 store.dispatch(fetchStatusValues())
 
 const ManageAnnotationsRoutedPage = ({ match }) => {
+    store.dispatch(setIndexUuid(match.params.indexUuid));
     store.dispatch(setAllowNavigation(true));
     return <ManageAnnotationsPage />
 }
 
 const SingleAnnotationRoutedPageWithNav = ({ match }) => {
+    store.dispatch(setIndexUuid(match.params.indexUuid));
     store.dispatch(setAnnotationId(match.params.annotationId));
     store.dispatch(setAllowNavigation(true));
     return <SingleAnnotationPage />
 }
 
 const SingleAnnotationRoutedPageWithoutNav = ({ match }) => {
+    store.dispatch(setIndexUuid(match.params.indexUuid));
     store.dispatch(setAnnotationId(match.params.annotationId));
     store.dispatch(setAllowNavigation(false));
     return <SingleAnnotationPage />
 }
 
 const AnnotationHistoryRoutedPageWithNav = ({ match }) => {
+    store.dispatch(setIndexUuid(match.params.indexUuid));
     store.dispatch(setAnnotationId(match.params.annotationId));
     store.dispatch(setAllowNavigation(true));
     return <AnnotationHistoryPage />
 }
 
 const AnnotationHistoryRoutedPageWithoutNav = ({ match }) => {
+    store.dispatch(setIndexUuid(match.params.indexUuid));
     store.dispatch(setAnnotationId(match.params.annotationId));
     store.dispatch(setAllowNavigation(false));
     return <AnnotationHistoryPage />
@@ -87,11 +93,11 @@ render(
             <Router>
                 <Switch>
                     <Route exact={true} path="/single/" component={NotFoundPage} />
-                    <Route exact={true} path="/singleWithNav/:annotationId?" component={SingleAnnotationRoutedPageWithNav} />
-                    <Route exact={true} path="/single/:annotationId?" component={SingleAnnotationRoutedPageWithoutNav} />
-                    <Route exact={true} path="/historyWithNav/:annotationId?" component={AnnotationHistoryRoutedPageWithNav} />
-                    <Route exact={true} path="/history/:annotationId?" component={AnnotationHistoryRoutedPageWithoutNav} />
-                    <Route exact={true} path="/" component={ManageAnnotationsRoutedPage} />
+                    <Route exact={true} path="/singleWithNav/:indexUuid/:annotationId?" component={SingleAnnotationRoutedPageWithNav} />
+                    <Route exact={true} path="/single/:indexUuid/:annotationId?" component={SingleAnnotationRoutedPageWithoutNav} />
+                    <Route exact={true} path="/historyWithNav/:indexUuid/:annotationId?" component={AnnotationHistoryRoutedPageWithNav} />
+                    <Route exact={true} path="/history/:indexUuid/:annotationId?" component={AnnotationHistoryRoutedPageWithoutNav} />
+                    <Route exact={true} path="/:indexUuid" component={ManageAnnotationsRoutedPage} />
                     <Route path="*" component={NotFoundPage}/>
                 </Switch>
             </Router>

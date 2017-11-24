@@ -3,7 +3,7 @@ package stroom.annotations.service.resources;
 import com.codahale.metrics.annotation.Timed;
 import io.dropwizard.validation.Validated;
 import org.hibernate.validator.constraints.Length;
-import stroom.annotations.service.model.*;
+import stroom.annotations.service.model.AnnotationDTO;
 
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.*;
@@ -23,7 +23,6 @@ public interface AnnotationsResource {
 
     @GET
     @Path("/static/statusValues")
-    @Produces({MediaType.APPLICATION_JSON})
     @Timed
     @NotNull
     Response statusValues() throws AnnotationsException;
@@ -40,9 +39,14 @@ public interface AnnotationsResource {
                     @QueryParam("q") String q,
                     @QueryParam("seekPosition") Integer seekPosition) throws AnnotationsException;
 
+//    @GET
+//    @Path("/list/all/indexes")
+//    @Timed
+//    @NotNull
+//    Response getIndexes() throws AnnotationsException;
+
     @GET
     @Path("/single/{index}/{id}")
-    @Produces({MediaType.APPLICATION_JSON})
     @Timed
     @NotNull
     Response get(@Validated
@@ -56,7 +60,6 @@ public interface AnnotationsResource {
 
     @GET
     @Path("/single/{index}/{id}/history")
-    @Produces({MediaType.APPLICATION_JSON})
     @Timed
     @NotNull
     Response getHistory(@Validated
@@ -70,7 +73,6 @@ public interface AnnotationsResource {
 
     @POST
     @Path("/single/{index}/{id}")
-    @Produces({MediaType.APPLICATION_JSON})
     @Timed
     @NotNull
     Response create(@Validated
@@ -85,7 +87,6 @@ public interface AnnotationsResource {
     @PUT
     @Path("/single/{index}/{id}")
     @Consumes({MediaType.APPLICATION_JSON})
-    @Produces({MediaType.APPLICATION_JSON})
     @Timed
     @NotNull
     Response update(@Validated
@@ -100,7 +101,6 @@ public interface AnnotationsResource {
 
     @DELETE
     @Path("/single/{index}/{id}")
-    @Produces({MediaType.APPLICATION_JSON})
     @Timed
     @NotNull
     Response remove(@Validated

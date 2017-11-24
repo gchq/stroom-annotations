@@ -7,6 +7,7 @@ import { fetchAnnotationHistory } from '../../actions/fetchAnnotationHistory'
 
 export default connect(
     (state) => ({
+        indexUuid: state.ui.indexUuid,
         annotationId: state.ui.annotationId,
         allowNavigation: state.ui.allowNavigation
     }),

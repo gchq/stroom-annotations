@@ -2,14 +2,9 @@ package stroom.annotations.service.hibernate;
 
 import stroom.annotations.service.model.HistoryOperation;
 import stroom.annotations.service.model.Status;
-import stroom.datasource.api.v2.DataSourceField;
-import stroom.query.api.v2.ExpressionTerm;
-import stroom.query.hibernate.IsDataSourceField;
 import stroom.query.hibernate.QueryableEntity;
 
 import javax.persistence.*;
-import java.util.Arrays;
-import java.util.function.Supplier;
 
 @Entity(name="annotations_history")
 public class AnnotationHistory extends QueryableEntity {

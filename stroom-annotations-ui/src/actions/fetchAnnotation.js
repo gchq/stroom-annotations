@@ -2,7 +2,7 @@ import fetch from 'isomorphic-fetch'
 
 export const REQUEST_FETCH_ANNOTATION = 'REQUEST_FETCH_ANNOTATION';
 
-export const requestFetchAnnotation = (apiCallId, id) => ({
+export const requestFetchAnnotation = (apiCallId, indexUuid, id) => ({
     type: REQUEST_FETCH_ANNOTATION,
     id,
     apiCallId
@@ -36,14 +36,14 @@ export const receiveFetchAnnotationFailed = (apiCallId, message) => ({
 
 let apiCallId = 0
 
-export const fetchAnnotation = (id) => {
+export const fetchAnnotation = (indexUuid, id) => {
     return function(dispatch) {
         const thisApiCallId = `fetchAnnotation-${apiCallId}`
         apiCallId += 1
 
         dispatch(requestFetchAnnotation(thisApiCallId, id));
 
-        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/single/${id}`)
+        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/single/${indexUuid}/${id}`)
             .then(
                 response => {
                     if (response.status === 404) {

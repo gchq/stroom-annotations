@@ -11,8 +11,9 @@ import stroom.annotations.service.model.*;
 import stroom.query.hibernate.QueryableEntity;
 
 import javax.inject.Inject;
-import javax.persistence.NoResultException;
-import javax.persistence.criteria.*;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
 import javax.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.List;
@@ -35,8 +36,7 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
     }
 
     public final Response welcome() throws AnnotationsException {
-        return Response.status(Response.Status.OK)
-                .entity(WELCOME_TEXT)
+        return Response.ok(WELCOME_TEXT)
                 .build();
     }
 
@@ -44,8 +44,7 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
         final Map<String, String> statusValues = Arrays.stream(Status.values())
                 .collect(Collectors.toMap(Object::toString, Status::getDisplayText));
 
-        return Response.status(Response.Status.OK)
-                .entity(statusValues)
+        return Response.ok(statusValues)
                 .build();
     }
 
@@ -84,12 +83,31 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
                     .map(AnnotationDTOMarshaller::toDTO)
                     .collect(Collectors.toList());
 
-            return Response.status(Response.Status.OK)
-                    .entity(dtos)
+            return Response.ok(dtos)
                     .build();
 
         } catch (final Exception e) {
             LOGGER.warn("Failed to search for annotations", e);
+            throw new AnnotationsException(e);
+        }
+    }
+
+    //@Override
+    public Response getIndexes() throws AnnotationsException {
+        try (final Session session = database.openSession()){
+            final CriteriaBuilder cb = session.getCriteriaBuilder();
+            final CriteriaQuery<String> cq = cb.createQuery(String.class);
+            final Root<Annotation> root = cq.from(Annotation.class);
+
+            cq.select(root.get(QueryableEntity.DATA_SOURCE_UUID));
+            cq.distinct(true);
+
+            final List<String> indexUuids = session.createQuery(cq).getResultList();
+
+            return Response.ok(indexUuids).build();
+
+        } catch (final Exception e) {
+            LOGGER.warn("Failed to get index list", e);
             throw new AnnotationsException(e);
         }
     }
@@ -122,8 +140,7 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
 
         final AnnotationDTO annotationDTO = AnnotationDTOMarshaller.toDTO(result);
 
-        return Response.status(Response.Status.OK)
-                .entity(annotationDTO)
+        return Response.ok(annotationDTO)
                 .build();
     }
 
@@ -146,8 +163,7 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
                     .collect(Collectors.toList());
 
             if (results.size() > 0) {
-                return Response.status(Response.Status.OK)
-                        .entity(results)
+                return Response.ok(results)
                         .build();
             } else {
                 return Response.status(Response.Status.NOT_FOUND)
@@ -187,8 +203,7 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
 
             final AnnotationDTO annotationDTO = AnnotationDTOMarshaller.toDTO(annotation);
 
-            return Response.status(Response.Status.OK)
-                    .entity(annotationDTO)
+            return Response.ok(annotationDTO)
                     .build();
         } catch (final Exception e) {
             if (tx!=null) tx.rollback();
@@ -247,8 +262,8 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
 
             tx.commit();
 
-            return Response.status(Response.Status.OK)
-                    .entity(ResponseMsgDTO.msg("Annotation deleted")
+            return Response
+                    .ok(ResponseMsgDTO.msg("Annotation deleted")
                             .recordsUpdated(1)
                             .build())
                     .build();

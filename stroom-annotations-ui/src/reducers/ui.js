@@ -1,11 +1,13 @@
 import {
     SET_ALLOW_NAVIGATION,
-    SET_ANNOTATION_ID
+    SET_ANNOTATION_ID,
+    SET_INDEX_UUID
 } from '../actions/setupUi'
 
 const defaultState = {
     allowNavigation: true,
-    annotationId: undefined
+    annotationId: undefined,
+    indexUuid: undefined
 }
 
 const ui = (
@@ -26,6 +28,11 @@ const ui = (
             return {
                 ...state,
                 annotationId: action.annotationId
+            }
+        case SET_INDEX_UUID:
+            return {
+                ...state,
+                indexUuid: action.indexUuid
             }
         default:
             return state

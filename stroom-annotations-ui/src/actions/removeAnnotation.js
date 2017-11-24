@@ -28,14 +28,14 @@ export const receiveRemoveAnnotationFailed = (apiCallId, message) => ({
 
 let apiCallId = 0
 
-export const removeAnnotation = (id) => {
+export const removeAnnotation = (indexUuid, id) => {
     return function(dispatch) {
         const thisApiCallId = `removeAnnotation-${apiCallId}`
         apiCallId += 1
 
         dispatch(requestRemoveAnnotation(thisApiCallId, id));
 
-        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/single/${id}`,
+        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/single/${indexUuid}/${id}`,
             {
                 method: "DELETE"
             }
@@ -43,7 +43,7 @@ export const removeAnnotation = (id) => {
               .then(
                 response => {
                     dispatch(receiveRemoveAnnotation(thisApiCallId, id))
-                    dispatch(fetchAnnotationHistory(id))
+                    dispatch(fetchAnnotationHistory(indexUuid, id))
                 },
                 error => dispatch(receiveRemoveAnnotationFailed(thisApiCallId, error))
               )

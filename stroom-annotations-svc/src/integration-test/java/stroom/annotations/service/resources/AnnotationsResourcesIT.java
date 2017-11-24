@@ -7,7 +7,10 @@ import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import io.dropwizard.testing.junit.DropwizardAppRule;
 import org.apache.http.HttpStatus;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import stroom.annotations.service.App;
@@ -44,6 +47,10 @@ public class AnnotationsResourcesIT {
 
     private static final com.fasterxml.jackson.databind.ObjectMapper jacksonObjectMapper =
             new com.fasterxml.jackson.databind.ObjectMapper();
+
+    private static String getIndexesUrl() {
+        return String.format("%s/list/all/indexes", annotationsUrl);
+    }
 
     private static String getAnnotationUrl(final String index, final String id) {
         return String.format("%s/single/%s/%s", annotationsUrl, index, id);
@@ -132,6 +139,27 @@ public class AnnotationsResourcesIT {
 
         assertEquals(HttpStatus.SC_OK, response.getStatus());
         assertEquals(statusValues, responseStatusValues);
+    }
+
+    @Test
+    public void testGetIndexes() throws UnirestException, IOException {
+        final int NUMBER_INDEXES = 4;
+        final Set<String> indexNames = IntStream.range(0, NUMBER_INDEXES)
+                .mapToObj(i -> UUID.randomUUID().toString())
+                .collect(Collectors.toSet());
+
+        indexNames.forEach(index -> createAnnotation(index, UUID.randomUUID().toString()));
+
+        LOGGER.info("Annotations Created, now to get the list of indexes");
+
+        final HttpResponse<String> response = Unirest
+                .get(getIndexesUrl())
+                .asString();
+
+        final List<String> indexNameResults = jacksonObjectMapper.readValue(response.getBody(), new TypeReference<List<String>>(){});
+        indexNames.forEach(indexName -> assertTrue(indexNameResults.contains(indexName)));
+
+        checkAuditLogs(5);
     }
 
     @Test

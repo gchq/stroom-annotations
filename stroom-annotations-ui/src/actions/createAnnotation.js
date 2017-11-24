@@ -27,14 +27,14 @@ export const receiveCreateAnnotationFailed = (apiCallId, message) => ({
 
 let apiCallId = 0
 
-export const createAnnotation = (id) => {
+export const createAnnotation = (indexUuid, id) => {
     return function(dispatch) {
         const thisApiCallId = `createAnnotation-${apiCallId}`
         apiCallId += 1
 
         dispatch(requestCreateAnnotation(thisApiCallId, id));
 
-        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/single/${id}`, {method: "POST"})
+        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/single/${indexUuid}/${id}`, {method: "POST"})
             .then(
                 response => {
                     if (!response.ok) {

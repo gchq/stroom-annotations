@@ -37,14 +37,12 @@ const singleAnnotation = (
         case RECEIVE_REMOVE_ANNOTATION:
             return Object.assign({}, state, {
                     isClean: true,
-                    lastUpdated: action.receivedAt,
                     annotation: {}
                 })
 
         case RECEIVE_REMOVE_ANNOTATION_FAILED:
             return Object.assign({}, state, {
                     isClean: false,
-                    lastUpdated: action.receivedAt,
                     annotation: {}
                   })
 

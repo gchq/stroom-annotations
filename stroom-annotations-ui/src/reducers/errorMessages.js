@@ -41,8 +41,7 @@ const errorMessages = (
             {
                 id,
                 action: userFriendlyType,
-                message: action.message,
-                receivedAt: action.receivedAt
+                message: action.message
             }
         ]
         id += 1

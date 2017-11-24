@@ -5,7 +5,9 @@ import { createAnnotation } from '../../actions/createAnnotation';
 import CreateAnnotation from './createAnnotation'
 
 export default connect(
-    null,
+    (state) => ({
+        indexUuid: state.ui.indexUuid
+    }),
     {
         createAnnotation
     }
