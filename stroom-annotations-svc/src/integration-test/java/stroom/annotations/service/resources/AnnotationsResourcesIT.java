@@ -41,6 +41,8 @@ public class AnnotationsResourcesIT {
     @ClassRule
     public static final DropwizardAppRule<Config> appRule = new DropwizardAppRule<>(App.class, resourceFilePath("config.yml"));
 
+    private static String indexUrl;
+
     private static String annotationsUrl;
 
     private static String queryUrl;
@@ -49,7 +51,7 @@ public class AnnotationsResourcesIT {
             new com.fasterxml.jackson.databind.ObjectMapper();
 
     private static String getIndexesUrl() {
-        return String.format("%s/list/all/indexes", annotationsUrl);
+        return String.format("%s/", indexUrl);
     }
 
     private static String getAnnotationUrl(final String index, final String id) {
@@ -80,6 +82,7 @@ public class AnnotationsResourcesIT {
     public static void setupClass() {
         int appPort = appRule.getLocalPort();
 
+        indexUrl = "http://localhost:" + appPort + "/indexes/v1";
         annotationsUrl = "http://localhost:" + appPort + "/annotations/v1";
         queryUrl = "http://localhost:" + appPort + "/queryApi/v1";
 

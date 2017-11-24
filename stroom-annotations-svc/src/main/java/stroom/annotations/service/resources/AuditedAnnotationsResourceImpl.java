@@ -78,26 +78,6 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
         }
     }
 
-    //@Override
-    public Response getIndexes() throws AnnotationsException {
-        Response response;
-        Exception exception = null;
-
-        try {
-            response = null;//annotationsResource.getIndexes();
-
-            return response;
-        } finally {
-            final Event event = eventLoggingService.createEvent();
-            final Event.EventDetail eventDetail = event.getEventDetail();
-
-            eventDetail.setTypeId("GET_INDEXES");
-            eventDetail.setDescription("Get the list of indexes");
-
-            eventLoggingService.log(event);
-        }
-    }
-
     @Override
     public Response get(final String index, final String id) throws AnnotationsException {
         Response response;

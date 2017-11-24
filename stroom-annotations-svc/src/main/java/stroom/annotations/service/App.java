@@ -15,6 +15,7 @@ import stroom.annotations.service.hibernate.Annotation;
 import stroom.annotations.service.hibernate.AnnotationHistory;
 import stroom.annotations.service.resources.AnnotationsExceptionMapper;
 import stroom.annotations.service.resources.AuditedAnnotationsResourceImpl;
+import stroom.annotations.service.resources.AuditedIndexResourceImpl;
 import stroom.query.hibernate.AuditedCriteriaQueryBundle;
 
 import javax.servlet.DispatcherType;
@@ -73,6 +74,7 @@ public class App extends Application<Config> {
 
         environment.jersey().register(new Module(configuration));
         environment.jersey().register(AuditedAnnotationsResourceImpl.class);
+        environment.jersey().register(AuditedIndexResourceImpl.class);
         environment.jersey().register(AnnotationsExceptionMapper.class);
     }
 

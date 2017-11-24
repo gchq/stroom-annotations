@@ -18,20 +18,17 @@ public interface AnnotationsResource {
     @Path("/static/welcome")
     @Produces({MediaType.TEXT_PLAIN})
     @Timed
-    @NotNull
     Response welcome() throws AnnotationsException;
 
     @GET
     @Path("/static/statusValues")
     @Timed
-    @NotNull
     Response statusValues() throws AnnotationsException;
 
     @GET
     @Path("/search/{index}")
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
-    @NotNull
     Response search(@Validated
                     @PathParam("index")
                     @NotNull
@@ -39,16 +36,9 @@ public interface AnnotationsResource {
                     @QueryParam("q") String q,
                     @QueryParam("seekPosition") Integer seekPosition) throws AnnotationsException;
 
-//    @GET
-//    @Path("/list/all/indexes")
-//    @Timed
-//    @NotNull
-//    Response getIndexes() throws AnnotationsException;
-
     @GET
     @Path("/single/{index}/{id}")
     @Timed
-    @NotNull
     Response get(@Validated
                  @PathParam("index")
                  @NotNull
@@ -61,7 +51,6 @@ public interface AnnotationsResource {
     @GET
     @Path("/single/{index}/{id}/history")
     @Timed
-    @NotNull
     Response getHistory(@Validated
                         @PathParam("index")
                         @NotNull
@@ -74,7 +63,6 @@ public interface AnnotationsResource {
     @POST
     @Path("/single/{index}/{id}")
     @Timed
-    @NotNull
     Response create(@Validated
                     @PathParam("index")
                     @NotNull
@@ -88,7 +76,6 @@ public interface AnnotationsResource {
     @Path("/single/{index}/{id}")
     @Consumes({MediaType.APPLICATION_JSON})
     @Timed
-    @NotNull
     Response update(@Validated
                     @PathParam("index")
                     @NotNull
@@ -102,7 +89,6 @@ public interface AnnotationsResource {
     @DELETE
     @Path("/single/{index}/{id}")
     @Timed
-    @NotNull
     Response remove(@Validated
                     @PathParam("index")
                     @NotNull

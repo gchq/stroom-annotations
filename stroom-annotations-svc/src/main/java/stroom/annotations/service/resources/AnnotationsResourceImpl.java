@@ -92,26 +92,6 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
         }
     }
 
-    //@Override
-    public Response getIndexes() throws AnnotationsException {
-        try (final Session session = database.openSession()){
-            final CriteriaBuilder cb = session.getCriteriaBuilder();
-            final CriteriaQuery<String> cq = cb.createQuery(String.class);
-            final Root<Annotation> root = cq.from(Annotation.class);
-
-            cq.select(root.get(QueryableEntity.DATA_SOURCE_UUID));
-            cq.distinct(true);
-
-            final List<String> indexUuids = session.createQuery(cq).getResultList();
-
-            return Response.ok(indexUuids).build();
-
-        } catch (final Exception e) {
-            LOGGER.warn("Failed to get index list", e);
-            throw new AnnotationsException(e);
-        }
-    }
-
     public final Response get(final String index,
                               final String id) throws AnnotationsException {
         try (final Session session = database.openSession()){
