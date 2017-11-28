@@ -31,10 +31,7 @@ logging:
     "AUDIT":
       level: INFO
       appenders:
-        - type: kafka
-          topic: audit
-          producerConfig:
-           - bootstrap.servers=${KAFKA_BOOTSTRAP_SERVERS:- localhost:9092}
+        - type: fifo
   appenders:
     - type: console
       logFormat: "%-6level [%d{HH:mm:ss.SSS}] [%t] %logger{5} - %X{code} %msg %n"
