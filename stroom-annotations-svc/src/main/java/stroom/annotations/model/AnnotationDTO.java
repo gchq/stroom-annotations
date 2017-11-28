@@ -1,4 +1,7 @@
-package stroom.annotations.service.model;
+package stroom.annotations.model;
+
+import stroom.annotations.hibernate.Annotation;
+import stroom.annotations.hibernate.Status;
 
 import java.util.Objects;
 
@@ -141,6 +144,16 @@ public class AnnotationDTO {
         public Builder lastUpdated(final Long lastUpdated) {
             this.instance.setLastUpdated(lastUpdated);
             return this;
+        }
+
+        public Builder entity(final Annotation entity) {
+            return this
+                    .id(entity.getId())
+                    .status(entity.getStatus())
+                    .assignTo(entity.getAssignTo())
+                    .content(entity.getContent())
+                    .updatedBy(entity.getUpdatedBy())
+                    .lastUpdated(entity.getLastUpdated());
         }
 
         public AnnotationDTO build() {

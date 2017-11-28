@@ -1,9 +1,9 @@
-package stroom.annotations.service.resources;
+package stroom.annotations.resources;
 
 import com.codahale.metrics.annotation.Timed;
 import io.dropwizard.validation.Validated;
 import org.hibernate.validator.constraints.Length;
-import stroom.annotations.service.model.AnnotationDTO;
+import stroom.annotations.model.AnnotationDTO;
 
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.*;

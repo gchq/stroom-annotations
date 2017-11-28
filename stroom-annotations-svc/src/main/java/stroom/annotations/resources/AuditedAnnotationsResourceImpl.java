@@ -1,7 +1,7 @@
-package stroom.annotations.service.resources;
+package stroom.annotations.resources;
 
 import event.logging.*;
-import stroom.annotations.service.model.AnnotationDTO;
+import stroom.annotations.model.AnnotationDTO;
 
 import javax.inject.Inject;
 import javax.ws.rs.core.Response;

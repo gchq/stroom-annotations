@@ -1,6 +1,6 @@
-package stroom.annotations.service.hibernate;
+package stroom.annotations.hibernate;
 
-import stroom.annotations.service.model.Status;
+import stroom.annotations.model.AnnotationDTO;
 import stroom.datasource.api.v2.DataSourceField;
 import stroom.query.api.v2.ExpressionTerm;
 import stroom.query.hibernate.IsDataSourceField;
@@ -10,7 +10,7 @@ import javax.persistence.*;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
-@Entity(name="annotations")
+@Entity(name="annotation")
 public class Annotation extends QueryableEntity {
     public static final String ID = "id";
     public static final String STATUS = "status";
@@ -247,6 +247,16 @@ public class Annotation extends QueryableEntity {
         public Builder content(final String value) {
             this.instance.setContent(value);
             return self();
+        }
+
+        public Builder dto(final AnnotationDTO dto) {
+            return this
+                    .id(dto.getId())
+                    .status(dto.getStatus())
+                    .assignTo(dto.getAssignTo())
+                    .content(dto.getContent())
+                    .updatedBy(dto.getUpdatedBy())
+                    .lastUpdated(dto.getLastUpdated());
         }
 
         @Override

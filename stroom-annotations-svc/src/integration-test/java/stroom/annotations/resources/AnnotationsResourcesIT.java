@@ -1,4 +1,4 @@
-package stroom.annotations.service.resources;
+package stroom.annotations.resources;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -13,13 +13,13 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import stroom.annotations.service.App;
-import stroom.annotations.service.Config;
-import stroom.annotations.service.hibernate.Annotation;
-import stroom.annotations.service.model.AnnotationDTO;
-import stroom.annotations.service.model.AnnotationHistoryDTO;
-import stroom.annotations.service.model.HistoryOperation;
-import stroom.annotations.service.model.Status;
+import stroom.annotations.App;
+import stroom.annotations.Config;
+import stroom.annotations.hibernate.Annotation;
+import stroom.annotations.model.AnnotationDTO;
+import stroom.annotations.model.AnnotationHistoryDTO;
+import stroom.annotations.hibernate.HistoryOperation;
+import stroom.annotations.hibernate.Status;
 import stroom.datasource.api.v2.DataSource;
 import stroom.datasource.api.v2.DataSourceField;
 import stroom.query.api.v2.*;
@@ -34,6 +34,7 @@ import java.util.stream.IntStream;
 
 import static io.dropwizard.testing.ResourceHelpers.resourceFilePath;
 import static org.junit.Assert.*;
+import static stroom.annotations.service.AnnotationsServiceImpl.SEARCH_PAGE_LIMIT;
 
 public class AnnotationsResourcesIT {
     private static final Logger LOGGER = LoggerFactory.getLogger(AnnotationsResourcesIT.class);
@@ -41,18 +42,12 @@ public class AnnotationsResourcesIT {
     @ClassRule
     public static final DropwizardAppRule<Config> appRule = new DropwizardAppRule<>(App.class, resourceFilePath("config.yml"));
 
-    private static String indexUrl;
-
     private static String annotationsUrl;
 
     private static String queryUrl;
 
     private static final com.fasterxml.jackson.databind.ObjectMapper jacksonObjectMapper =
             new com.fasterxml.jackson.databind.ObjectMapper();
-
-    private static String getIndexesUrl() {
-        return String.format("%s/", indexUrl);
-    }
 
     private static String getAnnotationUrl(final String index, final String id) {
         return String.format("%s/single/%s/%s", annotationsUrl, index, id);
@@ -82,7 +77,6 @@ public class AnnotationsResourcesIT {
     public static void setupClass() {
         int appPort = appRule.getLocalPort();
 
-        indexUrl = "http://localhost:" + appPort + "/indexes/v1";
         annotationsUrl = "http://localhost:" + appPort + "/annotations/v1";
         queryUrl = "http://localhost:" + appPort + "/queryApi/v1";
 
@@ -142,27 +136,6 @@ public class AnnotationsResourcesIT {
 
         assertEquals(HttpStatus.SC_OK, response.getStatus());
         assertEquals(statusValues, responseStatusValues);
-    }
-
-    @Test
-    public void testGetIndexes() throws UnirestException, IOException {
-        final int NUMBER_INDEXES = 4;
-        final Set<String> indexNames = IntStream.range(0, NUMBER_INDEXES)
-                .mapToObj(i -> UUID.randomUUID().toString())
-                .collect(Collectors.toSet());
-
-        indexNames.forEach(index -> createAnnotation(index, UUID.randomUUID().toString()));
-
-        LOGGER.info("Annotations Created, now to get the list of indexes");
-
-        final HttpResponse<String> response = Unirest
-                .get(getIndexesUrl())
-                .asString();
-
-        final List<String> indexNameResults = jacksonObjectMapper.readValue(response.getBody(), new TypeReference<List<String>>(){});
-        indexNames.forEach(indexName -> assertTrue(indexNameResults.contains(indexName)));
-
-        checkAuditLogs(5);
     }
 
     @Test
@@ -293,7 +266,7 @@ public class AnnotationsResourcesIT {
         final String index = UUID.randomUUID().toString();
         final int NUMBER_SEARCH_TERMS = 3;
         final int NUMBER_PAGES_EXPECTED = 3;
-        final int ANNOTATIONS_PER_SEARCH_TERM = AnnotationsResourceImpl.SEARCH_PAGE_LIMIT * NUMBER_PAGES_EXPECTED;
+        final int ANNOTATIONS_PER_SEARCH_TERM = SEARCH_PAGE_LIMIT * NUMBER_PAGES_EXPECTED;
         final int TOTAL_ANNOTATIONS = ANNOTATIONS_PER_SEARCH_TERM * NUMBER_SEARCH_TERMS;
         final List<String> searchTerms = IntStream.range(0, NUMBER_SEARCH_TERMS)
                 .mapToObj(i -> UUID.randomUUID().toString())
@@ -361,7 +334,7 @@ public class AnnotationsResourcesIT {
         final String index = UUID.randomUUID().toString();
         final int NUMBER_SEARCH_TERMS = 2;
         final int NUMBER_PAGES_EXPECTED = 3;
-        final int ANNOTATIONS_PER_SEARCH_TERM = AnnotationsResourceImpl.SEARCH_PAGE_LIMIT * NUMBER_PAGES_EXPECTED;
+        final int ANNOTATIONS_PER_SEARCH_TERM = SEARCH_PAGE_LIMIT * NUMBER_PAGES_EXPECTED;
         final int TOTAL_ANNOTATIONS = ANNOTATIONS_PER_SEARCH_TERM * NUMBER_SEARCH_TERMS;
         final List<String> contentSearchTerms = IntStream.range(0, NUMBER_SEARCH_TERMS)
                 .mapToObj(i -> UUID.randomUUID().toString())
@@ -385,8 +358,8 @@ public class AnnotationsResourcesIT {
 
         final Collection<OffsetRange> pageOffsets = IntStream.range(0, NUMBER_PAGES_EXPECTED)
                 .mapToObj(value -> new OffsetRange.Builder()
-                        .length((long) AnnotationsResourceImpl.SEARCH_PAGE_LIMIT)
-                        .offset((long) (value * AnnotationsResourceImpl.SEARCH_PAGE_LIMIT))
+                        .length((long) SEARCH_PAGE_LIMIT)
+                        .offset((long) (value * SEARCH_PAGE_LIMIT))
                         .build())
                 .collect(Collectors.toList());
 

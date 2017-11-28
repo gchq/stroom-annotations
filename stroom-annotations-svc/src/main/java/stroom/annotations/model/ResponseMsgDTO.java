@@ -1,4 +1,4 @@
-package stroom.annotations.service.model;
+package stroom.annotations.model;
 
 public class ResponseMsgDTO {
     private String msg;

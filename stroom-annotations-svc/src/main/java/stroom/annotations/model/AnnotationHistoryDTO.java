@@ -1,4 +1,7 @@
-package stroom.annotations.service.model;
+package stroom.annotations.model;
+
+import stroom.annotations.hibernate.AnnotationHistory;
+import stroom.annotations.hibernate.HistoryOperation;
 
 public class AnnotationHistoryDTO {
     private HistoryOperation operation;
@@ -63,6 +66,20 @@ public class AnnotationHistoryDTO {
         public Builder operation(final HistoryOperation operation) {
             this.instance.setOperation(operation);
             return this;
+        }
+
+        public Builder entity(final AnnotationHistory record) {
+            return this
+                    .historyId(record.getId())
+                    .operation(record.getOperation())
+                    .annotation(new AnnotationDTO.Builder()
+                            .id(record.getAnnotationId())
+                            .status(record.getStatus())
+                            .assignTo(record.getAssignTo())
+                            .content(record.getContent())
+                            .updatedBy(record.getUpdatedBy())
+                            .lastUpdated(record.getLastUpdated())
+                            .build());
         }
 
         public AnnotationHistoryDTO build() {

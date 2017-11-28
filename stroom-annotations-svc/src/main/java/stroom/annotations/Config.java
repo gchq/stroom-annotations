@@ -1,4 +1,4 @@
-package stroom.annotations.service;
+package stroom.annotations;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dropwizard.Configuration;

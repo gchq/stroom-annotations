@@ -1,4 +1,4 @@
-package stroom.annotations.service;
+package stroom.annotations;
 
 import io.dropwizard.Application;
 import io.dropwizard.ConfiguredBundle;
@@ -8,14 +8,17 @@ import io.dropwizard.db.DataSourceFactory;
 import io.dropwizard.db.ManagedDataSource;
 import io.dropwizard.flyway.FlywayBundle;
 import io.dropwizard.flyway.FlywayFactory;
+import io.dropwizard.hibernate.HibernateBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
-import stroom.annotations.service.hibernate.Annotation;
-import stroom.annotations.service.hibernate.AnnotationHistory;
-import stroom.annotations.service.resources.AnnotationsExceptionMapper;
-import stroom.annotations.service.resources.AuditedAnnotationsResourceImpl;
-import stroom.annotations.service.resources.AuditedIndexResourceImpl;
+import stroom.annotations.hibernate.Annotation;
+import stroom.annotations.hibernate.AnnotationHistory;
+import stroom.annotations.hibernate.AnnotationIndex;
+import stroom.annotations.resources.AnnotationsExceptionMapper;
+import stroom.annotations.resources.AuditedAnnotationsResourceImpl;
+import stroom.annotations.resources.DocRefExceptionMapper;
+import stroom.query.audit.AuditedDocRefResourceImpl;
 import stroom.query.hibernate.AuditedCriteriaQueryBundle;
 
 import javax.servlet.DispatcherType;
@@ -57,12 +60,12 @@ public class App extends Application<Config> {
     };
 
     private final AuditedCriteriaQueryBundle<Config, Annotation> auditedQueryBundle =
-            new AuditedCriteriaQueryBundle<Config, Annotation>(Annotation.class, AnnotationHistory.class) {
-        @Override
-        protected DataSourceFactory getDataSourceFactory(final Config configuration) {
-            return configuration.getDataSourceFactory();
-        }
-    };
+            new AuditedCriteriaQueryBundle<>(Annotation.class, new HibernateBundle<Config>(Annotation.class, AnnotationHistory.class, AnnotationIndex.class) {
+                @Override
+                public DataSourceFactory getDataSourceFactory(Config configuration) {
+                    return configuration.getDataSourceFactory();
+                }
+            });
 
     public static void main(final String[] args) throws Exception {
         new App().run(args);
@@ -74,8 +77,9 @@ public class App extends Application<Config> {
 
         environment.jersey().register(new Module(configuration));
         environment.jersey().register(AuditedAnnotationsResourceImpl.class);
-        environment.jersey().register(AuditedIndexResourceImpl.class);
+        environment.jersey().register(AuditedDocRefResourceImpl.class);
         environment.jersey().register(AnnotationsExceptionMapper.class);
+        environment.jersey().register(DocRefExceptionMapper.class);
     }
 
 

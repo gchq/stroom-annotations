@@ -1,12 +1,10 @@
-package stroom.annotations.service.hibernate;
+package stroom.annotations.hibernate;
 
-import stroom.annotations.service.model.HistoryOperation;
-import stroom.annotations.service.model.Status;
 import stroom.query.hibernate.QueryableEntity;
 
 import javax.persistence.*;
 
-@Entity(name="annotations_history")
+@Entity(name="annotation_history")
 public class AnnotationHistory extends QueryableEntity {
     public static final String ANNOTATION_ID = "annotationId";
     public static final String OPERATION = "operation";
