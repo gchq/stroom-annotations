@@ -3,6 +3,7 @@ package stroom.annotations.resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import stroom.annotations.hibernate.Annotation;
+import stroom.annotations.hibernate.AnnotationHistory;
 import stroom.annotations.hibernate.Status;
 import stroom.annotations.model.*;
 import stroom.annotations.service.AnnotationsService;
@@ -43,34 +44,22 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
     public final Response search(final String index,
                                  final String q,
                                  final Integer seekPosition) throws AnnotationsException {
-        final List<AnnotationDTO> dtos = service.search(index, q, seekPosition)
-                .stream()
-                .map(e -> new AnnotationDTO.Builder().entity(e).build())
-                .collect(Collectors.toList());
+        final List<Annotation> annotations = service.search(index, q, seekPosition);
 
-        return Response.ok(dtos)
+        return Response.ok(annotations)
                 .build();
     }
 
     public final Response get(final String index,
                               final String id) throws AnnotationsException {
-        final AnnotationDTO annotationDTO = getDTO(index, id);
-
-        return Response.ok(annotationDTO).build();
-    }
-
-    private AnnotationDTO getDTO(final String index, final String id) throws AnnotationsException {
         final Annotation annotation = service.get(index, id);
 
-        return new AnnotationDTO.Builder().entity(annotation).build();
+        return Response.ok(annotation).build();
     }
 
     public final Response getHistory(final String index,
                                      final String id) throws AnnotationsException {
-        final List<AnnotationHistoryDTO> results = service.getHistory(index, id)
-                .stream()
-                .map(e -> new AnnotationHistoryDTO.Builder().entity(e).build())
-                .collect(Collectors.toList());
+        final List<AnnotationHistory> results = service.getHistory(index, id);
 
         if (results.size() > 0) {
             return Response.ok(results)
@@ -88,21 +77,16 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
                                  final String id) throws AnnotationsException {
         final Annotation annotation = service.create(index, id);
 
-        final AnnotationDTO annotationDTO = new AnnotationDTO.Builder().entity(annotation).build();
-
-        return Response.ok(annotationDTO)
+        return Response.ok(annotation)
                 .build();
     }
 
     public final Response update(final String index,
                                  final String id,
-                                 final AnnotationDTO annotationDTO) throws AnnotationsException {
-        final Annotation annotationUpdate = new Annotation.Builder().dto(annotationDTO).build();
+                                 final Annotation annotationUpdate) throws AnnotationsException {
         final Annotation annotation = service.update(index, id, annotationUpdate);
 
-        final AnnotationDTO resultDTO = new AnnotationDTO.Builder().entity(annotation).build();
-
-        return Response.ok(resultDTO)
+        return Response.ok(annotation)
                 .build();
     }
 

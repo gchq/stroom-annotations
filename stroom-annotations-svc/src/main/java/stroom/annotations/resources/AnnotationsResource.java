@@ -3,7 +3,7 @@ package stroom.annotations.resources;
 import com.codahale.metrics.annotation.Timed;
 import io.dropwizard.validation.Validated;
 import org.hibernate.validator.constraints.Length;
-import stroom.annotations.model.AnnotationDTO;
+import stroom.annotations.hibernate.Annotation;
 
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.*;
@@ -32,7 +32,7 @@ public interface AnnotationsResource {
     Response search(@Validated
                     @PathParam("index")
                     @NotNull
-                    @Length(min=AnnotationDTO.MIN_ID_LENGTH) String index,
+                    @Length(min= Annotation.MIN_ID_LENGTH) String index,
                     @QueryParam("q") String q,
                     @QueryParam("seekPosition") Integer seekPosition) throws AnnotationsException;
 
@@ -42,11 +42,11 @@ public interface AnnotationsResource {
     Response get(@Validated
                  @PathParam("index")
                  @NotNull
-                 @Length(min=AnnotationDTO.MIN_ID_LENGTH) String index,
+                 @Length(min=Annotation.MIN_ID_LENGTH) String index,
                  @Validated
                  @PathParam("id")
                  @NotNull
-                 @Length(min=AnnotationDTO.MIN_ID_LENGTH) String id) throws AnnotationsException;
+                 @Length(min=Annotation.MIN_ID_LENGTH) String id) throws AnnotationsException;
 
     @GET
     @Path("/single/{index}/{id}/history")
@@ -54,11 +54,11 @@ public interface AnnotationsResource {
     Response getHistory(@Validated
                         @PathParam("index")
                         @NotNull
-                        @Length(min=AnnotationDTO.MIN_ID_LENGTH) String index,
+                        @Length(min=Annotation.MIN_ID_LENGTH) String index,
                         @Validated
                         @PathParam("id")
                         @NotNull
-                        @Length(min=AnnotationDTO.MIN_ID_LENGTH) String id) throws AnnotationsException;
+                        @Length(min=Annotation.MIN_ID_LENGTH) String id) throws AnnotationsException;
 
     @POST
     @Path("/single/{index}/{id}")
@@ -66,11 +66,11 @@ public interface AnnotationsResource {
     Response create(@Validated
                     @PathParam("index")
                     @NotNull
-                    @Length(min=AnnotationDTO.MIN_ID_LENGTH) String index,
+                    @Length(min=Annotation.MIN_ID_LENGTH) String index,
                     @Validated
                     @PathParam("id")
                     @NotNull
-                    @Length(min=AnnotationDTO.MIN_ID_LENGTH) String id) throws AnnotationsException;
+                    @Length(min=Annotation.MIN_ID_LENGTH) String id) throws AnnotationsException;
 
     @PUT
     @Path("/single/{index}/{id}")
@@ -79,12 +79,12 @@ public interface AnnotationsResource {
     Response update(@Validated
                     @PathParam("index")
                     @NotNull
-                    @Length(min=AnnotationDTO.MIN_ID_LENGTH) String index,
+                    @Length(min=Annotation.MIN_ID_LENGTH) String index,
                     @Validated
                     @PathParam("id")
                     @NotNull
-                    @Length(min=AnnotationDTO.MIN_ID_LENGTH) String id,
-                    AnnotationDTO annotation) throws AnnotationsException;
+                    @Length(min=Annotation.MIN_ID_LENGTH) String id,
+                    Annotation annotation) throws AnnotationsException;
 
     @DELETE
     @Path("/single/{index}/{id}")
@@ -92,9 +92,9 @@ public interface AnnotationsResource {
     Response remove(@Validated
                     @PathParam("index")
                     @NotNull
-                    @Length(min=AnnotationDTO.MIN_ID_LENGTH) String index,
+                    @Length(min=Annotation.MIN_ID_LENGTH) String index,
                     @Validated
                     @PathParam("id")
                     @NotNull
-                    @Length(min=AnnotationDTO.MIN_ID_LENGTH) String id) throws AnnotationsException;
+                    @Length(min=Annotation.MIN_ID_LENGTH) String id) throws AnnotationsException;
 }

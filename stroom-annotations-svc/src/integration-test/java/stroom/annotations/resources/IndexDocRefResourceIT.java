@@ -14,8 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import stroom.annotations.App;
 import stroom.annotations.Config;
-import stroom.annotations.model.AnnotationDTO;
-import stroom.annotations.model.AnnotationIndexDTO;
+import stroom.annotations.hibernate.AnnotationIndex;
 import stroom.query.audit.FifoLogbackAppender;
 
 import java.io.IOException;
@@ -26,8 +25,8 @@ import static io.dropwizard.testing.ResourceHelpers.resourceFilePath;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-public class IndexResourceIT {
-    private static final Logger LOGGER = LoggerFactory.getLogger(IndexResourceIT.class);
+public class IndexDocRefResourceIT {
+    private static final Logger LOGGER = LoggerFactory.getLogger(IndexDocRefResourceIT.class);
 
     @ClassRule
     public static final DropwizardAppRule<Config> appRule = new DropwizardAppRule<>(App.class, resourceFilePath("config.yml"));
@@ -104,7 +103,7 @@ public class IndexResourceIT {
         final String name = UUID.randomUUID().toString();
         createIndex(uuid, name);
 
-        final AnnotationIndexDTO created = getIndex(uuid);
+        final AnnotationIndex created = getIndex(uuid);
         assertEquals(name, created.getName());
 
         // Create, get
@@ -119,7 +118,7 @@ public class IndexResourceIT {
         createIndex(uuid, name1);
         renameIndex(uuid, name2);
 
-        final AnnotationIndexDTO renamed = getIndex(uuid);
+        final AnnotationIndex renamed = getIndex(uuid);
         assertEquals(name2, renamed.getName());
 
         // Create, rename, get
@@ -134,7 +133,7 @@ public class IndexResourceIT {
         createIndex(uuid1, name);
         copyIndex(uuid1, uuid2);
 
-        final AnnotationIndexDTO copied = getIndex(uuid2);
+        final AnnotationIndex copied = getIndex(uuid2);
         assertEquals(name, copied.getName());
 
         // Create, copy, get
@@ -163,14 +162,14 @@ public class IndexResourceIT {
         checkAuditLogs(3);
     }
 
-    private AnnotationIndexDTO createIndex(String uuid, String name) {
-        AnnotationIndexDTO result = null;
+    private AnnotationIndex createIndex(String uuid, String name) {
+        AnnotationIndex result = null;
         try {
             HttpResponse<String> response = Unirest.post(createIndexUrl(uuid, name))
                     .asString();
             assertEquals(HttpStatus.SC_OK, response.getStatus());
 
-            result = jacksonObjectMapper.readValue(response.getBody(), AnnotationIndexDTO.class);
+            result = jacksonObjectMapper.readValue(response.getBody(), AnnotationIndex.class);
             assertEquals(uuid, result.getUuid());
             assertEquals(name, result.getName());
         } catch (Exception e) {
@@ -185,8 +184,8 @@ public class IndexResourceIT {
      * @param copyUuid The UUID of the copy to create
      * @return The updated annotation returned from the service.
      */
-    private AnnotationIndexDTO copyIndex(final String originalUuid, final String copyUuid) {
-        AnnotationIndexDTO result = null;
+    private AnnotationIndex copyIndex(final String originalUuid, final String copyUuid) {
+        AnnotationIndex result = null;
 
         try {
             // Set the content in an update
@@ -195,7 +194,7 @@ public class IndexResourceIT {
                     .asString();
             assertEquals(HttpStatus.SC_OK, response.getStatus());
 
-            result = jacksonObjectMapper.readValue(response.getBody(), AnnotationIndexDTO.class);
+            result = jacksonObjectMapper.readValue(response.getBody(), AnnotationIndex.class);
             assertEquals(copyUuid, result.getUuid());
         } catch (Exception e) {
             fail(e.getLocalizedMessage());
@@ -209,8 +208,8 @@ public class IndexResourceIT {
      * @param name The new name
      * @return The updated annotation returned from the service.
      */
-    private AnnotationIndexDTO renameIndex(final String uuid, final String name) {
-        AnnotationIndexDTO result = null;
+    private AnnotationIndex renameIndex(final String uuid, final String name) {
+        AnnotationIndex result = null;
 
         try {
             // Set the content in an update
@@ -219,7 +218,7 @@ public class IndexResourceIT {
                     .asString();
             assertEquals(HttpStatus.SC_OK, response.getStatus());
 
-            result = jacksonObjectMapper.readValue(response.getBody(), AnnotationIndexDTO.class);
+            result = jacksonObjectMapper.readValue(response.getBody(), AnnotationIndex.class);
             assertEquals(name, result.getName());
         } catch (Exception e) {
             fail(e.getLocalizedMessage());
@@ -234,8 +233,8 @@ public class IndexResourceIT {
      * @param uuid The UUID to find.
      * @return The current annotation for that ID from the service.
      */
-    private AnnotationIndexDTO getIndex(final String uuid) {
-        AnnotationIndexDTO result = null;
+    private AnnotationIndex getIndex(final String uuid) {
+        AnnotationIndex result = null;
 
         try {
             final HttpResponse<String> response = Unirest
@@ -244,7 +243,7 @@ public class IndexResourceIT {
 
             assertEquals(HttpStatus.SC_OK, response.getStatus());
 
-            result = jacksonObjectMapper.readValue(response.getBody(), AnnotationIndexDTO.class);
+            result = jacksonObjectMapper.readValue(response.getBody(), AnnotationIndex.class);
 
             assertEquals(uuid, result.getUuid());
         } catch (Exception e) {

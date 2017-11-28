@@ -7,11 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import stroom.annotations.hibernate.Annotation;
 import stroom.annotations.hibernate.AnnotationHistory;
-import stroom.annotations.hibernate.AnnotationIndex;
 import stroom.annotations.hibernate.HistoryOperation;
-import stroom.annotations.model.*;
 import stroom.annotations.resources.AnnotationsException;
-import stroom.query.hibernate.DocRefEntity;
 import stroom.query.hibernate.QueryableEntity;
 
 import javax.inject.Inject;
@@ -113,10 +110,10 @@ public class AnnotationsServiceImpl implements AnnotationsService {
                     .id(id)
                     .dataSourceUuid(index)
                     .lastUpdated(System.currentTimeMillis())
-                    .assignTo(AnnotationDTO.DEFAULT_ASSIGNEE)
-                    .updatedBy(AnnotationDTO.DEFAULT_UPDATED_BY)
-                    .content(AnnotationDTO.DEFAULT_CONTENT)
-                    .status(AnnotationDTO.DEFAULT_STATUS)
+                    .assignTo(Annotation.DEFAULT_ASSIGNEE)
+                    .updatedBy(Annotation.DEFAULT_UPDATED_BY)
+                    .content(Annotation.DEFAULT_CONTENT)
+                    .status(Annotation.DEFAULT_STATUS)
                     .build();
             session.persist(annotation);
 
@@ -262,7 +259,7 @@ public class AnnotationsServiceImpl implements AnnotationsService {
                 .operation(HistoryOperation.DELETE)
                 .lastUpdated(System.currentTimeMillis())
                 .assignTo(currentState.getAssignTo())
-                .updatedBy(AnnotationDTO.DEFAULT_UPDATED_BY)
+                .updatedBy(Annotation.DEFAULT_UPDATED_BY)
                 .content(currentState.getContent())
                 .status(currentState.getStatus())
                 .build();

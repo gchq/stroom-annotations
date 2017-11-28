@@ -1,7 +1,7 @@
 package stroom.annotations.resources;
 
 import event.logging.*;
-import stroom.annotations.model.AnnotationDTO;
+import stroom.annotations.hibernate.Annotation;
 
 import javax.inject.Inject;
 import javax.ws.rs.core.Response;
@@ -149,7 +149,7 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     @Override
     public Response update(final String index,
                            final String id,
-                           final AnnotationDTO annotation) throws AnnotationsException {
+                           final Annotation annotation) throws AnnotationsException {
         Response response;
         Exception exception = null;
 

@@ -1,6 +1,5 @@
 package stroom.annotations.hibernate;
 
-import stroom.annotations.model.AnnotationDTO;
 import stroom.datasource.api.v2.DataSourceField;
 import stroom.query.api.v2.ExpressionTerm;
 import stroom.query.hibernate.IsDataSourceField;
@@ -8,6 +7,7 @@ import stroom.query.hibernate.QueryableEntity;
 
 import javax.persistence.*;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 @Entity(name="annotation")
@@ -18,6 +18,12 @@ public class Annotation extends QueryableEntity {
     public static final String LAST_UPDATED = "lastUpdated";
     public static final String CONTENT = "content";
     public static final String UPDATED_BY = "updatedBy";
+
+    public static final int MIN_ID_LENGTH = 3;
+    public static final Status DEFAULT_STATUS = Status.QUEUED;
+    public static final String DEFAULT_CONTENT = "";
+    public static final String DEFAULT_UPDATED_BY = "stroom-annotations-user";
+    public static final String DEFAULT_ASSIGNEE = "";
 
     private String id;
 
@@ -213,6 +219,23 @@ public class Annotation extends QueryableEntity {
         return sb.toString();
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        Annotation that = (Annotation) o;
+        return Objects.equals(id, that.id) &&
+                Objects.equals(assignTo, that.assignTo) &&
+                status == that.status &&
+                Objects.equals(content, that.content);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), id, assignTo, status, content);
+    }
+
     public static final class Builder extends QueryableEntity.ABuilder<Annotation, Builder> {
 
         public Builder() {
@@ -247,16 +270,6 @@ public class Annotation extends QueryableEntity {
         public Builder content(final String value) {
             this.instance.setContent(value);
             return self();
-        }
-
-        public Builder dto(final AnnotationDTO dto) {
-            return this
-                    .id(dto.getId())
-                    .status(dto.getStatus())
-                    .assignTo(dto.getAssignTo())
-                    .content(dto.getContent())
-                    .updatedBy(dto.getUpdatedBy())
-                    .lastUpdated(dto.getLastUpdated());
         }
 
         @Override

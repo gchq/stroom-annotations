@@ -5,15 +5,9 @@ import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import stroom.annotations.hibernate.Annotation;
 import stroom.annotations.hibernate.AnnotationIndex;
-import stroom.annotations.hibernate.HistoryOperation;
-import stroom.annotations.model.AnnotationDTO;
-import stroom.annotations.resources.AnnotationsException;
-import stroom.query.api.v2.DocRef;
 import stroom.query.audit.DocRefException;
 import stroom.query.hibernate.DocRefEntity;
-import stroom.query.hibernate.QueryableEntity;
 
 import javax.inject.Inject;
 import javax.persistence.criteria.*;

@@ -16,8 +16,7 @@ import org.slf4j.LoggerFactory;
 import stroom.annotations.App;
 import stroom.annotations.Config;
 import stroom.annotations.hibernate.Annotation;
-import stroom.annotations.model.AnnotationDTO;
-import stroom.annotations.model.AnnotationHistoryDTO;
+import stroom.annotations.hibernate.AnnotationHistory;
 import stroom.annotations.hibernate.HistoryOperation;
 import stroom.annotations.hibernate.Status;
 import stroom.datasource.api.v2.DataSource;
@@ -65,8 +64,8 @@ public class AnnotationsResourcesIT {
         return String.format("%s/dataSource", queryUrl);
     }
 
-    private static String getQuerySearchUrl(final String index) {
-        return String.format("%s/search/%s", queryUrl, index);
+    private static String getQuerySearchUrl() {
+        return String.format("%s/search", queryUrl);
     }
 
     private static String getQueryDestroyUrl() {
@@ -154,7 +153,7 @@ public class AnnotationsResourcesIT {
         final String id = UUID.randomUUID().toString();
         createAnnotation(index, id);
 
-        final AnnotationDTO annotationResponse = getAnnotation(index, id);
+        final Annotation annotationResponse = getAnnotation(index, id);
         assertNotNull(annotationResponse);
 
         // Create
@@ -166,21 +165,21 @@ public class AnnotationsResourcesIT {
         // Create some test data
         final String index = UUID.randomUUID().toString();
         final int RECORDS_TO_CREATE = 10;
-        final Map<String, AnnotationDTO> annotations = IntStream.range(0, RECORDS_TO_CREATE)
+        final Map<String, Annotation> annotations = IntStream.range(0, RECORDS_TO_CREATE)
                 .mapToObj(i -> UUID.randomUUID().toString())
-                .map(uuid -> new AnnotationDTO.Builder().id(uuid)
+                .map(uuid -> new Annotation.Builder().id(uuid)
                         .content(UUID.randomUUID().toString())
                         .assignTo(UUID.randomUUID().toString())
                         .status(Status.OPEN_ESCALATED)
                         .build())
                 .peek(a -> this.createAnnotation(index, a)) // add to database
                 .peek(a -> this.updateAnnotation(index, a)) // update with initial state
-                .collect(Collectors.toMap(AnnotationDTO::getId, Function.identity()));
+                .collect(Collectors.toMap(Annotation::getId, Function.identity()));
 
         // Try and fetch each annotation
         annotations.forEach((id, annotation) -> {
-            final AnnotationDTO annotationResponse = getAnnotation(index, id);
-            assertEquals(annotation.getContent(), annotationResponse.getContent());
+            final Annotation annotationResponse = getAnnotation(index, id);
+            assertUserSetFieldsEqual(annotation, annotationResponse);
         });
 
         // Records * create, update, get
@@ -210,8 +209,8 @@ public class AnnotationsResourcesIT {
         final int numberUpdates = 5;
         createAnnotation(index, id); // create initial empty annotation
 
-        final List<AnnotationDTO> annotationHistory =
-                IntStream.range(0, numberUpdates).mapToObj(i -> new AnnotationDTO.Builder()
+        final List<Annotation> annotationHistory =
+                IntStream.range(0, numberUpdates).mapToObj(i -> new Annotation.Builder()
                         .id(id)
                         .content(UUID.randomUUID().toString())
                         .assignTo(UUID.randomUUID().toString())
@@ -222,13 +221,12 @@ public class AnnotationsResourcesIT {
 
         deleteAnnotation(index, id);
 
-        final List<AnnotationHistoryDTO> result = getHistory(index, id);
+        final List<AnnotationHistory> result = getHistory(index, id);
         assertEquals(numberUpdates + 2, result.size());
 
         assertEquals(HistoryOperation.CREATE, result.get(0).getOperation());
         IntStream.range(0, annotationHistory.size()).forEach(i -> {
             assertEquals(HistoryOperation.UPDATE, result.get(i + 1).getOperation());
-            assertEquals(annotationHistory.get(i), result.get(i + 1).getAnnotation());
         });
         assertEquals(HistoryOperation.DELETE, result.get(6).getOperation());
 
@@ -240,7 +238,7 @@ public class AnnotationsResourcesIT {
     public void testSearchSingle() {
         // Create some test data
         final String index = UUID.randomUUID().toString();
-        final AnnotationDTO annotation = new AnnotationDTO.Builder().id(UUID.randomUUID().toString())
+        final Annotation annotation = new Annotation.Builder().id(UUID.randomUUID().toString())
                         .content(UUID.randomUUID().toString())
                         .assignTo(UUID.randomUUID().toString())
                         .status(Status.OPEN_ESCALATED)
@@ -249,12 +247,12 @@ public class AnnotationsResourcesIT {
         updateAnnotation(index, annotation);
 
         // Try and fetch each annotation
-        final AnnotationDTO annotationResponse = getAnnotation(index, annotation.getId());
+        final Annotation annotationResponse = getAnnotation(index, annotation.getId());
         assertEquals(annotation.getContent(), annotationResponse.getContent());
 
-        final List<AnnotationDTO> page = searchAnnotation(index, annotation.getContent());
+        final List<Annotation> page = searchAnnotation(index, annotation.getContent());
         assertEquals(1, page.size());
-        assertEquals(annotation.getId(), page.get(0).getId());
+        assertUserSetFieldsEqual(annotation, page.get(0));
 
         // Records * create, update, get
         checkAuditLogs(4);
@@ -273,11 +271,12 @@ public class AnnotationsResourcesIT {
                 .collect(Collectors.toList());
 
         // Create some test data for each search term
-        final Map<String, Set<AnnotationDTO>> annotationsBySearchTerm = new HashMap<>();
+        final Map<String, Set<Annotation>> annotationsBySearchTerm = new HashMap<>();
         for (final String searchTerm : searchTerms) {
-            final Set<AnnotationDTO> annotations = IntStream.range(0, ANNOTATIONS_PER_SEARCH_TERM)
+            final Set<Annotation> annotations = IntStream.range(0, ANNOTATIONS_PER_SEARCH_TERM)
                     .mapToObj(i -> UUID.randomUUID().toString()) // Generate an ID
-                    .map(uuid -> new AnnotationDTO.Builder().id(uuid)
+                    .map(uuid -> new Annotation.Builder().id(uuid)
+                            .dataSourceUuid(index)
                             .content(UUID.randomUUID().toString() + searchTerm)
                             .assignTo(UUID.randomUUID().toString())
                             .status(Status.OPEN_ESCALATED)
@@ -302,17 +301,17 @@ public class AnnotationsResourcesIT {
         annotationsBySearchTerm.forEach((searchTerm, annotationsSet) -> {
             LOGGER.info(String.format("Search Term: %s", searchTerm));
 
-            final Set<AnnotationDTO> resultsSet = new HashSet<>();
+            final Set<Annotation> resultsSet = new HashSet<>();
 
             // Get all the expected pages
             int seekPosition = 0;
             for (int page = 0; page < NUMBER_PAGES_EXPECTED; page++) {
                 LOGGER.info(String.format("Page Found %d", page));
 
-                List<AnnotationDTO> thisPage = searchAnnotation(index, searchTerm, seekPosition);
+                List<Annotation> thisPage = searchAnnotation(index, searchTerm, seekPosition);
 
                 // ensures all of these new results do not already appear in our gathered results
-                for (final AnnotationDTO result: thisPage) {
+                for (final Annotation result: thisPage) {
                     LOGGER.info(String.format("\t%s", result.getId()));
                     assertFalse(resultsSet.contains(result));
                     seekPosition++;
@@ -341,11 +340,12 @@ public class AnnotationsResourcesIT {
                 .collect(Collectors.toList());
 
         // Create some test data for each search term
-        final Map<String, Set<AnnotationDTO>> annotationsBySearchTerm = new HashMap<>();
+        final Map<String, Set<Annotation>> annotationsBySearchTerm = new HashMap<>();
         for (final String contentSearchTerm : contentSearchTerms) {
-            final Set<AnnotationDTO> annotations = IntStream.range(0, ANNOTATIONS_PER_SEARCH_TERM)
+            final Set<Annotation> annotations = IntStream.range(0, ANNOTATIONS_PER_SEARCH_TERM)
                     .mapToObj(i -> UUID.randomUUID().toString()) // Generate an ID
-                    .map(uuid -> new AnnotationDTO.Builder().id(uuid)
+                    .map(uuid -> new Annotation.Builder().id(uuid)
+                            .dataSourceUuid(index)
                             .content("Some Content - " + UUID.randomUUID().toString() + contentSearchTerm)
                             .assignTo("Some Guy - " + UUID.randomUUID().toString())
                             .status(Status.OPEN_ESCALATED)
@@ -374,7 +374,7 @@ public class AnnotationsResourcesIT {
 
             final Set<String> resultsSet = new HashSet<>();
             final Set<String> expectedAnnotationIds = annotationsSet.stream()
-                    .map(AnnotationDTO::getId)
+                    .map(Annotation::getId)
                     .collect(Collectors.toSet());
 
             pageOffsets.forEach(offsetRange -> {
@@ -443,7 +443,7 @@ public class AnnotationsResourcesIT {
             final String queryKey = UUID.randomUUID().toString();
             final SearchRequest request = new SearchRequest.Builder()
                     .query()
-                        .dataSource("docRefName", UUID.randomUUID().toString(), "docRefType")
+                        .dataSource("docRefName", index, "docRefType")
                         .expression(expressionOperator)
                         .end()
                     .key(queryKey)
@@ -465,7 +465,7 @@ public class AnnotationsResourcesIT {
                     .build();
 
             final HttpResponse<String> response = Unirest
-                    .post(getQuerySearchUrl(index))
+                    .post(getQuerySearchUrl())
                     .header("accept", "application/json")
                     .header("Content-Type", "application/json")
                     .body(request)
@@ -493,7 +493,7 @@ public class AnnotationsResourcesIT {
      * @param annotation The annotation to create
      * @return The initial state of the annotation
      */
-    private AnnotationDTO createAnnotation(final String index, final AnnotationDTO annotation) {
+    private Annotation createAnnotation(final String index, final Annotation annotation) {
         return createAnnotation(index, annotation.getId());
     }
 
@@ -503,19 +503,19 @@ public class AnnotationsResourcesIT {
      * @param id The ID to annotate
      * @return The initial state of the annotation
      */
-    private AnnotationDTO createAnnotation(final String index, final String id) {
-        AnnotationDTO result = null;
+    private Annotation createAnnotation(final String index, final String id) {
+        Annotation result = null;
         try {
             HttpResponse<String> response = Unirest.post(getAnnotationUrl(index, id))
                     .asString();
             assertEquals(HttpStatus.SC_OK, response.getStatus());
 
-            result = jacksonObjectMapper.readValue(response.getBody(), AnnotationDTO.class);
+            result = jacksonObjectMapper.readValue(response.getBody(), Annotation.class);
             assertEquals(id, result.getId());
-            assertEquals(AnnotationDTO.DEFAULT_CONTENT, result.getContent());
-            assertEquals(AnnotationDTO.DEFAULT_ASSIGNEE, result.getAssignTo());
-            assertEquals(AnnotationDTO.DEFAULT_UPDATED_BY, result.getUpdatedBy());
-            assertEquals(AnnotationDTO.DEFAULT_STATUS, result.getStatus());
+            assertEquals(Annotation.DEFAULT_CONTENT, result.getContent());
+            assertEquals(Annotation.DEFAULT_ASSIGNEE, result.getAssignTo());
+            assertEquals(Annotation.DEFAULT_UPDATED_BY, result.getUpdatedBy());
+            assertEquals(Annotation.DEFAULT_STATUS, result.getStatus());
         } catch (Exception e) {
             fail(e.getLocalizedMessage());
         }
@@ -528,8 +528,8 @@ public class AnnotationsResourcesIT {
      * @param annotation The annotation to update
      * @return The updated annotation returned from the service.
      */
-    private AnnotationDTO updateAnnotation(final String index, final AnnotationDTO annotation) {
-        AnnotationDTO result = null;
+    private Annotation updateAnnotation(final String index, final Annotation annotation) {
+        Annotation result = null;
 
         try {
             // Set the content in an update
@@ -541,12 +541,19 @@ public class AnnotationsResourcesIT {
                     .asString();
             assertEquals(HttpStatus.SC_OK, response.getStatus());
 
-            result = jacksonObjectMapper.readValue(response.getBody(), AnnotationDTO.class);
-            assertEquals(annotation, result);
+            result = jacksonObjectMapper.readValue(response.getBody(), Annotation.class);
+            assertUserSetFieldsEqual(annotation, result);
         } catch (Exception e) {
             fail(e.getLocalizedMessage());
         }
         return result;
+    }
+
+    private void assertUserSetFieldsEqual(final Annotation first, final Annotation second) {
+        assertEquals(first.getId(), second.getId());
+        assertEquals(first.getAssignTo(), second.getAssignTo());
+        assertEquals(first.getContent(), second.getContent());
+        assertEquals(first.getStatus(), second.getStatus());
     }
 
     /**
@@ -555,8 +562,8 @@ public class AnnotationsResourcesIT {
      * @param queryTerm The term to search for
      * @return The list of annotations found by the service.
      */
-    private List<AnnotationDTO> searchAnnotation(final String index, final String queryTerm) {
-        List<AnnotationDTO> result = null;
+    private List<Annotation> searchAnnotation(final String index, final String queryTerm) {
+        List<Annotation> result = null;
 
         try {
             final HttpResponse<String> response = Unirest
@@ -566,7 +573,7 @@ public class AnnotationsResourcesIT {
 
             assertEquals(HttpStatus.SC_OK, response.getStatus());
 
-            result = jacksonObjectMapper.readValue(response.getBody(), new TypeReference<List<AnnotationDTO>>(){});
+            result = jacksonObjectMapper.readValue(response.getBody(), new TypeReference<List<Annotation>>(){});
         } catch (Exception e) {
             fail(e.getLocalizedMessage());
         }
@@ -583,10 +590,10 @@ public class AnnotationsResourcesIT {
      * @param seekPosition Pagination continue
      * @return The list of annotations found by the service.
      */
-    private List<AnnotationDTO> searchAnnotation(final String index,
+    private List<Annotation> searchAnnotation(final String index,
                                                  final String queryTerm,
                                                  final Integer seekPosition) {
-        List<AnnotationDTO> result = null;
+        List<Annotation> result = null;
 
         try {
             final HttpResponse<String> response = Unirest
@@ -597,7 +604,7 @@ public class AnnotationsResourcesIT {
 
             assertEquals(HttpStatus.SC_OK, response.getStatus());
 
-            result = jacksonObjectMapper.readValue(response.getBody(), new TypeReference<List<AnnotationDTO>>(){});
+            result = jacksonObjectMapper.readValue(response.getBody(), new TypeReference<List<Annotation>>(){});
         } catch (Exception e) {
             fail(e.getLocalizedMessage());
         }
@@ -613,8 +620,8 @@ public class AnnotationsResourcesIT {
      * @param id The ID to find.
      * @return The current annotation for that ID from the service.
      */
-    private AnnotationDTO getAnnotation(final String index, final String id) {
-        AnnotationDTO result = null;
+    private Annotation getAnnotation(final String index, final String id) {
+        Annotation result = null;
 
         try {
             final HttpResponse<String> response = Unirest
@@ -623,7 +630,7 @@ public class AnnotationsResourcesIT {
 
             assertEquals(HttpStatus.SC_OK, response.getStatus());
 
-            result = jacksonObjectMapper.readValue(response.getBody(), AnnotationDTO.class);
+            result = jacksonObjectMapper.readValue(response.getBody(), Annotation.class);
 
             assertEquals(id, result.getId());
         } catch (Exception e) {
@@ -653,8 +660,8 @@ public class AnnotationsResourcesIT {
      * @param id The ID to find the history for
      * @return The list of history items.
      */
-    private List<AnnotationHistoryDTO> getHistory(final String index, final String id) {
-        List<AnnotationHistoryDTO> result = null;
+    private List<AnnotationHistory> getHistory(final String index, final String id) {
+        List<AnnotationHistory> result = null;
 
         try {
             final HttpResponse<String> response = Unirest
@@ -663,7 +670,7 @@ public class AnnotationsResourcesIT {
 
             assertEquals(HttpStatus.SC_OK, response.getStatus());
 
-            result = jacksonObjectMapper.readValue(response.getBody(), new TypeReference<List<AnnotationHistoryDTO>>() {});
+            result = jacksonObjectMapper.readValue(response.getBody(), new TypeReference<List<AnnotationHistory>>() {});
         } catch (Exception e) {
             fail(e.getLocalizedMessage());
         }

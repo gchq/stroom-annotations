@@ -1,7 +1,6 @@
 package stroom.annotations.resources;
 
 import stroom.annotations.hibernate.AnnotationIndex;
-import stroom.annotations.model.AnnotationIndexDTO;
 import stroom.annotations.service.IndexService;
 import stroom.query.audit.DocRefException;
 import stroom.query.audit.DocRefResource;
@@ -25,10 +24,7 @@ public class IndexDocRefResourceImpl implements DocRefResource {
         final List<AnnotationIndex> indexes = service.getAll();
 
         return Response
-                .ok(indexes
-                        .stream()
-                        .map(e -> new AnnotationIndexDTO.Builder().entity(e).build())
-                        .collect(Collectors.toList()))
+                .ok(indexes)
                 .build();
     }
 
@@ -37,9 +33,7 @@ public class IndexDocRefResourceImpl implements DocRefResource {
         final AnnotationIndex index = service.get(uuid);
 
         return Response
-                .ok(new AnnotationIndexDTO.Builder()
-                        .entity(index)
-                        .build())
+                .ok(index)
                 .build();
     }
 
@@ -48,9 +42,7 @@ public class IndexDocRefResourceImpl implements DocRefResource {
         final AnnotationIndex index = service.create(uuid, name);
 
         return Response
-                .ok(new AnnotationIndexDTO.Builder()
-                        .entity(index)
-                        .build())
+                .ok(index)
                 .build();
     }
 
@@ -59,9 +51,7 @@ public class IndexDocRefResourceImpl implements DocRefResource {
         final AnnotationIndex index = service.copyDocument(originalUuid, copyUuid);
 
         return Response
-                .ok(new AnnotationIndexDTO.Builder()
-                        .entity(index)
-                        .build())
+                .ok(index)
                 .build();
     }
 
@@ -70,9 +60,7 @@ public class IndexDocRefResourceImpl implements DocRefResource {
         final AnnotationIndex index = service.documentMoved(uuid);
 
         return Response
-                .ok(new AnnotationIndexDTO.Builder()
-                        .entity(index)
-                        .build())
+                .ok(index)
                 .build();
     }
 
@@ -81,9 +69,7 @@ public class IndexDocRefResourceImpl implements DocRefResource {
         final AnnotationIndex index = service.documentRenamed(uuid, name);
 
         return Response
-                .ok(new AnnotationIndexDTO.Builder()
-                        .entity(index)
-                        .build())
+                .ok(index)
                 .build();
     }
 
