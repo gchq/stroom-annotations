@@ -19,6 +19,7 @@ public class IndexDocRefResourceImpl implements DocRefResource {
         this.service = service;
     }
 
+
     @Override
     public Response getAll() throws DocRefException {
         final List<AnnotationIndex> indexes = service.getAll();
@@ -38,7 +39,8 @@ public class IndexDocRefResourceImpl implements DocRefResource {
     }
 
     @Override
-    public Response createDocument(final String uuid, final String name) throws DocRefException {
+    public Response createDocument(final String uuid,
+                                   final String name) throws DocRefException {
         final AnnotationIndex index = service.create(uuid, name);
 
         return Response
@@ -47,7 +49,8 @@ public class IndexDocRefResourceImpl implements DocRefResource {
     }
 
     @Override
-    public Response copyDocument(final String originalUuid, final String copyUuid) throws DocRefException {
+    public Response copyDocument(final String originalUuid,
+                                 final String copyUuid) throws DocRefException {
         final AnnotationIndex index = service.copyDocument(originalUuid, copyUuid);
 
         return Response
@@ -56,7 +59,7 @@ public class IndexDocRefResourceImpl implements DocRefResource {
     }
 
     @Override
-    public Response documentMoved(final String uuid) throws DocRefException {
+    public Response documentMoved(String uuid) throws DocRefException {
         final AnnotationIndex index = service.documentMoved(uuid);
 
         return Response
@@ -65,7 +68,8 @@ public class IndexDocRefResourceImpl implements DocRefResource {
     }
 
     @Override
-    public Response documentRenamed(final String uuid, final String name) throws DocRefException {
+    public Response documentRenamed(final String uuid,
+                                    final String name) throws DocRefException {
         final AnnotationIndex index = service.documentRenamed(uuid, name);
 
         return Response
@@ -74,7 +78,7 @@ public class IndexDocRefResourceImpl implements DocRefResource {
     }
 
     @Override
-    public Response deleteDocument(final String uuid) throws DocRefException {
+    public Response deleteDocument(String uuid) throws DocRefException {
         service.deleteDocument(uuid);
         return Response.noContent().build();
     }
