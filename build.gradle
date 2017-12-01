@@ -21,15 +21,13 @@ task wrapper(type: Wrapper) {
 
 buildscript {
     dependencies {
-        classpath group: 'gchq', name: 'urlDependencyPlugin', version: 'v0.2.0'
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
     }
     repositories {
         mavenLocal()
         jcenter()
     }
 }
-
-apply plugin: 'gchq.urldependencies'
 
 //if the project has a value for the passed property (i.e from the cmd line via -PpropName=xxx)
 //use that, else use a default value
@@ -56,7 +54,7 @@ ext.versions = [
     eventLogging: 'v3.1.1_schema-v3.1.2',
 
     //same version for both stroom-query-api and stroom-query-common
-    stroomQuery: 'v2.0.0-alpha.9',
+    stroomQuery: 'v2.0.0-alpha.11',
     stroomExpression: 'v1.0.0',
 ]
 
@@ -75,11 +73,11 @@ subprojects {
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
 
-    tasks.compileJava.dependsOn downloadUrlDependencies
-
     repositories {
         mavenLocal()
         maven { url "http://repo.maven.apache.org/maven2" }
+        maven { url "https://dl.bintray.com/stroom/event-logging" }
+        maven { url "https://dl.bintray.com/stroom/stroom" }
     }
 }
 
@@ -88,6 +86,16 @@ ext.testVersions = [
 ]
 
 ext.deps = [
+
+    //------Stroom-libs---------------
+    eventLogging: "event-logging:event-logging:$versions.eventLogging",
+    stroomExpression: "stroom:stroom-expression:$versions.stroomExpression",
+    stroomQueryApi: "stroom:stroom-query-api:$versions.stroomQuery",
+    stroomQueryCommon: "stroom:stroom-query-common:$versions.stroomQuery",
+    stroomQueryAudit: "stroom:stroom-query-audit:$versions.stroomQuery",
+    stroomQueryHibernate: "stroom:stroom-query-hibernate:$versions.stroomQuery",
+
+    //------3rd Party-libs---------------
     dropwizard_core: "io.dropwizard:dropwizard-core:$versions.dropwizard",
     dropwizard_jooq: "com.bendb.dropwizard:dropwizard-jooq:$versions.dropwizard_jooq",
     dropwizard_auth: "io.dropwizard:dropwizard-auth:$versions.dropwizard",
@@ -114,32 +122,5 @@ ext.testDeps = [
     assertj: 'org.assertj:assertj-core:3.8.0',
     dropwizard_testing: "io.dropwizard:dropwizard-testing:$versions.dropwizard",
     fuel: 'com.github.kittinunf.fuel:fuel:1.7.0',
-    moshi: 'com.squareup.moshi:moshi:1.5.0',
-    unirest: 'com.mashape.unirest:unirest-java:1.4.9'
+    moshi: 'com.squareup.moshi:moshi:1.5.0'
 ]
-
-ext.urlLibs = [
-    eventLogging: "event-logging-$versions.eventLogging",
-    stroomQueryApi: "stroom-query-api-$versions.stroomQuery",
-    stroomQueryCommon: "stroom-query-common-$versions.stroomQuery",
-    stroomQueryAudit: "stroom-query-audit-$versions.stroomQuery",
-    stroomQueryHibernate: "stroom-query-hibernate-$versions.stroomQuery",
-    stroomExpression: "stroom-expression-$versions.stroomExpression",
-]
-
-urlDependencies {
-    libs "libs"
-
-    compile(urlLibs.eventLogging,
-            "https://github.com/gchq/event-logging/releases/download/$versions.eventLogging/${urlLibs.eventLogging}.jar")
-    compile(urlLibs.stroomQueryApi,
-            "https://github.com/gchq/stroom-query/releases/download/$versions.stroomQuery/${urlLibs.stroomQueryApi}.jar")
-    compile(urlLibs.stroomQueryCommon,
-            "https://github.com/gchq/stroom-query/releases/download/$versions.stroomQuery/${urlLibs.stroomQueryCommon}.jar")
-    compile(urlLibs.stroomQueryAudit,
-            "https://github.com/gchq/stroom-query/releases/download/$versions.stroomQuery/${urlLibs.stroomQueryAudit}.jar")
-    compile(urlLibs.stroomQueryHibernate,
-            "https://github.com/gchq/stroom-query/releases/download/$versions.stroomQuery/${urlLibs.stroomQueryHibernate}.jar")
-    compile(urlLibs.stroomExpression,
-            "https://github.com/gchq/stroom-expression/releases/download/$versions.stroomExpression/${urlLibs.stroomExpression}.jar")
-}

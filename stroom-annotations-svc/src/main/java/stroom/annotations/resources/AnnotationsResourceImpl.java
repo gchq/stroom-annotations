@@ -5,8 +5,9 @@ import org.slf4j.LoggerFactory;
 import stroom.annotations.hibernate.Annotation;
 import stroom.annotations.hibernate.AnnotationHistory;
 import stroom.annotations.hibernate.Status;
-import stroom.annotations.model.*;
+import stroom.annotations.model.ResponseMsgDTO;
 import stroom.annotations.service.AnnotationsService;
+import stroom.util.shared.QueryApiException;
 
 import javax.inject.Inject;
 import javax.ws.rs.core.Response;
@@ -28,12 +29,12 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
         this.service = service;
     }
 
-    public final Response welcome() throws AnnotationsException {
+    public final Response welcome() throws QueryApiException {
         return Response.ok(WELCOME_TEXT)
                 .build();
     }
 
-    public final Response statusValues() throws AnnotationsException {
+    public final Response statusValues() throws QueryApiException {
         final Map<String, String> statusValues = Arrays.stream(Status.values())
                 .collect(Collectors.toMap(Object::toString, Status::getDisplayText));
 
@@ -43,7 +44,7 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
 
     public final Response search(final String index,
                                  final String q,
-                                 final Integer seekPosition) throws AnnotationsException {
+                                 final Integer seekPosition) throws QueryApiException {
         final List<Annotation> annotations = service.search(index, q, seekPosition);
 
         return Response.ok(annotations)
@@ -51,14 +52,14 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
     }
 
     public final Response get(final String index,
-                              final String id) throws AnnotationsException {
+                              final String id) throws QueryApiException {
         final Annotation annotation = service.get(index, id);
 
         return Response.ok(annotation).build();
     }
 
     public final Response getHistory(final String index,
-                                     final String id) throws AnnotationsException {
+                                     final String id) throws QueryApiException {
         final List<AnnotationHistory> results = service.getHistory(index, id);
 
         if (results.size() > 0) {
@@ -74,7 +75,7 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
     }
 
     public final Response create(final String index,
-                                 final String id) throws AnnotationsException {
+                                 final String id) throws QueryApiException {
         final Annotation annotation = service.create(index, id);
 
         return Response.ok(annotation)
@@ -83,7 +84,7 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
 
     public final Response update(final String index,
                                  final String id,
-                                 final Annotation annotationUpdate) throws AnnotationsException {
+                                 final Annotation annotationUpdate) throws QueryApiException {
         final Annotation annotation = service.update(index, id, annotationUpdate);
 
         return Response.ok(annotation)
@@ -91,7 +92,7 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
     }
 
     public final Response remove(final String index,
-                                 final String id) throws AnnotationsException {
+                                 final String id) throws QueryApiException {
         service.remove(index, id);
 
         return Response

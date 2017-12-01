@@ -3,7 +3,7 @@ package stroom.annotations.resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import stroom.annotations.model.ResponseMsgDTO;
-import stroom.query.audit.DocRefException;
+import stroom.util.shared.QueryApiException;
 
 import javax.persistence.NoResultException;
 import javax.ws.rs.core.Response;
@@ -11,11 +11,11 @@ import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
 @Provider
-public class DocRefExceptionMapper implements ExceptionMapper<DocRefException> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DocRefExceptionMapper.class);
+public class QueryApiExceptionMapper implements ExceptionMapper<QueryApiException> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(QueryApiExceptionMapper.class);
 
     @Override
-    public Response toResponse(final DocRefException e) {
+    public Response toResponse(final QueryApiException e) {
         LOGGER.warn("Exception seen on REST interface", e);
 
         if (e.getCause() instanceof NoResultException) {

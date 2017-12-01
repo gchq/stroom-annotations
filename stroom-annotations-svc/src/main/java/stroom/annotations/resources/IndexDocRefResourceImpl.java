@@ -2,13 +2,12 @@ package stroom.annotations.resources;
 
 import stroom.annotations.hibernate.AnnotationIndex;
 import stroom.annotations.service.IndexService;
-import stroom.query.audit.DocRefException;
 import stroom.query.audit.DocRefResource;
+import stroom.util.shared.QueryApiException;
 
 import javax.inject.Inject;
 import javax.ws.rs.core.Response;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class IndexDocRefResourceImpl implements DocRefResource {
 
@@ -21,7 +20,7 @@ public class IndexDocRefResourceImpl implements DocRefResource {
 
 
     @Override
-    public Response getAll() throws DocRefException {
+    public Response getAll() throws QueryApiException {
         final List<AnnotationIndex> indexes = service.getAll();
 
         return Response
@@ -30,7 +29,7 @@ public class IndexDocRefResourceImpl implements DocRefResource {
     }
 
     @Override
-    public Response get(final String uuid) throws DocRefException {
+    public Response get(final String uuid) throws QueryApiException {
         final AnnotationIndex index = service.get(uuid);
 
         return Response
@@ -40,7 +39,7 @@ public class IndexDocRefResourceImpl implements DocRefResource {
 
     @Override
     public Response createDocument(final String uuid,
-                                   final String name) throws DocRefException {
+                                   final String name) throws QueryApiException {
         final AnnotationIndex index = service.create(uuid, name);
 
         return Response
@@ -50,7 +49,7 @@ public class IndexDocRefResourceImpl implements DocRefResource {
 
     @Override
     public Response copyDocument(final String originalUuid,
-                                 final String copyUuid) throws DocRefException {
+                                 final String copyUuid) throws QueryApiException {
         final AnnotationIndex index = service.copyDocument(originalUuid, copyUuid);
 
         return Response
@@ -59,7 +58,7 @@ public class IndexDocRefResourceImpl implements DocRefResource {
     }
 
     @Override
-    public Response documentMoved(String uuid) throws DocRefException {
+    public Response documentMoved(String uuid) throws QueryApiException {
         final AnnotationIndex index = service.documentMoved(uuid);
 
         return Response
@@ -69,7 +68,7 @@ public class IndexDocRefResourceImpl implements DocRefResource {
 
     @Override
     public Response documentRenamed(final String uuid,
-                                    final String name) throws DocRefException {
+                                    final String name) throws QueryApiException {
         final AnnotationIndex index = service.documentRenamed(uuid, name);
 
         return Response
@@ -78,7 +77,7 @@ public class IndexDocRefResourceImpl implements DocRefResource {
     }
 
     @Override
-    public Response deleteDocument(String uuid) throws DocRefException {
+    public Response deleteDocument(String uuid) throws QueryApiException {
         service.deleteDocument(uuid);
         return Response.noContent().build();
     }

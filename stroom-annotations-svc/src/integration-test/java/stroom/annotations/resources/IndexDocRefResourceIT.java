@@ -1,11 +1,8 @@
 package stroom.annotations.resources;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.mashape.unirest.http.HttpResponse;
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dropwizard.testing.junit.DropwizardAppRule;
-import org.apache.http.HttpStatus;
+import org.eclipse.jetty.http.HttpStatus;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -15,9 +12,11 @@ import org.slf4j.LoggerFactory;
 import stroom.annotations.App;
 import stroom.annotations.Config;
 import stroom.annotations.hibernate.AnnotationIndex;
+import stroom.query.audit.DocRefResourceHttpClient;
 import stroom.query.audit.FifoLogbackAppender;
+import stroom.util.shared.QueryApiException;
 
-import java.io.IOException;
+import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,57 +30,16 @@ public class IndexDocRefResourceIT {
     @ClassRule
     public static final DropwizardAppRule<Config> appRule = new DropwizardAppRule<>(App.class, resourceFilePath("config.yml"));
 
-    private static String indexUrl;
-
-    private static String createIndexUrl(final String uuid, final String name) {
-        return String.format("%s/create/%s/%s", indexUrl, uuid, name);
-    }
-
-    private static String getIndexUrl(final String uuid) {
-        return String.format("%s/%s", indexUrl, uuid);
-    }
-
-    private static String deleteIndexUrl(final String uuid) {
-        return String.format("%s/delete/%s", indexUrl, uuid);
-    }
-
-    private static String renameIndexUrl(final String uuid, final String name) {
-        return String.format("%s/rename/%s/%s", indexUrl, uuid, name);
-    }
-
-    private static String copyIndexUrl(final String originalUuid, final String copyUuid) {
-        return String.format("%s/copy/%s/%s", indexUrl, originalUuid, copyUuid);
-    }
-
-    private static final com.fasterxml.jackson.databind.ObjectMapper jacksonObjectMapper =
-            new com.fasterxml.jackson.databind.ObjectMapper();
+    private static final String LOCALHOST = "localhost";
+    private static final ObjectMapper jacksonObjectMapper = new ObjectMapper();
+    private static DocRefResourceHttpClient docRefClient;
 
     @BeforeClass
     public static void setupClass() {
+
         int appPort = appRule.getLocalPort();
-
-        indexUrl = "http://localhost:" + appPort + "/docRefApi/v1";
-
-        Unirest.setObjectMapper(new com.mashape.unirest.http.ObjectMapper() {
-            private com.fasterxml.jackson.databind.ObjectMapper jacksonObjectMapper
-                    = new com.fasterxml.jackson.databind.ObjectMapper();
-
-            public <T> T readValue(String value, Class<T> valueType) {
-                try {
-                    return jacksonObjectMapper.readValue(value, valueType);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            public String writeValue(Object value) {
-                try {
-                    return jacksonObjectMapper.writeValueAsString(value);
-                } catch (JsonProcessingException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        });
+        final String host = String.format("http://%s:%d", LOCALHOST, appPort);
+        docRefClient = new DocRefResourceHttpClient(host);
     }
 
     @Before
@@ -141,22 +99,16 @@ public class IndexDocRefResourceIT {
     }
 
     @Test
-    public void testDeleteIndex() {
+    public void testDeleteIndex() throws QueryApiException {
         final String uuid = UUID.randomUUID().toString();
         final String name = UUID.randomUUID().toString();
         createIndex(uuid, name);
 
         deleteIndex(uuid);
 
-        try {
-            final HttpResponse<String> response = Unirest
-                    .get(getIndexUrl(uuid))
-                    .asString();
-
-            assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatus());
-        } catch (UnirestException e) {
-            fail(e.getLocalizedMessage());
-        }
+        final Response response = docRefClient.get(uuid);
+        
+        assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
 
         // Create, delete, attempt get
         checkAuditLogs(3);
@@ -165,14 +117,13 @@ public class IndexDocRefResourceIT {
     private AnnotationIndex createIndex(String uuid, String name) {
         AnnotationIndex result = null;
         try {
-            HttpResponse<String> response = Unirest.post(createIndexUrl(uuid, name))
-                    .asString();
-            assertEquals(HttpStatus.SC_OK, response.getStatus());
+            final Response response = docRefClient.createDocument(uuid, name);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
 
-            result = jacksonObjectMapper.readValue(response.getBody(), AnnotationIndex.class);
+            result = jacksonObjectMapper.readValue(response.getEntity().toString(), AnnotationIndex.class);
             assertEquals(uuid, result.getUuid());
             assertEquals(name, result.getName());
-        } catch (Exception e) {
+        } catch (Exception | QueryApiException e) {
             fail(e.getLocalizedMessage());
         }
         return result;
@@ -188,15 +139,12 @@ public class IndexDocRefResourceIT {
         AnnotationIndex result = null;
 
         try {
-            // Set the content in an update
-            HttpResponse<String> response = Unirest
-                    .post(copyIndexUrl(originalUuid, copyUuid))
-                    .asString();
-            assertEquals(HttpStatus.SC_OK, response.getStatus());
+            final Response response = docRefClient.copyDocument(originalUuid, copyUuid);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
 
-            result = jacksonObjectMapper.readValue(response.getBody(), AnnotationIndex.class);
+            result = jacksonObjectMapper.readValue(response.getEntity().toString(), AnnotationIndex.class);
             assertEquals(copyUuid, result.getUuid());
-        } catch (Exception e) {
+        } catch (Exception | QueryApiException e) {
             fail(e.getLocalizedMessage());
         }
         return result;
@@ -212,15 +160,12 @@ public class IndexDocRefResourceIT {
         AnnotationIndex result = null;
 
         try {
-            // Set the content in an update
-            HttpResponse<String> response = Unirest
-                    .put(renameIndexUrl(uuid, name))
-                    .asString();
-            assertEquals(HttpStatus.SC_OK, response.getStatus());
+            final Response response = docRefClient.documentRenamed(uuid, name);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
 
-            result = jacksonObjectMapper.readValue(response.getBody(), AnnotationIndex.class);
+            result = jacksonObjectMapper.readValue(response.getEntity().toString(), AnnotationIndex.class);
             assertEquals(name, result.getName());
-        } catch (Exception e) {
+        } catch (Exception | QueryApiException e) {
             fail(e.getLocalizedMessage());
         }
         return result;
@@ -237,16 +182,14 @@ public class IndexDocRefResourceIT {
         AnnotationIndex result = null;
 
         try {
-            final HttpResponse<String> response = Unirest
-                    .get(getIndexUrl(uuid))
-                    .asString();
+            final Response response = docRefClient.get(uuid);
 
-            assertEquals(HttpStatus.SC_OK, response.getStatus());
+            assertEquals(HttpStatus.OK_200, response.getStatus());
 
-            result = jacksonObjectMapper.readValue(response.getBody(), AnnotationIndex.class);
+            result = jacksonObjectMapper.readValue(response.getEntity().toString(), AnnotationIndex.class);
 
             assertEquals(uuid, result.getUuid());
-        } catch (Exception e) {
+        } catch (Exception | QueryApiException e) {
             fail(e.getLocalizedMessage());
         }
 
@@ -261,12 +204,10 @@ public class IndexDocRefResourceIT {
     private void deleteIndex(final String uuid) {
 
         try {
-            final HttpResponse<String> response = Unirest
-                    .delete(deleteIndexUrl(uuid))
-                    .asString();
+            final Response response = docRefClient.deleteDocument(uuid);
 
-            assertEquals(HttpStatus.SC_NO_CONTENT, response.getStatus());
-        } catch (Exception e) {
+            assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
+        } catch (Exception | QueryApiException e) {
             fail(e.getLocalizedMessage());
         }
     }

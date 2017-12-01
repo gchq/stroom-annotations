@@ -4,9 +4,18 @@ import com.codahale.metrics.annotation.Timed;
 import io.dropwizard.validation.Validated;
 import org.hibernate.validator.constraints.Length;
 import stroom.annotations.hibernate.Annotation;
+import stroom.util.shared.QueryApiException;
 
 import javax.validation.constraints.NotNull;
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -16,14 +25,13 @@ public interface AnnotationsResource {
 
     @GET
     @Path("/static/welcome")
-    @Produces({MediaType.TEXT_PLAIN})
     @Timed
-    Response welcome() throws AnnotationsException;
+    Response welcome() throws QueryApiException;
 
     @GET
     @Path("/static/statusValues")
     @Timed
-    Response statusValues() throws AnnotationsException;
+    Response statusValues() throws QueryApiException;
 
     @GET
     @Path("/search/{index}")
@@ -34,7 +42,7 @@ public interface AnnotationsResource {
                     @NotNull
                     @Length(min= Annotation.MIN_ID_LENGTH) String index,
                     @QueryParam("q") String q,
-                    @QueryParam("seekPosition") Integer seekPosition) throws AnnotationsException;
+                    @QueryParam("seekPosition") Integer seekPosition) throws QueryApiException;
 
     @GET
     @Path("/single/{index}/{id}")
@@ -46,7 +54,7 @@ public interface AnnotationsResource {
                  @Validated
                  @PathParam("id")
                  @NotNull
-                 @Length(min=Annotation.MIN_ID_LENGTH) String id) throws AnnotationsException;
+                 @Length(min=Annotation.MIN_ID_LENGTH) String id) throws QueryApiException;
 
     @GET
     @Path("/single/{index}/{id}/history")
@@ -58,7 +66,7 @@ public interface AnnotationsResource {
                         @Validated
                         @PathParam("id")
                         @NotNull
-                        @Length(min=Annotation.MIN_ID_LENGTH) String id) throws AnnotationsException;
+                        @Length(min=Annotation.MIN_ID_LENGTH) String id) throws QueryApiException;
 
     @POST
     @Path("/single/{index}/{id}")
@@ -70,7 +78,7 @@ public interface AnnotationsResource {
                     @Validated
                     @PathParam("id")
                     @NotNull
-                    @Length(min=Annotation.MIN_ID_LENGTH) String id) throws AnnotationsException;
+                    @Length(min=Annotation.MIN_ID_LENGTH) String id) throws QueryApiException;
 
     @PUT
     @Path("/single/{index}/{id}")
@@ -84,7 +92,7 @@ public interface AnnotationsResource {
                     @PathParam("id")
                     @NotNull
                     @Length(min=Annotation.MIN_ID_LENGTH) String id,
-                    Annotation annotation) throws AnnotationsException;
+                    Annotation annotation) throws QueryApiException;
 
     @DELETE
     @Path("/single/{index}/{id}")
@@ -96,5 +104,5 @@ public interface AnnotationsResource {
                     @Validated
                     @PathParam("id")
                     @NotNull
-                    @Length(min=Annotation.MIN_ID_LENGTH) String id) throws AnnotationsException;
+                    @Length(min=Annotation.MIN_ID_LENGTH) String id) throws QueryApiException;
 }

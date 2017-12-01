@@ -15,9 +15,8 @@ import org.eclipse.jetty.servlets.CrossOriginFilter;
 import stroom.annotations.hibernate.Annotation;
 import stroom.annotations.hibernate.AnnotationHistory;
 import stroom.annotations.hibernate.AnnotationIndex;
-import stroom.annotations.resources.AnnotationsExceptionMapper;
 import stroom.annotations.resources.AuditedAnnotationsResourceImpl;
-import stroom.annotations.resources.DocRefExceptionMapper;
+import stroom.annotations.resources.QueryApiExceptionMapper;
 import stroom.query.audit.AuditedDocRefResourceImpl;
 import stroom.query.hibernate.AuditedCriteriaQueryBundle;
 
@@ -78,8 +77,7 @@ public class App extends Application<Config> {
         environment.jersey().register(new Module(configuration));
         environment.jersey().register(AuditedAnnotationsResourceImpl.class);
         environment.jersey().register(AuditedDocRefResourceImpl.class);
-        environment.jersey().register(AnnotationsExceptionMapper.class);
-        environment.jersey().register(DocRefExceptionMapper.class);
+        environment.jersey().register(QueryApiExceptionMapper.class);
     }
 
 

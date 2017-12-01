@@ -77,12 +77,12 @@ tasks.withType(Test) {
 }
 
 dependencies {
-    compile urlDependencies.get(urlLibs.eventLogging)
-    compile urlDependencies.get(urlLibs.stroomQueryApi)
-    compile urlDependencies.get(urlLibs.stroomQueryCommon)
-    compile urlDependencies.get(urlLibs.stroomQueryAudit)
-    compile urlDependencies.get(urlLibs.stroomQueryHibernate)
-    compile urlDependencies.get(urlLibs.stroomExpression)
+    compile deps.eventLogging
+    compile deps.stroomQueryApi
+    compile deps.stroomQueryCommon
+    compile deps.stroomQueryAudit
+    compile deps.stroomQueryHibernate
+    compile deps.stroomExpression
 
     compile deps.kafka
     compile deps.dropwizard_core
@@ -106,5 +106,4 @@ dependencies {
 
     integrationTestCompile testDeps.dropwizard_testing
     integrationTestCompile testDeps.moshi
-    integrationTestCompile testDeps.unirest
 }

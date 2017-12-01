@@ -5,7 +5,11 @@ import stroom.query.api.v2.ExpressionTerm;
 import stroom.query.hibernate.IsDataSourceField;
 import stroom.query.hibernate.QueryableEntity;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.Id;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Supplier;

@@ -8,11 +8,15 @@ import org.slf4j.LoggerFactory;
 import stroom.annotations.hibernate.Annotation;
 import stroom.annotations.hibernate.AnnotationHistory;
 import stroom.annotations.hibernate.HistoryOperation;
-import stroom.annotations.resources.AnnotationsException;
 import stroom.query.hibernate.QueryableEntity;
+import stroom.util.shared.QueryApiException;
 
 import javax.inject.Inject;
-import javax.persistence.criteria.*;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaDelete;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.CriteriaUpdate;
+import javax.persistence.criteria.Root;
 import java.util.List;
 
 public class AnnotationsServiceImpl implements AnnotationsService {
@@ -31,7 +35,7 @@ public class AnnotationsServiceImpl implements AnnotationsService {
     @Override
     public List<Annotation> search(final String index,
                                    final String q,
-                                   final Integer seekPosition) throws AnnotationsException {
+                                   final Integer seekPosition) throws QueryApiException {
         try (final Session session = database.openSession()){
             LOGGER.info(String.format("Searching the annotations for %s, pagination information (position=%d)",
                     q, seekPosition));
@@ -63,24 +67,24 @@ public class AnnotationsServiceImpl implements AnnotationsService {
 
         } catch (final Exception e) {
             LOGGER.warn("Failed to search for annotations", e);
-            throw new AnnotationsException(e);
+            throw new QueryApiException(e);
         }
     }
 
     @Override
     public Annotation get(final String index,
-                          final String id) throws AnnotationsException {
+                          final String id) throws QueryApiException {
         try (final Session session = database.openSession()) {
             return getEntity(session, index, id);
         } catch (final Exception e) {
             LOGGER.warn("Failed to get history of annotation", e);
-            throw new AnnotationsException(e);
+            throw new QueryApiException(e);
         }
     }
 
     @Override
     public List<AnnotationHistory> getHistory(final String index,
-                                        final String id) throws AnnotationsException {
+                                        final String id) throws QueryApiException {
         try (final Session session = database.openSession()){
             final CriteriaBuilder cb = session.getCriteriaBuilder();
             final CriteriaQuery<AnnotationHistory> cq = cb.createQuery(AnnotationHistory.class);
@@ -94,13 +98,13 @@ public class AnnotationsServiceImpl implements AnnotationsService {
             return session.createQuery(cq).getResultList();
         } catch (final Exception e) {
             LOGGER.warn("Failed to get history of annotation", e);
-            throw new AnnotationsException(e);
+            throw new QueryApiException(e);
         }
     }
 
     @Override
     public Annotation create(final String index,
-                             final String id) throws AnnotationsException {
+                             final String id) throws QueryApiException {
         Transaction tx = null;
 
         try (final Session session = database.openSession()) {
@@ -127,14 +131,14 @@ public class AnnotationsServiceImpl implements AnnotationsService {
             if (tx!=null) tx.rollback();
             LOGGER.warn("Failed to get create annotation", e);
 
-            throw new AnnotationsException(e);
+            throw new QueryApiException(e);
         }
     }
 
     @Override
     public Annotation update(final String index,
                              final String id,
-                             final Annotation annotationUpdate) throws AnnotationsException {
+                             final Annotation annotationUpdate) throws QueryApiException {
         Transaction tx = null;
 
         try (final Session session = database.openSession()) {
@@ -171,13 +175,13 @@ public class AnnotationsServiceImpl implements AnnotationsService {
         } catch (final Exception e) {
             if (tx!=null) tx.rollback();
             LOGGER.warn("Failed to get update annotation", e);
-            throw new AnnotationsException(e);
+            throw new QueryApiException(e);
         }
     }
 
     @Override
     public void remove(final String index,
-                       final String id) throws AnnotationsException {
+                       final String id) throws QueryApiException {
         Transaction tx = null;
 
         try (final Session session = database.openSession()) {
@@ -208,7 +212,7 @@ public class AnnotationsServiceImpl implements AnnotationsService {
         } catch (final Exception e) {
             if (tx!=null) tx.rollback();
             LOGGER.warn("Failed to get create annotation", e);
-            throw new AnnotationsException(e);
+            throw new QueryApiException(e);
         }
     }
 

@@ -1,7 +1,16 @@
 package stroom.annotations.resources;
 
-import event.logging.*;
+import event.logging.Data;
+import event.logging.Event;
+import event.logging.EventLoggingService;
+import event.logging.ObjectOutcome;
+import event.logging.Outcome;
+import event.logging.Query;
+import event.logging.Search;
+import event.logging.Term;
+import event.logging.TermCondition;
 import stroom.annotations.hibernate.Annotation;
+import stroom.util.shared.QueryApiException;
 
 import javax.inject.Inject;
 import javax.ws.rs.core.Response;
@@ -20,19 +29,19 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response welcome() throws AnnotationsException {
+    public Response welcome() throws QueryApiException {
         return annotationsResource.welcome();
     }
 
     @Override
-    public Response statusValues() throws AnnotationsException {
+    public Response statusValues() throws QueryApiException {
         return annotationsResource.statusValues();
     }
 
     @Override
     public Response search(final String index,
                            final String q,
-                           final Integer seekPosition) throws AnnotationsException {
+                           final Integer seekPosition) throws QueryApiException {
         Response response;
         Exception exception = null;
         
@@ -79,7 +88,7 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response get(final String index, final String id) throws AnnotationsException {
+    public Response get(final String index, final String id) throws QueryApiException {
         Response response;
         Exception exception = null;
         
@@ -102,7 +111,7 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response getHistory(final String index, final String id) throws AnnotationsException {
+    public Response getHistory(final String index, final String id) throws QueryApiException {
         Response response;
         Exception exception = null;
 
@@ -124,9 +133,9 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response create(final String index, final String id) throws AnnotationsException {
+    public Response create(final String index, final String id) throws QueryApiException {
         Response response;
-        AnnotationsException exception = null;
+        QueryApiException exception = null;
 
         try {
             response =  annotationsResource.create(index, id);
@@ -149,7 +158,7 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     @Override
     public Response update(final String index,
                            final String id,
-                           final Annotation annotation) throws AnnotationsException {
+                           final Annotation annotation) throws QueryApiException {
         Response response;
         Exception exception = null;
 
@@ -179,7 +188,7 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response remove(final String index, final String id) throws AnnotationsException {
+    public Response remove(final String index, final String id) throws QueryApiException {
         Response response;
         Exception exception = null;
 

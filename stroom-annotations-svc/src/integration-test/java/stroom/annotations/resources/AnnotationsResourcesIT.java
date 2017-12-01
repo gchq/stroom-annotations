@@ -1,12 +1,9 @@
 package stroom.annotations.resources;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.mashape.unirest.http.HttpResponse;
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dropwizard.testing.junit.DropwizardAppRule;
-import org.apache.http.HttpStatus;
+import org.eclipse.jetty.http.HttpStatus;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -21,18 +18,39 @@ import stroom.annotations.hibernate.HistoryOperation;
 import stroom.annotations.hibernate.Status;
 import stroom.datasource.api.v2.DataSource;
 import stroom.datasource.api.v2.DataSourceField;
-import stroom.query.api.v2.*;
+import stroom.query.api.v2.DocRef;
+import stroom.query.api.v2.ExpressionOperator;
+import stroom.query.api.v2.ExpressionTerm;
+import stroom.query.api.v2.FlatResult;
+import stroom.query.api.v2.OffsetRange;
+import stroom.query.api.v2.Result;
+import stroom.query.api.v2.ResultRequest;
+import stroom.query.api.v2.SearchRequest;
+import stroom.query.api.v2.SearchResponse;
 import stroom.query.audit.FifoLogbackAppender;
+import stroom.query.audit.QueryResourceHttpClient;
+import stroom.util.shared.QueryApiException;
 
-import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static io.dropwizard.testing.ResourceHelpers.resourceFilePath;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static stroom.annotations.service.AnnotationsServiceImpl.SEARCH_PAGE_LIMIT;
 
 public class AnnotationsResourcesIT {
@@ -41,64 +59,19 @@ public class AnnotationsResourcesIT {
     @ClassRule
     public static final DropwizardAppRule<Config> appRule = new DropwizardAppRule<>(App.class, resourceFilePath("config.yml"));
 
-    private static String annotationsUrl;
+    private static AnnotationsHttpClient annotationsClient;
 
-    private static String queryUrl;
+    private static QueryResourceHttpClient queryClient;
 
-    private static final com.fasterxml.jackson.databind.ObjectMapper jacksonObjectMapper =
-            new com.fasterxml.jackson.databind.ObjectMapper();
-
-    private static String getAnnotationUrl(final String index, final String id) {
-        return String.format("%s/single/%s/%s", annotationsUrl, index, id);
-    }
-
-    private static String getHistoryUrl(final String index, final String id) {
-        return String.format("%s/single/%s/%s/history", annotationsUrl, index, id);
-    }
-
-    private static String getSearchUrl(final String index) {
-        return String.format("%s/search/%s", annotationsUrl, index);
-    }
-
-    private static String getQueryDataSourceUrl() {
-        return String.format("%s/dataSource", queryUrl);
-    }
-
-    private static String getQuerySearchUrl() {
-        return String.format("%s/search", queryUrl);
-    }
-
-    private static String getQueryDestroyUrl() {
-        return String.format("%s/destroy", queryUrl);
-    }
+    private static final ObjectMapper jacksonObjectMapper = new ObjectMapper();
 
     @BeforeClass
     public static void setupClass() {
         int appPort = appRule.getLocalPort();
+        final String host = String.format("http://localhost:%d", appPort);
 
-        annotationsUrl = "http://localhost:" + appPort + "/annotations/v1";
-        queryUrl = "http://localhost:" + appPort + "/queryApi/v1";
-
-        Unirest.setObjectMapper(new com.mashape.unirest.http.ObjectMapper() {
-            private com.fasterxml.jackson.databind.ObjectMapper jacksonObjectMapper
-                    = new com.fasterxml.jackson.databind.ObjectMapper();
-
-            public <T> T readValue(String value, Class<T> valueType) {
-                try {
-                    return jacksonObjectMapper.readValue(value, valueType);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            public String writeValue(Object value) {
-                try {
-                    return jacksonObjectMapper.writeValueAsString(value);
-                } catch (JsonProcessingException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        });
+        annotationsClient = new AnnotationsHttpClient(host);
+        queryClient = new QueryResourceHttpClient(host);
     }
 
     @Before
@@ -115,30 +88,28 @@ public class AnnotationsResourcesIT {
     }
 
     @Test
-    public void testWelcome() throws UnirestException {
-        final HttpResponse<String> response = Unirest
-                .get(annotationsUrl + "/static/welcome")
-                .asString();
+    public void testWelcome() throws QueryApiException {
+        final Response response = annotationsClient.welcome();
 
-        assertEquals(AnnotationsResourceImpl.WELCOME_TEXT, response.getBody());
+        assertEquals(AnnotationsResourceImpl.WELCOME_TEXT, response.getEntity());
     }
 
     @Test
-    public void testStatusValues() throws UnirestException, IOException {
-        final HttpResponse<String> response = Unirest
-                .get(annotationsUrl + "/static/statusValues")
-                .asString();
+    public void testStatusValues() throws IOException, QueryApiException {
+        final Response response = annotationsClient.statusValues();
 
-        final Map<String, String> responseStatusValues = jacksonObjectMapper.readValue(response.getBody(), new TypeReference<Map<String, String>>(){});
+        final Map<String, String> responseStatusValues = jacksonObjectMapper.readValue(
+                response.getEntity().toString(), 
+                new TypeReference<Map<String, String>>(){});
         final Map<String, String> statusValues = Arrays.stream(Status.values())
                 .collect(Collectors.toMap(Object::toString, Status::getDisplayText));
 
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
+        assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(statusValues, responseStatusValues);
     }
 
     @Test
-    public void testCreateAnnotation() throws UnirestException, IOException {
+    public void testCreateAnnotation() throws IOException {
         final String index = UUID.randomUUID().toString();
         final String id = UUID.randomUUID().toString();
         createAnnotation(index, id);
@@ -148,7 +119,7 @@ public class AnnotationsResourcesIT {
     }
 
     @Test
-    public void testCreateAndGetAnnotation() throws UnirestException, IOException {
+    public void testCreateAndGetAnnotation() throws IOException {
         final String index = UUID.randomUUID().toString();
         final String id = UUID.randomUUID().toString();
         createAnnotation(index, id);
@@ -187,16 +158,15 @@ public class AnnotationsResourcesIT {
     }
 
     @Test
-    public void testDelete() throws UnirestException {
+    public void testDelete() throws QueryApiException {
         final String index = UUID.randomUUID().toString();
         final String id = UUID.randomUUID().toString();
         createAnnotation(index, id);
         getAnnotation(index, id);
         deleteAnnotation(index, id);
-        HttpResponse<String> result = Unirest
-                .get(getAnnotationUrl(index, id))
-                .asString();
-        assertEquals(HttpStatus.SC_NOT_FOUND, result.getStatus());
+        
+        Response postDeleteResponse = annotationsClient.get(index, id);
+        assertEquals(HttpStatus.NOT_FOUND_404, postDeleteResponse.getStatus());
 
         // Create, Get, Delete, Get
         checkAuditLogs(4);
@@ -378,16 +348,20 @@ public class AnnotationsResourcesIT {
                     .collect(Collectors.toSet());
 
             pageOffsets.forEach(offsetRange -> {
-                final SearchResponse searchResponse = querySearch(index, expressionOperator, offsetRange);
+                try {
+                    final SearchResponse searchResponse = querySearch(index, expressionOperator, offsetRange);
 
-                for (final Result result : searchResponse.getResults()) {
-                    assertTrue(result instanceof FlatResult);
+                    for (final Result result : searchResponse.getResults()) {
+                        assertTrue(result instanceof FlatResult);
 
-                    final FlatResult flatResult = (FlatResult) result;
-                    flatResult.getValues().stream()
-                            .map(objects -> objects.get(3))
-                            .map(Object::toString)
-                            .forEach(resultsSet::add);
+                        final FlatResult flatResult = (FlatResult) result;
+                        flatResult.getValues().stream()
+                                .map(objects -> objects.get(3))
+                                .map(Object::toString)
+                                .forEach(resultsSet::add);
+                    }
+                } catch (QueryApiException | IOException e) {
+                    fail(e.getLocalizedMessage());
                 }
             });
 
@@ -398,8 +372,12 @@ public class AnnotationsResourcesIT {
     }
 
     @Test
-    public void testGetDataSource() {
-        final DataSource result = getDataSource();
+    public void testGetDataSource() throws QueryApiException, IOException {
+        Response response = queryClient.getDataSource(new DocRef());
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        final DataSource result = jacksonObjectMapper.readValue(response.getEntity().toString(), DataSource.class);
 
         final Set<String> resultFieldNames = result.getFields().stream()
                 .map(DataSourceField::getName)
@@ -415,71 +393,39 @@ public class AnnotationsResourcesIT {
         checkAuditLogs(1);
     }
 
-    private DataSource getDataSource() {
-        DataSource result = null;
-
-        try {
-            final HttpResponse<String> response = Unirest
-                    .post(getQueryDataSourceUrl())
-                    .header("accept", MediaType.APPLICATION_JSON)
-                    .asString();
-
-            assertEquals(HttpStatus.SC_OK, response.getStatus());
-
-            result = jacksonObjectMapper.readValue(response.getBody(), DataSource.class);
-        } catch (UnirestException | IOException e) {
-            fail(e.getLocalizedMessage());
-        }
-
-        return result;
-    }
-
     private SearchResponse querySearch(final String index,
                                        final ExpressionOperator expressionOperator,
-                                       final OffsetRange offsetRange) {
-        SearchResponse result = null;
+                                       final OffsetRange offsetRange) throws QueryApiException, IOException {
 
-        try {
-            final String queryKey = UUID.randomUUID().toString();
-            final SearchRequest request = new SearchRequest.Builder()
-                    .query()
-                        .dataSource("docRefName", index, "docRefType")
-                        .expression(expressionOperator)
+        final String queryKey = UUID.randomUUID().toString();
+        final SearchRequest request = new SearchRequest.Builder()
+                .query()
+                    .dataSource("docRefName", index, "docRefType")
+                    .expression(expressionOperator)
+                    .end()
+                .key(queryKey)
+                .dateTimeLocale("en-gb")
+                .incremental(true)
+                .addResultRequest()
+                    .fetch(ResultRequest.Fetch.ALL)
+                    .resultStyle(ResultRequest.ResultStyle.FLAT)
+                    .componentId("componentId")
+                    .requestedRange(offsetRange)
+                    .addMapping()
+                        .queryId(queryKey)
+                        .extractValues(false)
+                        .showDetail(false)
+                        .addField(Annotation.ID, "${" + Annotation.ID + "}").end()
+                        .addMaxResults(10)
                         .end()
-                    .key(queryKey)
-                    .dateTimeLocale("en-gb")
-                    .incremental(true)
-                    .addResultRequest()
-                        .fetch(ResultRequest.Fetch.ALL)
-                        .resultStyle(ResultRequest.ResultStyle.FLAT)
-                        .componentId("componentId")
-                        .requestedRange(offsetRange)
-                        .addMapping()
-                            .queryId(queryKey)
-                            .extractValues(false)
-                            .showDetail(false)
-                            .addField(Annotation.ID, "${" + Annotation.ID + "}").end()
-                            .addMaxResults(10)
-                            .end()
-                        .end()
-                    .build();
+                    .end()
+                .build();
 
-            final HttpResponse<String> response = Unirest
-                    .post(getQuerySearchUrl())
-                    .header("accept", "application/json")
-                    .header("Content-Type", "application/json")
-                    .body(request)
-                    .asString();
+        final Response response = queryClient.search(request);
 
-            assertEquals(HttpStatus.SC_OK, response.getStatus());
+        assertEquals(HttpStatus.OK_200, response.getStatus());
 
-            result = jacksonObjectMapper.readValue(response.getBody(), SearchResponse.class);
-        } catch (UnirestException | IOException e) {
-            fail(e.getLocalizedMessage());
-
-        }
-
-        return result;
+        return jacksonObjectMapper.readValue(response.getEntity().toString(), SearchResponse.class);
     }
 
     /**
@@ -505,20 +451,21 @@ public class AnnotationsResourcesIT {
      */
     private Annotation createAnnotation(final String index, final String id) {
         Annotation result = null;
-        try {
-            HttpResponse<String> response = Unirest.post(getAnnotationUrl(index, id))
-                    .asString();
-            assertEquals(HttpStatus.SC_OK, response.getStatus());
 
-            result = jacksonObjectMapper.readValue(response.getBody(), Annotation.class);
+        try {
+            final Response response = annotationsClient.create(index, id);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+
+            result = jacksonObjectMapper.readValue(response.getEntity().toString(), Annotation.class);
             assertEquals(id, result.getId());
             assertEquals(Annotation.DEFAULT_CONTENT, result.getContent());
             assertEquals(Annotation.DEFAULT_ASSIGNEE, result.getAssignTo());
             assertEquals(Annotation.DEFAULT_UPDATED_BY, result.getUpdatedBy());
             assertEquals(Annotation.DEFAULT_STATUS, result.getStatus());
-        } catch (Exception e) {
+        } catch (Exception | QueryApiException e) {
             fail(e.getLocalizedMessage());
         }
+
         return result;
     }
 
@@ -533,19 +480,15 @@ public class AnnotationsResourcesIT {
 
         try {
             // Set the content in an update
-            HttpResponse<String> response = Unirest
-                    .put(getAnnotationUrl(index, annotation.getId()))
-                    .header("accept", "application/json")
-                    .header("Content-Type", "application/json")
-                    .body(annotation)
-                    .asString();
-            assertEquals(HttpStatus.SC_OK, response.getStatus());
+            final Response response = annotationsClient.update(index, annotation.getId(), annotation);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
 
-            result = jacksonObjectMapper.readValue(response.getBody(), Annotation.class);
+            result = jacksonObjectMapper.readValue(response.getEntity().toString(), Annotation.class);
             assertUserSetFieldsEqual(annotation, result);
-        } catch (Exception e) {
+        } catch (Exception | QueryApiException e) {
             fail(e.getLocalizedMessage());
         }
+
         return result;
     }
 
@@ -563,22 +506,7 @@ public class AnnotationsResourcesIT {
      * @return The list of annotations found by the service.
      */
     private List<Annotation> searchAnnotation(final String index, final String queryTerm) {
-        List<Annotation> result = null;
-
-        try {
-            final HttpResponse<String> response = Unirest
-                    .get(getSearchUrl(index))
-                    .queryString("q", queryTerm)
-                    .asString();
-
-            assertEquals(HttpStatus.SC_OK, response.getStatus());
-
-            result = jacksonObjectMapper.readValue(response.getBody(), new TypeReference<List<Annotation>>(){});
-        } catch (Exception e) {
-            fail(e.getLocalizedMessage());
-        }
-
-        return result;
+        return searchAnnotation(index, queryTerm, 0);
     }
 
     /**
@@ -596,16 +524,13 @@ public class AnnotationsResourcesIT {
         List<Annotation> result = null;
 
         try {
-            final HttpResponse<String> response = Unirest
-                    .get(getSearchUrl(index))
-                    .queryString("q", queryTerm)
-                    .queryString("seekPosition", seekPosition)
-                    .asString();
+            final Response response = annotationsClient.search(index, queryTerm, seekPosition);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
 
-            assertEquals(HttpStatus.SC_OK, response.getStatus());
-
-            result = jacksonObjectMapper.readValue(response.getBody(), new TypeReference<List<Annotation>>(){});
-        } catch (Exception e) {
+            result = jacksonObjectMapper.readValue(
+                    response.getEntity().toString(),
+                    new TypeReference<List<Annotation>>(){});
+        } catch (Exception | QueryApiException e) {
             fail(e.getLocalizedMessage());
         }
 
@@ -624,16 +549,14 @@ public class AnnotationsResourcesIT {
         Annotation result = null;
 
         try {
-            final HttpResponse<String> response = Unirest
-                    .get(getAnnotationUrl(index, id))
-                    .asString();
+            final Response response = annotationsClient.get(index, id);
 
-            assertEquals(HttpStatus.SC_OK, response.getStatus());
+            assertEquals(HttpStatus.OK_200, response.getStatus());
 
-            result = jacksonObjectMapper.readValue(response.getBody(), Annotation.class);
+            result = jacksonObjectMapper.readValue(response.getEntity().toString(), Annotation.class);
 
             assertEquals(id, result.getId());
-        } catch (Exception e) {
+        } catch (Exception | QueryApiException e) {
             fail(e.getLocalizedMessage());
         }
 
@@ -647,9 +570,9 @@ public class AnnotationsResourcesIT {
      */
     private void deleteAnnotation(final String index, final String id) {
         try {
-            final HttpResponse<String> response = Unirest.delete(getAnnotationUrl(index, id)).asString();
-            assertEquals(HttpStatus.SC_OK, response.getStatus());
-        } catch (UnirestException e) {
+            final Response response = annotationsClient.remove(index, id);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+        } catch (Exception | QueryApiException e) {
             fail(e.getLocalizedMessage());
         }
     }
@@ -664,14 +587,14 @@ public class AnnotationsResourcesIT {
         List<AnnotationHistory> result = null;
 
         try {
-            final HttpResponse<String> response = Unirest
-                    .get(getHistoryUrl(index, id))
-                    .asString();
+            final Response response = annotationsClient.getHistory(index, id);
 
-            assertEquals(HttpStatus.SC_OK, response.getStatus());
+            assertEquals(HttpStatus.OK_200, response.getStatus());
 
-            result = jacksonObjectMapper.readValue(response.getBody(), new TypeReference<List<AnnotationHistory>>() {});
-        } catch (Exception e) {
+            result = jacksonObjectMapper.readValue(
+                    response.getEntity().toString(),
+                    new TypeReference<List<AnnotationHistory>>() {});
+        } catch (Exception | QueryApiException e) {
             fail(e.getLocalizedMessage());
         }
 
