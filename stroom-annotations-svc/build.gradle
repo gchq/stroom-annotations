@@ -19,14 +19,14 @@ plugins {
 }
 
 apply plugin: 'application'
-mainClassName = 'stroom.annotations.service.App'
+mainClassName = 'stroom.annotations.App'
 
 jar {
     manifest {
         attributes(
                 "Implementation-Title": "Stroom Annotations Service",
                 "Implementation-Version": version,
-                "Main-Class" : "stroom.annotations.service.App"
+                "Main-Class" : "stroom.annotations.App"
         )
     }
 
