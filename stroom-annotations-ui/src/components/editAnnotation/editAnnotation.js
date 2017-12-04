@@ -21,7 +21,7 @@ class EditAnnotation extends Component {
     }
 
     saveChanges() {
-        this.props.updateAnnotation(this.props.indexUuid, this.props.annotation.id, this.props.annotation);
+        this.props.updateAnnotation(this.props.indexUuid, this.props.annotationId, this.props.annotation);
     }
 
     handleOpen() {
@@ -33,7 +33,7 @@ class EditAnnotation extends Component {
     };
 
     handleRemoveAndClose() {
-        this.props.removeAnnotation(this.props.indexUuid, this.props.annotation.id)
+        this.props.removeAnnotation(this.props.indexUuid, this.props.annotationId)
         this.handleClose();
     }
 
@@ -42,7 +42,7 @@ class EditAnnotation extends Component {
             assignTo: e.target.value
         }
 
-        this.props.editAnnotation(this.props.annotation.id, updates)
+        this.props.editAnnotation(this.props.annotationId, updates)
     }
 
     onContentChange(e) {
@@ -50,18 +50,18 @@ class EditAnnotation extends Component {
             content: e.target.value
         }
 
-        this.props.editAnnotation(this.props.annotation.id, updates)
+        this.props.editAnnotation(this.props.annotationId, updates)
     }
 
     onStatusChange(status) {
-        this.props.editAnnotation(this.props.annotation.id, { status })
+        this.props.editAnnotation(this.props.annotationId, { status })
     }
 
     handleViewHistory() {
         if (this.props.allowNavigation) {
-            this.props.history.push(`/historyWithNav/${this.props.indexUuid}/${this.props.annotation.id}`)
+            this.props.history.push(`/historyWithNav/${this.props.indexUuid}/${this.props.annotationId}`)
         } else {
-            this.props.history.push(`/history/${this.props.indexUuid}/${this.props.annotation.id}`)
+            this.props.history.push(`/history/${this.props.indexUuid}/${this.props.annotationId}`)
         }
     }
 
@@ -128,7 +128,7 @@ class EditAnnotation extends Component {
                   open={this.state.open}
                   onRequestClose={this.handleClose.bind(this)}
                 >
-                    Remove the Annotation for event {this.props.annotation.id}?
+                    Remove the Annotation for event {this.props.annotationId}?
                 </Dialog>
 
             </div>
@@ -140,6 +140,7 @@ EditAnnotation.propTypes = {
     history: PropTypes.object.isRequired,
 
     indexUuid: PropTypes.string.isRequired,
+    annotationId: PropTypes.string.isRequired,
     annotation: PropTypes.object.isRequired,
     allowNavigation: PropTypes.bool.isRequired,
 

@@ -1,20 +1,32 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
+import moment from 'moment'
 
-import IconButton from 'material-ui/IconButton'
-import BackIcon from 'material-ui/svg-icons/navigation/arrow-back'
-import AppBar from 'material-ui/AppBar'
 import Paper from 'material-ui/Paper'
+import RaisedButton from 'material-ui/RaisedButton'
 
 import ApiCallSpinner from '../apiCallSpinner'
-import ErrorDisplay from '../errorDisplay'
 import SnackbarDisplay from '../snackbarDisplay'
 
-import History from '../history'
+import {
+    Step,
+    Stepper,
+    StepButton,
+    StepContent,
+  } from 'material-ui/Stepper'
+  import TextField from 'material-ui/TextField'
 
 class AnnotationHistoryPage extends Component {
+    constructor(props) {
+        super(props)
+
+        this.state = {
+            stepIndex: -1,
+        }
+    }
+
     componentDidMount() {
-        this.props.fetchAnnotationHistory(this.props.annotationId)
+        this.props.fetchAnnotationHistory(this.props.indexUuid, this.props.annotationId)
     }
 
     handleNavigateBack() {
@@ -25,26 +37,76 @@ class AnnotationHistoryPage extends Component {
         }
     }
 
+    toggleStep(i) {
+        if (this.state.stepIndex === i) {
+            this.setState({stepIndex: -1})
+        } else {
+            this.setState({stepIndex: i})
+        }
+    }
+
+    renderHistory() {
+        const stepContentStyle = {
+            display: "flex",
+            flexDirection: "column"
+        }
+
+        return this.props.annotationHistory.slice().reverse().map((h, i) => (
+            <Step key={i}>
+                <StepButton onClick={() => this.toggleStep(i)}>
+                    {h.operation} by {h.updatedBy} on {moment(h.lastUpdated).fromNow()}
+                </StepButton>
+                <StepContent>
+                    <div style={stepContentStyle}>
+                        <TextField value={h.content} onChange={() => {}}
+                            hintText="Content was empty"
+                            floatingLabelText="Content"
+                            multiLine={true}
+                            rows={1}
+                            rowsMax={4}
+                        />
+                        <TextField value={h.assignTo} onChange={() => {}}
+                            hintText="Wasn't assigned to anyone"
+                            floatingLabelText="Assign To"
+                        />
+                        <TextField value={h.status} onChange={() => {}}
+                            hintText="No Status Found"
+                            floatingLabelText="Status"
+                        />
+                    </div>
+                </StepContent>
+            </Step>
+
+        ))
+    }
+
     render() {
-        // Only present navigation icon if we are NOT a dialog
-        let iconElementLeft = <IconButton><BackIcon /></IconButton>
-
         // Indicate if the annotation information is clean
-        let title = `Annotation on ${this.props.annotationId}`
 
+        const {stepIndex} = this.state;
+    
         return (
             <div className='app'>
-                <AppBar
-                    title={title}
-                    iconElementLeft={iconElementLeft}
-                    onLeftIconButtonTouchTap={this.handleNavigateBack.bind(this)}
-                    iconElementRight={<ErrorDisplay />}
-                    />
+                <Paper className='app--body' zDepth={0}>
+                    <div>
+                        <h1>History</h1>
+
+                        <RaisedButton
+                                label="Back"
+                                onClick={this.handleNavigateBack.bind(this)}
+                                primary={true}
+                                />
+                        <Stepper
+                            activeStep={stepIndex}
+                            linear={false}
+                            orientation="vertical"
+                            >
+                            {this.renderHistory()}
+                        </Stepper>
+                    </div>
+                </Paper>
                 <SnackbarDisplay />
                 <ApiCallSpinner />
-                <Paper className='app--body' zDepth={0}>
-                    <History annotationId={this.props.annotationId}/>
-                </Paper>
             </div>
         );
     }
@@ -54,6 +116,7 @@ AnnotationHistoryPage.propTypes = {
     indexUuid: PropTypes.string.isRequired,
     annotationId: PropTypes.string.isRequired,
     allowNavigation: PropTypes.bool.isRequired,
+    annotationHistory: PropTypes.array.isRequired,
 
     history: PropTypes.object.isRequired
 }

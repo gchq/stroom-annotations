@@ -4,7 +4,6 @@ import PropTypes from 'prop-types'
 import EditAnnotation from '../editAnnotation';
 
 import ApiCallSpinner from '../apiCallSpinner'
-import ErrorDisplay from '../errorDisplay'
 import SnackbarDisplay from '../snackbarDisplay'
 
 import IconButton from 'material-ui/IconButton'
@@ -44,7 +43,7 @@ class SingleAnnotationPage extends Component {
                     <RaisedButton
                         label="Create Annotation"
                         primary={true}
-                        onClick={() => this.props.createAnnotation(this.props.annotationId)}
+                        onClick={() => this.props.createAnnotation(this.props.indexUuid, this.props.annotationId)}
                         className='single-annotation__create-button'
                         />
 
@@ -58,23 +57,25 @@ class SingleAnnotationPage extends Component {
             )
         }
 
-        // Only present navigation icon if we are NOT a dialog
-        let iconElementLeft = this.props.allowNavigation ? <IconButton><BackIcon /></IconButton> : <div />
-
         // Indicate if the annotation information is clean
         let title = `Annotation on ${this.props.annotationId}`
         if (!this.props.isClean) {
             title += " *"
         }
 
+        // Only present navigation icon if we are NOT a dialog
+        let appBar = this.props.allowNavigation ?
+            <AppBar
+            title={title}
+            iconElementLeft={<IconButton><BackIcon /></IconButton>}
+            onLeftIconButtonTouchTap={() => this.props.history.push(`/${this.props.indexUuid}`)}
+            /> 
+            : undefined
+
         return (
             <div className='app'>
-                <AppBar
-                    title={title}
-                    iconElementLeft={iconElementLeft}
-                    onLeftIconButtonTouchTap={() => this.props.history.push(`/${this.props.indexUuid}`)}
-                    iconElementRight={<ErrorDisplay />}
-                    />
+                {appBar}
+
                 <SnackbarDisplay />
                 <ApiCallSpinner />
                 <Paper className='app--body' zDepth={0}>

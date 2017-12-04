@@ -5,7 +5,6 @@ import history from './history'
 import manageAnnotations from './manageAnnotations'
 import statusValues from './statusValues'
 import snackbarMessages from './snackbarMessages'
-import errorMessages from './errorMessages'
 import apiCalls from './apiCalls'
 import ui from './ui'
 
@@ -15,7 +14,6 @@ const annotationsApp = combineReducers({
     manageAnnotations,
     statusValues,
     snackbarMessages,
-    errorMessages,
     apiCalls,
     ui
 })

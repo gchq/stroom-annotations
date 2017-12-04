@@ -1,7 +1,5 @@
 import fetch from 'isomorphic-fetch'
 
-import { fetchAnnotationHistory } from './fetchAnnotationHistory'
-
 export const REQUEST_REMOVE_ANNOTATION = 'REQUEST_REMOVE_ANNOTATION'
 
 export const requestRemoveAnnotation = (apiCallId, id) => ({
@@ -43,7 +41,6 @@ export const removeAnnotation = (indexUuid, id) => {
               .then(
                 response => {
                     dispatch(receiveRemoveAnnotation(thisApiCallId, id))
-                    dispatch(fetchAnnotationHistory(indexUuid, id))
                 },
                 error => dispatch(receiveRemoveAnnotationFailed(thisApiCallId, error))
               )

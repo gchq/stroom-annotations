@@ -9,7 +9,6 @@ import IconButton from 'material-ui/IconButton'
 import MoreHorizIcon from 'material-ui/svg-icons/navigation/more-horiz'
 
 import ApiCallSpinner from '../apiCallSpinner'
-import ErrorDisplay from '../errorDisplay'
 import SnackbarDisplay from '../snackbarDisplay'
 import CreateAnnotation from '../createAnnotation'
 
@@ -99,7 +98,6 @@ class ManageAnnotationsPage extends Component {
                 <AppBar
                     title='Manage Annotations'
                     iconElementLeft={<div/>}
-                    iconElementRight={<ErrorDisplay />}
                     />
                 <ApiCallSpinner />
                 <SnackbarDisplay />

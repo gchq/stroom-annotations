@@ -14,7 +14,8 @@ export default connect(
   (state) => ({
      annotation: state.singleAnnotation.annotation,
      allowNavigation: state.ui.allowNavigation,
-     indexUuid: state.ui.indexUuid
+     indexUuid: state.ui.indexUuid,
+     annotationId: state.ui.annotationId
   }),
   {
      editAnnotation,
