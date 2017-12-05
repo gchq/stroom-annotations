@@ -240,7 +240,7 @@ public class Annotation extends QueryableEntity {
         return Objects.hash(super.hashCode(), id, assignTo, status, content);
     }
 
-    public static final class Builder extends QueryableEntity.ABuilder<Annotation, Builder> {
+    public static final class Builder extends QueryableEntity.Builder<Annotation, Builder> {
 
         public Builder() {
             super(new Annotation());

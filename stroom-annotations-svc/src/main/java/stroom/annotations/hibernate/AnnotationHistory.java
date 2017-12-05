@@ -120,7 +120,7 @@ public class AnnotationHistory extends QueryableEntity {
         return sb.toString();
     }
 
-    public static final class Builder extends ABuilder<AnnotationHistory, Builder> {
+    public static final class Builder extends QueryableEntity.Builder<AnnotationHistory, Builder> {
 
         public Builder() {
             super(new AnnotationHistory());

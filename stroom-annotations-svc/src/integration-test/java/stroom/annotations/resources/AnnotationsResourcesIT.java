@@ -21,12 +21,15 @@ import stroom.datasource.api.v2.DataSourceField;
 import stroom.query.api.v2.DocRef;
 import stroom.query.api.v2.ExpressionOperator;
 import stroom.query.api.v2.ExpressionTerm;
+import stroom.query.api.v2.Field;
 import stroom.query.api.v2.FlatResult;
 import stroom.query.api.v2.OffsetRange;
+import stroom.query.api.v2.Query;
 import stroom.query.api.v2.Result;
 import stroom.query.api.v2.ResultRequest;
 import stroom.query.api.v2.SearchRequest;
 import stroom.query.api.v2.SearchResponse;
+import stroom.query.api.v2.TableSettings;
 import stroom.query.audit.FifoLogbackAppender;
 import stroom.query.audit.QueryResourceHttpClient;
 import stroom.util.shared.QueryApiException;
@@ -335,11 +338,7 @@ public class AnnotationsResourcesIT {
 
         annotationsBySearchTerm.forEach((contentSearchTerm, annotationsSet) -> {
             final ExpressionOperator expressionOperator = new ExpressionOperator.Builder(ExpressionOperator.Op.OR)
-                    .addTerm()
-                        .field(Annotation.CONTENT)
-                        .condition(ExpressionTerm.Condition.CONTAINS)
-                        .value(contentSearchTerm)
-                        .end()
+                    .addTerm(Annotation.CONTENT, ExpressionTerm.Condition.CONTAINS, contentSearchTerm)
                     .build();
 
             final Set<String> resultsSet = new HashSet<>();
@@ -399,26 +398,29 @@ public class AnnotationsResourcesIT {
 
         final String queryKey = UUID.randomUUID().toString();
         final SearchRequest request = new SearchRequest.Builder()
-                .query()
+                .query(new Query.Builder()
                     .dataSource("docRefName", index, "docRefType")
                     .expression(expressionOperator)
-                    .end()
+                    .build())
                 .key(queryKey)
                 .dateTimeLocale("en-gb")
                 .incremental(true)
-                .addResultRequest()
+                .addResultRequests(new ResultRequest.Builder()
                     .fetch(ResultRequest.Fetch.ALL)
                     .resultStyle(ResultRequest.ResultStyle.FLAT)
                     .componentId("componentId")
                     .requestedRange(offsetRange)
-                    .addMapping()
+                    .addMappings(new TableSettings.Builder()
                         .queryId(queryKey)
                         .extractValues(false)
                         .showDetail(false)
-                        .addField(Annotation.ID, "${" + Annotation.ID + "}").end()
+                        .addFields(new Field.Builder()
+                                .name(Annotation.ID)
+                                .expression("${" + Annotation.ID + "}")
+                                .build())
                         .addMaxResults(10)
-                        .end()
-                    .end()
+                        .build())
+                    .build())
                 .build();
 
         final Response response = queryClient.search(request);
