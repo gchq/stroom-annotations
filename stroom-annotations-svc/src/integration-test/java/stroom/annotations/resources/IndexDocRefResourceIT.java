@@ -114,6 +114,16 @@ public class IndexDocRefResourceIT {
         checkAuditLogs(3);
     }
 
+    @Test
+    public void testExportIndex() throws QueryApiException {
+
+    }
+
+    @Test
+    public void testImportIndex() throws QueryApiException {
+
+    }
+
     private AnnotationIndex createIndex(String uuid, String name) {
         AnnotationIndex result = null;
         try {

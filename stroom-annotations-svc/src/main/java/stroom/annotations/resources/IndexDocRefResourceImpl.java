@@ -8,6 +8,7 @@ import stroom.util.shared.QueryApiException;
 import javax.inject.Inject;
 import javax.ws.rs.core.Response;
 import java.util.List;
+import java.util.Map;
 
 public class IndexDocRefResourceImpl implements DocRefResource {
 
@@ -77,8 +78,27 @@ public class IndexDocRefResourceImpl implements DocRefResource {
     }
 
     @Override
-    public Response deleteDocument(String uuid) throws QueryApiException {
+    public Response deleteDocument(final String uuid) throws QueryApiException {
         service.deleteDocument(uuid);
         return Response.noContent().build();
+    }
+
+    @Override
+    public Response importDocument(final String uuid,
+                                   final String name,
+                                   final Boolean confirmed,
+                                   final Map<String, String> dataMap) throws QueryApiException {
+        final AnnotationIndex index = service.importDocument(uuid, name, confirmed, dataMap);
+        return Response
+                .ok(index)
+                .build();
+    }
+
+    @Override
+    public Response exportDocument(final String uuid) throws QueryApiException {
+        final Map<String, String> doc = service.exportDocument(uuid);
+        return Response
+                .ok(doc)
+                .build();
     }
 }

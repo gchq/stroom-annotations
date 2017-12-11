@@ -15,7 +15,9 @@ import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.criteria.Root;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class IndexServiceImpl implements IndexService {
     private static final Logger LOGGER = LoggerFactory.getLogger(IndexServiceImpl.class);
@@ -185,6 +187,34 @@ public class IndexServiceImpl implements IndexService {
             if (tx!=null) tx.rollback();
             LOGGER.warn("Failed to get create annotation", e);
             throw new QueryApiException(e);
+        }
+    }
+
+    @Override
+    public Map<String, String> exportDocument(final String uuid) throws QueryApiException {
+        final AnnotationIndex index = get(uuid);
+
+        final Map<String, String> export = new HashMap<>();
+        return export;
+    }
+
+    @Override
+    public AnnotationIndex importDocument(final String uuid,
+                                          final String name,
+                                          final Boolean confirmed,
+                                          final Map<String, String> dataMap) throws QueryApiException {
+        if (confirmed) {
+            final AnnotationIndex index = create(uuid, name);
+
+            return index;
+        } else {
+            final AnnotationIndex existing = get(uuid);
+
+            if (null != existing) {
+                return null;
+            } else {
+                return new AnnotationIndex.Builder().uuid(uuid).name(name).build();
+            }
         }
     }
 }

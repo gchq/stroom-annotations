@@ -3,7 +3,9 @@ package stroom.annotations.service;
 import stroom.annotations.hibernate.AnnotationIndex;
 import stroom.util.shared.QueryApiException;
 
+import javax.ws.rs.PathParam;
 import java.util.List;
+import java.util.Map;
 
 public interface IndexService {
     /**
@@ -71,4 +73,25 @@ public interface IndexService {
      * @throws QueryApiException  If something goes wrong
      */
     void deleteDocument(String uuid) throws QueryApiException;
+
+    /**
+     * Used to export the full details of a document for transfer.
+     * @param uuid The UUID of the document to export
+     * @return The exported data
+     * @throws QueryApiException If something goes wrong
+     */
+    Map<String, String> exportDocument(String uuid) throws QueryApiException;
+
+    /**
+     * Used to import a document into the system
+     * @param uuid The UUID of the document to import
+     * @param name The Name of the document to import
+     * @param confirmed indicates if this is a dry run
+     * @param dataMap The data that gives all the implementation specific details
+     * @return
+     */
+    AnnotationIndex importDocument(String uuid,
+                                   String name,
+                                   Boolean confirmed,
+                                   Map<String, String> dataMap) throws QueryApiException;
 }
