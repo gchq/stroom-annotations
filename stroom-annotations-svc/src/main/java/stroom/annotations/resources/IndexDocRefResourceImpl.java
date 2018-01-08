@@ -2,6 +2,7 @@ package stroom.annotations.resources;
 
 import stroom.annotations.hibernate.AnnotationIndex;
 import stroom.annotations.service.IndexService;
+import stroom.query.api.v2.DocRefInfo;
 import stroom.query.audit.DocRefResource;
 import stroom.util.shared.QueryApiException;
 
@@ -35,6 +36,15 @@ public class IndexDocRefResourceImpl implements DocRefResource {
 
         return Response
                 .ok(index)
+                .build();
+    }
+
+    @Override
+    public Response getInfo(String uuid) throws QueryApiException {
+        final DocRefInfo info = service.getInfo(uuid);
+
+        return Response
+                .ok(info)
                 .build();
     }
 

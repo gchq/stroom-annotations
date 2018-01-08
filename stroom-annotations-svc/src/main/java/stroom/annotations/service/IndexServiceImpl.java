@@ -6,6 +6,8 @@ import org.hibernate.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import stroom.annotations.hibernate.AnnotationIndex;
+import stroom.query.api.v2.DocRef;
+import stroom.query.api.v2.DocRefInfo;
 import stroom.query.hibernate.DocRefEntity;
 import stroom.util.shared.QueryApiException;
 
@@ -62,6 +64,18 @@ public class IndexServiceImpl implements IndexService {
             LOGGER.warn("Failed to get index list", e);
             throw new QueryApiException(e);
         }
+    }
+
+    @Override
+    public DocRefInfo getInfo(final String uuid) throws QueryApiException {
+        final AnnotationIndex index = get(uuid);
+
+        return new DocRefInfo.Builder()
+                .docRef(new DocRef.Builder()
+                        .uuid(index.getUuid())
+                        .name(index.getName())
+                        .build())
+                .build();
     }
 
     @Override

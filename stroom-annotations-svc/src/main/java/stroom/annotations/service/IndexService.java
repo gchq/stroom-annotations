@@ -1,6 +1,7 @@
 package stroom.annotations.service;
 
 import stroom.annotations.hibernate.AnnotationIndex;
+import stroom.query.api.v2.DocRefInfo;
 import stroom.util.shared.QueryApiException;
 
 import javax.ws.rs.PathParam;
@@ -22,6 +23,14 @@ public interface IndexService {
      * @throws QueryApiException  If something goes wrong
      */
     AnnotationIndex get(String uuid) throws QueryApiException;
+
+    /**
+     * Retrieve the info about a doc ref
+     * @param uuid The UUID of the doc ref to find
+     * @return The DocRefInfo for the UUID
+     * @throws QueryApiException If something goes wrong
+     */
+    DocRefInfo getInfo(String uuid) throws QueryApiException;
 
     /**
      * A new document has been created in Stroom
