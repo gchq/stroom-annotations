@@ -10,7 +10,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import stroom.annotations.App;
-import stroom.annotations.Config;
+import stroom.annotations.config.Config;
 import stroom.annotations.hibernate.AnnotationIndex;
 import stroom.query.audit.DocRefResourceHttpClient;
 import stroom.query.audit.FifoLogbackAppender;

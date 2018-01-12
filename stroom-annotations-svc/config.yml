@@ -37,3 +37,7 @@ logging:
       logFormat: "%-6level [%d{HH:mm:ss.SSS}] [%t] %logger{5} - %X{code} %msg %n"
       timeZone: UTC
 
+token:
+  publicKeyUrl: ${JWS_PUBLIC_KEY_URL:- http://stroom-auth-service:8099/token/v1/publickey}
+  jwsIssuer: ${JWS_ISSUER:- stroom}
+  algorithm: ${JWS_ALGORITHM:- RS256}

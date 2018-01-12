@@ -2,7 +2,8 @@ import {
     REQUEST_SEARCH_ANNOTATIONS,
     REQUEST_MORE_ANNOTATIONS,
     RECEIVE_SEARCH_ANNOTATIONS,
-    RECEIVE_SEARCH_ANNOTATIONS_FAILED
+    RECEIVE_SEARCH_ANNOTATIONS_FAILED,
+    SELECT_ROW
 } from '../actions/searchAnnotations'
 
 import {
@@ -16,6 +17,7 @@ import {
 const defaultState = {
     searchTerm: '',
     annotations: [],
+    showSearchLoader: false,
     canRequestMore: false
 }
 
@@ -24,6 +26,17 @@ const manageAnnotations = (
     action
  ) => {
     switch(action.type) {
+        case SELECT_ROW: {
+            if (state.selectedAnnotationRowId === action.annotationId) {
+                return Object.assign({}, state, {
+                    selectedAnnotationRowId: undefined
+                })
+            } else {
+                return Object.assign({}, state, {
+                    selectedAnnotationRowId: action.annotationId
+                })
+            }
+        }
         case RECEIVE_REMOVE_ANNOTATION: {
             return Object.assign({}, state, {
                     annotations : state.annotations.filter(a => a.id !== action.id)
@@ -41,12 +54,14 @@ const manageAnnotations = (
             return Object.assign({}, state, {
                 searchTerm: action.searchTerm,
                 annotations: [],
-                canRequestMore: false
+                canRequestMore: false,
+                showSearchLoader: true
             })
         }
         case REQUEST_MORE_ANNOTATIONS: {
             return Object.assign({}, state, {
-                canRequestMore: false
+                canRequestMore: false,
+                showSearchLoader: true
             })
         }
         case RECEIVE_SEARCH_ANNOTATIONS: {
@@ -54,7 +69,7 @@ const manageAnnotations = (
             if (action.append) {
                 annotations = [
                     ...state.annotations,
-                    ...action.annotations
+                    ...action.annotations,
                 ]
             } else {
                 annotations = action.annotations
@@ -62,12 +77,14 @@ const manageAnnotations = (
 
             return Object.assign({}, state, {
                 annotations,
+                showSearchLoader: false,
                 canRequestMore: (action.annotations.length > 0)
             })
         }
         case RECEIVE_SEARCH_ANNOTATIONS_FAILED: {
             return Object.assign({}, state, {
                     annotations: [],
+                    showSearchLoader: false,
                     canRequestMore: false
                   })
         }

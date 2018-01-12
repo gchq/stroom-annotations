@@ -1,5 +1,7 @@
 import fetch from 'isomorphic-fetch'
 
+import { sendToSnackbar } from './snackBar'
+
 export const REQUEST_FETCH_ANNOTATION = 'REQUEST_FETCH_ANNOTATION';
 
 export const requestFetchAnnotation = (apiCallId, indexUuid, id) => ({
@@ -37,13 +39,21 @@ export const receiveFetchAnnotationFailed = (apiCallId, message) => ({
 let apiCallId = 0
 
 export const fetchAnnotation = (indexUuid, id) => {
-    return function(dispatch) {
+    return function(dispatch, getState) {
         const thisApiCallId = `fetchAnnotation-${apiCallId}`
         apiCallId += 1
 
         dispatch(requestFetchAnnotation(thisApiCallId, id));
 
-        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/single/${indexUuid}/${id}`)
+        const state = getState()
+        const jwsToken = state.authentication.idToken
+
+        return fetch(`${state.config.annotationsServiceUrl}/single/${indexUuid}/${id}`, {
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': 'Bearer ' + jwsToken
+            },
+        })
             .then(
                 response => {
                     if (response.status === 404) {
@@ -60,6 +70,7 @@ export const fetchAnnotation = (indexUuid, id) => {
                 }
             }).catch(error => {
                 dispatch(receiveFetchAnnotationFailed(thisApiCallId, error))
+                dispatch(sendToSnackbar('Failed to Fetch Annotations ' + error))
             })
     }
 }

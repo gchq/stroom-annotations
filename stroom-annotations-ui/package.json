@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "dateformat": "^3.0.2",
     "isomorphic-fetch": "^2.2.1",
+    "jquery": "^3.2.1",
     "material-ui": "^0.19.4",
     "material-ui-icons": "^1.0.0-beta.10",
     "material-ui-search-bar": "^0.4.0",
@@ -12,14 +14,20 @@
     "react-dom": "^16.0.0",
     "react-redux": "^5.0.6",
     "react-router-dom": "^4.2.2",
+    "react-router-redux": "next",
     "react-scripts": "1.0.17",
+    "react-table": "^6.4.0",
+    "react-tap-event-plugin": "^3.0.2",
     "redux": "^3.7.2",
+    "redux-form": "^7.0.1",
+    "redux-form-material-ui": "^4.2.0",
     "redux-logger": "^3.0.6",
     "redux-thunk": "^2.2.0",
-    "simpl-schema": "^0.4.0"
+    "simpl-schema": "^0.4.0",
+    "stroom-js": "https://github.com/gchq/stroom-js.git#dist"
   },
   "scripts": {
-    "start": "PORT=5001 react-scripts start",
+    "start": "BROWSER=none PORT=5001 react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject"

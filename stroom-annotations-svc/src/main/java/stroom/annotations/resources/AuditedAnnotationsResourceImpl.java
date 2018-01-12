@@ -10,6 +10,7 @@ import event.logging.Search;
 import event.logging.Term;
 import event.logging.TermCondition;
 import stroom.annotations.hibernate.Annotation;
+import stroom.annotations.security.ServiceUser;
 import stroom.util.shared.QueryApiException;
 
 import javax.inject.Inject;
@@ -39,14 +40,15 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response search(final String index,
+    public Response search(final ServiceUser authenticatedServiceUser,
+                           final String index,
                            final String q,
                            final Integer seekPosition) throws QueryApiException {
         Response response;
         Exception exception = null;
         
         try {
-            response = annotationsResource.search(index, q, seekPosition);
+            response = annotationsResource.search(authenticatedServiceUser, index, q, seekPosition);
 
             return response;
         } finally {
@@ -88,12 +90,14 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response get(final String index, final String id) throws QueryApiException {
+    public Response get(final ServiceUser authenticatedServiceUser,
+                        final String index,
+                        final String id) throws QueryApiException {
         Response response;
         Exception exception = null;
         
         try {
-            response =  annotationsResource.get(index, id);
+            response =  annotationsResource.get(authenticatedServiceUser, index, id);
 
             return response;
         } finally {
@@ -111,12 +115,14 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response getHistory(final String index, final String id) throws QueryApiException {
+    public Response getHistory(final ServiceUser authenticatedServiceUser,
+                               final String index,
+                               final String id) throws QueryApiException {
         Response response;
         Exception exception = null;
 
         try {
-            response =  annotationsResource.getHistory(index, id);
+            response =  annotationsResource.getHistory(authenticatedServiceUser, index, id);
 
             return response;
         } finally {
@@ -133,12 +139,14 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response create(final String index, final String id) throws QueryApiException {
+    public Response create(final ServiceUser authenticatedServiceUser,
+                           final String index,
+                           final String id) throws QueryApiException {
         Response response;
         QueryApiException exception = null;
 
         try {
-            response =  annotationsResource.create(index, id);
+            response =  annotationsResource.create(authenticatedServiceUser, index, id);
 
             return response;
         } finally {
@@ -156,14 +164,15 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response update(final String index,
+    public Response update(final ServiceUser authenticatedServiceUser,
+                           final String index,
                            final String id,
                            final Annotation annotation) throws QueryApiException {
         Response response;
         Exception exception = null;
 
         try {
-            response =  annotationsResource.update(index, id, annotation);
+            response =  annotationsResource.update(authenticatedServiceUser, index, id, annotation);
 
             return response;
         } finally {
@@ -188,12 +197,14 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response remove(final String index, final String id) throws QueryApiException {
+    public Response remove(final ServiceUser authenticatedServiceUser,
+                           final String index,
+                           final String id) throws QueryApiException {
         Response response;
         Exception exception = null;
 
         try {
-            response =  annotationsResource.remove(index, id);
+            response =  annotationsResource.remove(authenticatedServiceUser, index, id);
 
             return response;
         } finally {

@@ -1,21 +1,24 @@
 import { combineReducers } from 'redux'
+import { routerReducer } from 'react-router-redux'
+import { reducer as formReducer } from 'redux-form'
+
+import { authenticationReducer as authentication, authorisationReducer as authorisation } from 'stroom-js'
 
 import singleAnnotation from './singleAnnotation'
 import history from './history'
 import manageAnnotations from './manageAnnotations'
 import statusValues from './statusValues'
 import snackbarMessages from './snackbarMessages'
-import apiCalls from './apiCalls'
-import ui from './ui'
 
-const annotationsApp = combineReducers({
+export default combineReducers({
+    routing: routerReducer,
     singleAnnotation,
     history,
     manageAnnotations,
     statusValues,
     snackbarMessages,
-    apiCalls,
-    ui
+    authentication,
+    authorisation,
+    config : (state= {}) => state,
+    form: formReducer
 })
-
-export default annotationsApp

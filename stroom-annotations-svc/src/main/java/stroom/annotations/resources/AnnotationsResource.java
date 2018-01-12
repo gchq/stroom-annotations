@@ -1,9 +1,11 @@
 package stroom.annotations.resources;
 
 import com.codahale.metrics.annotation.Timed;
+import io.dropwizard.auth.Auth;
 import io.dropwizard.validation.Validated;
 import org.hibernate.validator.constraints.Length;
 import stroom.annotations.hibernate.Annotation;
+import stroom.annotations.security.ServiceUser;
 import stroom.util.shared.QueryApiException;
 
 import javax.validation.constraints.NotNull;
@@ -37,7 +39,8 @@ public interface AnnotationsResource {
     @Path("/search/{index}")
     @Produces({MediaType.APPLICATION_JSON})
     @Timed
-    Response search(@Validated
+    Response search(@Auth @NotNull ServiceUser authenticatedServiceUser,
+                    @Validated
                     @PathParam("index")
                     @NotNull
                     @Length(min= Annotation.MIN_ID_LENGTH) String index,
@@ -47,7 +50,8 @@ public interface AnnotationsResource {
     @GET
     @Path("/single/{index}/{id}")
     @Timed
-    Response get(@Validated
+    Response get(@Auth @NotNull ServiceUser authenticatedServiceUser,
+                 @Validated
                  @PathParam("index")
                  @NotNull
                  @Length(min=Annotation.MIN_ID_LENGTH) String index,
@@ -59,7 +63,8 @@ public interface AnnotationsResource {
     @GET
     @Path("/single/{index}/{id}/history")
     @Timed
-    Response getHistory(@Validated
+    Response getHistory(@Auth @NotNull ServiceUser authenticatedServiceUser,
+                        @Validated
                         @PathParam("index")
                         @NotNull
                         @Length(min=Annotation.MIN_ID_LENGTH) String index,
@@ -71,7 +76,8 @@ public interface AnnotationsResource {
     @POST
     @Path("/single/{index}/{id}")
     @Timed
-    Response create(@Validated
+    Response create(@Auth @NotNull ServiceUser authenticatedServiceUser,
+                    @Validated
                     @PathParam("index")
                     @NotNull
                     @Length(min=Annotation.MIN_ID_LENGTH) String index,
@@ -84,7 +90,8 @@ public interface AnnotationsResource {
     @Path("/single/{index}/{id}")
     @Consumes({MediaType.APPLICATION_JSON})
     @Timed
-    Response update(@Validated
+    Response update(@Auth @NotNull ServiceUser authenticatedServiceUser,
+                    @Validated
                     @PathParam("index")
                     @NotNull
                     @Length(min=Annotation.MIN_ID_LENGTH) String index,
@@ -97,7 +104,8 @@ public interface AnnotationsResource {
     @DELETE
     @Path("/single/{index}/{id}")
     @Timed
-    Response remove(@Validated
+    Response remove(@Auth @NotNull ServiceUser authenticatedServiceUser,
+                    @Validated
                     @PathParam("index")
                     @NotNull
                     @Length(min=Annotation.MIN_ID_LENGTH) String index,

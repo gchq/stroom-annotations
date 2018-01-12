@@ -1,5 +1,7 @@
 import fetch from 'isomorphic-fetch'
 
+import { sendToSnackbar } from './snackBar'
+
 export const REQUEST_REMOVE_ANNOTATION = 'REQUEST_REMOVE_ANNOTATION'
 
 export const requestRemoveAnnotation = (apiCallId, id) => ({
@@ -27,22 +29,32 @@ export const receiveRemoveAnnotationFailed = (apiCallId, message) => ({
 let apiCallId = 0
 
 export const removeAnnotation = (indexUuid, id) => {
-    return function(dispatch) {
+    return function(dispatch, getState) {
         const thisApiCallId = `removeAnnotation-${apiCallId}`
         apiCallId += 1
 
         dispatch(requestRemoveAnnotation(thisApiCallId, id));
 
-        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/single/${indexUuid}/${id}`,
-            {
-                method: "DELETE"
-            }
-        )
+        const state = getState()
+        const jwsToken = state.authentication.idToken
+
+        return fetch(`${state.config.annotationsServiceUrl}/single/${indexUuid}/${id}`, {
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': 'Bearer ' + jwsToken
+            },
+            method: "DELETE",
+            mode: 'cors'
+        })
               .then(
                 response => {
                     dispatch(receiveRemoveAnnotation(thisApiCallId, id))
+                    dispatch(sendToSnackbar('Annotation Removed'))
                 },
-                error => dispatch(receiveRemoveAnnotationFailed(thisApiCallId, error))
+                error => {
+                    dispatch(receiveRemoveAnnotationFailed(thisApiCallId, error))
+                    dispatch(sendToSnackbar('Failed to Remove Annotation ' + error))
+                }
               )
     }
 }

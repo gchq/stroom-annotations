@@ -1,5 +1,7 @@
 import fetch from 'isomorphic-fetch'
 
+import { sendToSnackbar } from './snackBar'
+
 export const EDIT_ANNOTATION = 'EDIT_ANNOTATION'
 
 export const editAnnotation = (id, updates) => ({
@@ -37,19 +39,24 @@ export const receiveUpdateAnnotationFailed = (apiCallId, message) => ({
 let apiCallId = 0
 
 export const updateAnnotation = (indexUuid, id, annotation) => {
-    return function(dispatch) {
+    return function(dispatch, getState) {
         const thisApiCallId = `updateAnnotation-${apiCallId}`
         apiCallId += 1
 
         dispatch(requestUpdateAnnotation(thisApiCallId, id, annotation));
 
-        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/single/${indexUuid}/${id}`,
+        const state = getState()
+        const jwsToken = state.authentication.idToken
+
+        return fetch(`${state.config.annotationsServiceUrl}/single/${indexUuid}/${id}`,
             {
                 method: "PUT",
                 headers: {
                     'Accept': 'application/json',
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + jwsToken
                 },
+                mode: 'cors',
                 body: JSON.stringify(annotation)
             }
         )
@@ -64,8 +71,10 @@ export const updateAnnotation = (indexUuid, id, annotation) => {
               .then(json => {
                 if (json.id) {
                     dispatch(receiveUpdateAnnotation(thisApiCallId, id, json))
+                    dispatch(sendToSnackbar('Annotation Updated'))
                 } else {
                     dispatch(receiveUpdateAnnotationFailed(thisApiCallId, json.msg))
+                    dispatch(sendToSnackbar('Failed to Update Annotation ' + json.msg))
                 }
               })
     }

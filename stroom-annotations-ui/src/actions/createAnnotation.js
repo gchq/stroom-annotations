@@ -1,5 +1,7 @@
 import fetch from 'isomorphic-fetch'
 
+import { sendToSnackbar } from './snackBar'
+
 export const REQUEST_CREATE_ANNOTATION = 'REQUEST_CREATE_ANNOTATION'
 
 export const requestCreateAnnotation = (apiCallId, id) => ({
@@ -28,13 +30,24 @@ export const receiveCreateAnnotationFailed = (apiCallId, message) => ({
 let apiCallId = 0
 
 export const createAnnotation = (indexUuid, id) => {
-    return function(dispatch) {
+    return function(dispatch, getState) {
         const thisApiCallId = `createAnnotation-${apiCallId}`
         apiCallId += 1
 
-        dispatch(requestCreateAnnotation(thisApiCallId, id));
+        dispatch(requestCreateAnnotation(thisApiCallId, id))
 
-        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/single/${indexUuid}/${id}`, {method: "POST"})
+        const state = getState()
+        const jwsToken = state.authentication.idToken
+
+        return fetch(`${state.config.annotationsServiceUrl}/single/${indexUuid}/${id}`, {
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + jwsToken
+            },
+            method: "POST",
+            mode: 'cors'
+        })
             .then(
                 response => {
                     if (!response.ok) {
@@ -46,9 +59,11 @@ export const createAnnotation = (indexUuid, id) => {
             .then(json => {
                 if (json.id) {
                     dispatch(receiveCreateAnnotation(thisApiCallId, id, json))
+                    dispatch(sendToSnackbar('Annotation Created'))
                 }
             }).catch(error => {
                 dispatch(receiveCreateAnnotationFailed(thisApiCallId, error.message))
+                dispatch(sendToSnackbar('Failed to Create Annotation ' + error.message))
             })
     }
 }

@@ -1,6 +1,7 @@
 package stroom.annotations;
 
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
+import stroom.annotations.config.Config;
 import stroom.annotations.resources.AnnotationsResource;
 import stroom.annotations.resources.AnnotationsResourceImpl;
 import stroom.annotations.resources.IndexDocRefResourceImpl;

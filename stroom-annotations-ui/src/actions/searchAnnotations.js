@@ -1,5 +1,14 @@
 import fetch from 'isomorphic-fetch'
 
+import { sendToSnackbar } from './snackBar'
+
+export const SELECT_ROW = 'SELECT_ROW'
+
+export const changeSelectedRow = (annotationId) => ({
+    type: SELECT_ROW,
+    annotationId
+})
+
 export const REQUEST_SEARCH_ANNOTATIONS = 'REQUEST_SEARCH_ANNOTATIONS';
 
 export const requestSearchAnnotations = (apiCallId, searchTerm) => ({
@@ -39,13 +48,22 @@ export const searchAnnotations = (indexUuid, searchTermRaw) => {
 
     let searchTerm = searchTermRaw ? searchTermRaw : ''
 
-    return function(dispatch) {
+    return function(dispatch, getState) {
         const thisApiCallId = `searchAnnotations-${apiCallId}`
         apiCallId += 1
 
         dispatch(requestSearchAnnotations(thisApiCallId, searchTerm));
 
-        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/search/${indexUuid}/?q=${searchTerm}`)
+        const state = getState()
+        const jwsToken = state.authentication.idToken
+
+        return fetch(`${state.config.annotationsServiceUrl}/search/${indexUuid}/?q=${searchTerm}`, {
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': 'Bearer ' + jwsToken
+            },
+            mode: 'cors'
+        })
             .then(
                 response => {
                     if (!response.ok) {
@@ -57,6 +75,7 @@ export const searchAnnotations = (indexUuid, searchTermRaw) => {
             .then(json => dispatch(receiveSearchAnnotations(thisApiCallId, json, false)) )
             .catch(error => {
                 dispatch(receiveSearchAnnotationsFailed(thisApiCallId, error))
+                dispatch(sendToSnackbar('Failed to Search Annotations ' + error))
             })
     }
 }
@@ -69,9 +88,16 @@ export const moreAnnotations = (indexUuid) => {
 
         dispatch(requestMoreAnnotations(thisApiCallId));
 
-        let state = getState().manageAnnotations
+        let state = getState()
+        const jwsToken = state.authentication.idToken
 
-        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/search/${indexUuid}/?q=${state.searchTerm}&seekPosition=${state.annotations.length}`)
+        return fetch(`${state.config.annotationsServiceUrl}/search/${indexUuid}/?q=${state.manageAnnotations.searchTerm}&seekPosition=${state.manageAnnotations.annotations.length}`, {
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': 'Bearer ' + jwsToken
+            },
+            mode: 'cors'
+        })
             .then(
                 response => {
                     if (!response.ok) {
@@ -83,6 +109,7 @@ export const moreAnnotations = (indexUuid) => {
             .then(json => dispatch(receiveSearchAnnotations(thisApiCallId, json, true)) )
             .catch(error => {
                 dispatch(receiveSearchAnnotationsFailed(thisApiCallId, error))
+                dispatch(sendToSnackbar('Failed to Fetch More Annotations ' + error))
             })
     }
 }

@@ -1,6 +1,7 @@
 package stroom.annotations.resources;
 
 import stroom.annotations.hibernate.Annotation;
+import stroom.annotations.security.ServiceUser;
 import stroom.query.audit.SimpleJsonHttpClient;
 import stroom.util.shared.QueryApiException;
 
@@ -51,7 +52,8 @@ public class AnnotationsHttpClient implements AnnotationsResource {
     }
 
     @Override
-    public Response search(final String index,
+    public Response search(final ServiceUser authenticatedServiceUser,
+                           final String index,
                            final String q,
                            final Integer seekPosition) throws QueryApiException {
         return this.httpClient
@@ -62,7 +64,8 @@ public class AnnotationsHttpClient implements AnnotationsResource {
     }
 
     @Override
-    public Response get(final String index,
+    public Response get(final ServiceUser authenticatedServiceUser,
+                        final String index,
                         final String id) throws QueryApiException {
         return this.httpClient
                 .get(this.singleUrl.apply(index, id))
@@ -70,7 +73,8 @@ public class AnnotationsHttpClient implements AnnotationsResource {
     }
 
     @Override
-    public Response getHistory(final String index,
+    public Response getHistory(final ServiceUser authenticatedServiceUser,
+                               final String index,
                                final String id) throws QueryApiException {
         return this.httpClient
                 .get(this.getHistoryUrl.apply(index, id))
@@ -78,7 +82,8 @@ public class AnnotationsHttpClient implements AnnotationsResource {
     }
 
     @Override
-    public Response create(final String index,
+    public Response create(final ServiceUser authenticatedServiceUser,
+                           final String index,
                            final String id) throws QueryApiException {
         return this.httpClient
                 .post(this.singleUrl.apply(index, id))
@@ -86,7 +91,8 @@ public class AnnotationsHttpClient implements AnnotationsResource {
     }
 
     @Override
-    public Response update(final String index,
+    public Response update(final ServiceUser authenticatedServiceUser,
+                           final String index,
                            final String id,
                            final Annotation annotation) throws QueryApiException {
         return this.httpClient
@@ -96,7 +102,8 @@ public class AnnotationsHttpClient implements AnnotationsResource {
     }
 
     @Override
-    public Response remove(final String index,
+    public Response remove(final ServiceUser authenticatedServiceUser,
+                           final String index,
                            final String id) throws QueryApiException {
         return this.httpClient
                 .delete(this.singleUrl.apply(index, id))

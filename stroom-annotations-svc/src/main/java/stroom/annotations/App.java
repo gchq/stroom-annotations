@@ -2,6 +2,8 @@ package stroom.annotations;
 
 import io.dropwizard.Application;
 import io.dropwizard.ConfiguredBundle;
+import io.dropwizard.auth.AuthDynamicFeature;
+import io.dropwizard.auth.AuthValueFactoryProvider;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
 import io.dropwizard.db.DataSourceFactory;
@@ -12,11 +14,16 @@ import io.dropwizard.hibernate.HibernateBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
+import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
+import stroom.annotations.config.Config;
+import stroom.annotations.config.TokenConfig;
 import stroom.annotations.hibernate.Annotation;
 import stroom.annotations.hibernate.AnnotationHistory;
 import stroom.annotations.hibernate.AnnotationIndex;
 import stroom.annotations.resources.AuditedAnnotationsResourceImpl;
 import stroom.annotations.resources.QueryApiExceptionMapper;
+import stroom.annotations.security.RobustJwtAuthFilter;
+import stroom.annotations.security.ServiceUser;
 import stroom.query.audit.AuditedDocRefResourceImpl;
 import stroom.query.hibernate.AuditedCriteriaQueryBundle;
 
@@ -71,7 +78,12 @@ public class App extends Application<Config> {
     }
 
     @Override
-    public void run(final Config configuration, final Environment environment) throws Exception {
+    public void run(final Config configuration,
+                    final Environment environment) throws Exception {
+
+        // And we want to configure authentication before the resources
+        configureAuthentication(configuration.getTokenConfig(), environment);
+
         configureCors(environment);
 
         environment.jersey().register(new Module(configuration));
@@ -80,8 +92,14 @@ public class App extends Application<Config> {
         environment.jersey().register(QueryApiExceptionMapper.class);
     }
 
+    private static void configureAuthentication(final TokenConfig tokenConfig,
+                                                final Environment environment) {
+        environment.jersey().register(new AuthDynamicFeature(new RobustJwtAuthFilter(tokenConfig)));
+        environment.jersey().register(new AuthValueFactoryProvider.Binder<>(ServiceUser.class));
+        environment.jersey().register(RolesAllowedDynamicFeature.class);
+    }
 
-    private static void configureCors(Environment environment) {
+    private static void configureCors(final Environment environment) {
         FilterRegistration.Dynamic cors = environment.servlets().addFilter("CORS", CrossOriginFilter.class);
         cors.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, new String[]{"/*"});
         cors.setInitParameter("allowedMethods", "GET,PUT,POST,DELETE,OPTIONS");

@@ -1,5 +1,7 @@
 import fetch from 'isomorphic-fetch'
 
+import { sendToSnackbar } from './snackBar'
+
 export const REQUEST_FETCH_ANNOTATION_HISTORY = 'REQUEST_FETCH_ANNOTATION_HISTORY';
 
 export const requestFetchAnnotationHistory = (apiCallId, id) => ({
@@ -28,13 +30,21 @@ export const receiveFetchAnnotationHistoryFailed = (apiCallId, message) => ({
 let apiCallId = 0
 
 export const fetchAnnotationHistory = (indexUuid, id) => {
-    return function(dispatch) {
+    return function(dispatch, getState) {
         const thisApiCallId = `fetchAnnotationHistory-${apiCallId}`
         apiCallId += 1
 
         dispatch(requestFetchAnnotationHistory(thisApiCallId, id));
 
-        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/single/${indexUuid}/${id}/history`)
+        const state = getState()
+        const jwsToken = state.authentication.idToken
+
+        return fetch(`${state.config.annotationsServiceUrl}/single/${indexUuid}/${id}/history`, {
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': 'Bearer ' + jwsToken
+            },
+        })
               .then(
                 response => response.json(),
                 // Do not use catch, because that will also catch
@@ -49,6 +59,7 @@ export const fetchAnnotationHistory = (indexUuid, id) => {
               .then(json => {
                 if (json) {
                     dispatch(receiveFetchAnnotationHistory(thisApiCallId, id, json))
+                    dispatch(sendToSnackbar('Failed to Fetch Annotation History ' + json))
                 }
               })
     }

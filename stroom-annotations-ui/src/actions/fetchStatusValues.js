@@ -1,5 +1,7 @@
 import fetch from 'isomorphic-fetch'
 
+import { sendToSnackbar } from './snackBar'
+
 export const REQUEST_FETCH_STATUS_VALUES = 'REQUEST_FETCH_STATUS_VALUES';
 
 export const requestFetchStatusValues = (apiCallId, id) => ({
@@ -27,13 +29,15 @@ export const receiveFetchStatusValuesFailed = (apiCallId, message) => ({
 let apiCallId = 0
 
 export const fetchStatusValues = (id) => {
-    return function(dispatch) {
+    return function(dispatch, getState) {
         const thisApiCallId = `fetchStatusValues-${apiCallId}`
         apiCallId += 1
 
         dispatch(requestFetchStatusValues(thisApiCallId, id));
 
-        return fetch(`${process.env.REACT_APP_ANNOTATIONS_URL}/static/statusValues`)
+        const state = getState()
+
+        return fetch(`${state.config.annotationsServiceUrl}/static/statusValues`)
               .then(
                 response => response.json(),
                 // Do not use catch, because that will also catch
@@ -47,6 +51,7 @@ export const fetchStatusValues = (id) => {
                     dispatch(receiveFetchStatusValues(thisApiCallId, json))
                 } else {
                     dispatch(receiveFetchStatusValuesFailed(thisApiCallId, json.msg))
+                    dispatch(sendToSnackbar('Failed to Fetch Status Values ' + json.msg))
                 }
               })
     }

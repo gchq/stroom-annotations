@@ -6,6 +6,7 @@ import stroom.annotations.hibernate.Annotation;
 import stroom.annotations.hibernate.AnnotationHistory;
 import stroom.annotations.hibernate.Status;
 import stroom.annotations.model.ResponseMsgDTO;
+import stroom.annotations.security.ServiceUser;
 import stroom.annotations.service.AnnotationsService;
 import stroom.util.shared.QueryApiException;
 
@@ -42,7 +43,8 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
                 .build();
     }
 
-    public final Response search(final String index,
+    public final Response search(final ServiceUser authenticatedServiceUser,
+                                 final String index,
                                  final String q,
                                  final Integer seekPosition) throws QueryApiException {
         final List<Annotation> annotations = service.search(index, q, seekPosition);
@@ -51,14 +53,16 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
                 .build();
     }
 
-    public final Response get(final String index,
+    public final Response get(final ServiceUser authenticatedServiceUser,
+                              final String index,
                               final String id) throws QueryApiException {
         final Annotation annotation = service.get(index, id);
 
         return Response.ok(annotation).build();
     }
 
-    public final Response getHistory(final String index,
+    public final Response getHistory(final ServiceUser authenticatedServiceUser,
+                                     final String index,
                                      final String id) throws QueryApiException {
         final List<AnnotationHistory> results = service.getHistory(index, id);
 
@@ -74,7 +78,8 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
         }
     }
 
-    public final Response create(final String index,
+    public final Response create(final ServiceUser authenticatedServiceUser,
+                                 final String index,
                                  final String id) throws QueryApiException {
         final Annotation annotation = service.create(index, id);
 
@@ -82,7 +87,8 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
                 .build();
     }
 
-    public final Response update(final String index,
+    public final Response update(final ServiceUser authenticatedServiceUser,
+                                 final String index,
                                  final String id,
                                  final Annotation annotationUpdate) throws QueryApiException {
         final Annotation annotation = service.update(index, id, annotationUpdate);
@@ -91,7 +97,8 @@ public class AnnotationsResourceImpl implements AnnotationsResource {
                 .build();
     }
 
-    public final Response remove(final String index,
+    public final Response remove(final ServiceUser authenticatedServiceUser,
+                                 final String index,
                                  final String id) throws QueryApiException {
         service.remove(index, id);
 

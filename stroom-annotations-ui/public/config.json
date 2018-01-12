@@ -1,0 +1,7 @@
+{
+    "authenticationServiceUrl": "http://stroom-auth-service:8099/authentication/v1",
+    "authorisationServiceUrl": "http://localhost:8080/api/authorisation/v1",
+    "advertisedUrl": "http://stroom-annotations-ui:5001",
+    "appClientId": "stroom-annotations",
+    "annotationsServiceUrl": "http://stroom-annotations-service:8199/annotations/v1"
+}
