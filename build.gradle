@@ -54,7 +54,7 @@ ext.versions = [
 
     //same version for both stroom-query-api and stroom-query-common
     stroomQuery: 'v2.0.0-alpha.22',
-    stroomExpression: 'v1.0.0',
+    stroomExpression: 'v1.0.1',
 ]
 
 allprojects {
