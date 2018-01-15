@@ -1,8 +1,8 @@
 package stroom.annotations.resources;
 
 import stroom.annotations.hibernate.Annotation;
-import stroom.annotations.security.ServiceUser;
-import stroom.query.audit.SimpleJsonHttpClient;
+import stroom.query.audit.client.SimpleJsonHttpClient;
+import stroom.query.audit.security.ServiceUser;
 import stroom.util.shared.QueryApiException;
 
 import javax.ws.rs.core.Response;
@@ -60,6 +60,7 @@ public class AnnotationsHttpClient implements AnnotationsResource {
                 .get(this.searchUrl.apply(index))
                 .queryParam("q", q)
                 .queryParam("seekPosition", seekPosition)
+                .jwt(authenticatedServiceUser.getJwt())
                 .send();
     }
 
@@ -69,6 +70,7 @@ public class AnnotationsHttpClient implements AnnotationsResource {
                         final String id) throws QueryApiException {
         return this.httpClient
                 .get(this.singleUrl.apply(index, id))
+                .jwt(authenticatedServiceUser.getJwt())
                 .send();
     }
 
@@ -78,6 +80,7 @@ public class AnnotationsHttpClient implements AnnotationsResource {
                                final String id) throws QueryApiException {
         return this.httpClient
                 .get(this.getHistoryUrl.apply(index, id))
+                .jwt(authenticatedServiceUser.getJwt())
                 .send();
     }
 
@@ -87,6 +90,7 @@ public class AnnotationsHttpClient implements AnnotationsResource {
                            final String id) throws QueryApiException {
         return this.httpClient
                 .post(this.singleUrl.apply(index, id))
+                .jwt(authenticatedServiceUser.getJwt())
                 .send();
     }
 
@@ -98,6 +102,7 @@ public class AnnotationsHttpClient implements AnnotationsResource {
         return this.httpClient
                 .put(this.singleUrl.apply(index, id))
                 .body(annotation)
+                .jwt(authenticatedServiceUser.getJwt())
                 .send();
     }
 
@@ -107,6 +112,7 @@ public class AnnotationsHttpClient implements AnnotationsResource {
                            final String id) throws QueryApiException {
         return this.httpClient
                 .delete(this.singleUrl.apply(index, id))
+                .jwt(authenticatedServiceUser.getJwt())
                 .send();
     }
 }

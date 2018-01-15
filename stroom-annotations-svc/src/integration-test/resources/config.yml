@@ -36,3 +36,8 @@ logging:
     - type: console
       logFormat: "%-6level [%d{HH:mm:ss.SSS}] [%t] %logger{5} - %X{code} %msg %n"
       timeZone: UTC
+
+token:
+  publicKeyUrl: http://localhost:10299/testAuthService/publicKey
+  jwsIssuer: stroom
+  algorithm: RS256

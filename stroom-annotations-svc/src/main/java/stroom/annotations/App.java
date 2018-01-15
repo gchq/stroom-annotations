@@ -1,5 +1,6 @@
 package stroom.annotations;
 
+import event.logging.EventLoggingService;
 import io.dropwizard.Application;
 import io.dropwizard.ConfiguredBundle;
 import io.dropwizard.auth.AuthDynamicFeature;
@@ -19,14 +20,16 @@ import stroom.annotations.config.Config;
 import stroom.annotations.config.TokenConfig;
 import stroom.annotations.hibernate.Annotation;
 import stroom.annotations.hibernate.AnnotationHistory;
-import stroom.annotations.hibernate.AnnotationIndex;
+import stroom.annotations.hibernate.AnnotationsDocRefEntity;
 import stroom.annotations.resources.AuditedAnnotationsResourceImpl;
-import stroom.annotations.resources.QueryApiExceptionMapper;
-import stroom.annotations.security.RobustJwtAuthFilter;
-import stroom.annotations.security.ServiceUser;
-import stroom.query.audit.AuditedDocRefResourceImpl;
+import stroom.annotations.service.AnnotationsDocRefServiceImpl;
+import stroom.query.audit.rest.AuditedDocRefResourceImpl;
+import stroom.query.audit.security.RobustJwtAuthFilter;
+import stroom.query.audit.security.ServiceUser;
+import stroom.query.audit.service.DocRefService;
 import stroom.query.hibernate.AuditedCriteriaQueryBundle;
 
+import javax.inject.Inject;
 import javax.servlet.DispatcherType;
 import javax.servlet.FilterRegistration;
 import java.util.EnumSet;
@@ -65,13 +68,28 @@ public class App extends Application<Config> {
 
     };
 
-    private final AuditedCriteriaQueryBundle<Config, Annotation> auditedQueryBundle =
-            new AuditedCriteriaQueryBundle<>(Annotation.class, new HibernateBundle<Config>(Annotation.class, AnnotationHistory.class, AnnotationIndex.class) {
-                @Override
-                public DataSourceFactory getDataSourceFactory(Config configuration) {
-                    return configuration.getDataSourceFactory();
-                }
-            });
+
+    public static final class AuditedAnnotationsDocRefResource extends AuditedDocRefResourceImpl<AnnotationsDocRefEntity> {
+
+        @Inject
+        public AuditedAnnotationsDocRefResource(final DocRefService<AnnotationsDocRefEntity> service,
+                                                final EventLoggingService eventLoggingService) {
+            super(service, eventLoggingService);
+        }
+    }
+
+    private final AuditedCriteriaQueryBundle auditedQueryBundle =
+            new AuditedCriteriaQueryBundle<>(Annotation.class,
+
+                    new HibernateBundle<Config>(Annotation.class, AnnotationHistory.class, AnnotationsDocRefEntity.class) {
+                        @Override
+                        public DataSourceFactory getDataSourceFactory(Config configuration) {
+                            return configuration.getDataSourceFactory();
+                        }
+                    },
+                    AnnotationsDocRefEntity.class,
+                    AuditedAnnotationsDocRefResource.class,
+                    AnnotationsDocRefServiceImpl.class);
 
     public static void main(final String[] args) throws Exception {
         new App().run(args);
@@ -88,13 +106,18 @@ public class App extends Application<Config> {
 
         environment.jersey().register(new Module(configuration));
         environment.jersey().register(AuditedAnnotationsResourceImpl.class);
-        environment.jersey().register(AuditedDocRefResourceImpl.class);
-        environment.jersey().register(QueryApiExceptionMapper.class);
     }
 
     private static void configureAuthentication(final TokenConfig tokenConfig,
                                                 final Environment environment) {
-        environment.jersey().register(new AuthDynamicFeature(new RobustJwtAuthFilter(tokenConfig)));
+        environment.jersey().register(
+                new AuthDynamicFeature(
+                        new RobustJwtAuthFilter(
+                                tokenConfig.getJwsIssuer(),
+                                tokenConfig.getAlgorithm(),
+                                tokenConfig.getPublicKeyUrl()
+                        )
+                ));
         environment.jersey().register(new AuthValueFactoryProvider.Binder<>(ServiceUser.class));
         environment.jersey().register(RolesAllowedDynamicFeature.class);
     }

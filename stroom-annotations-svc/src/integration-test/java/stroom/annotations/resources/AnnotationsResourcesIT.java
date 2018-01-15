@@ -16,6 +16,8 @@ import stroom.annotations.hibernate.Annotation;
 import stroom.annotations.hibernate.AnnotationHistory;
 import stroom.annotations.hibernate.HistoryOperation;
 import stroom.annotations.hibernate.Status;
+import stroom.annotations.service.AnnotationsService;
+import stroom.annotations.service.AnnotationsServiceImpl;
 import stroom.datasource.api.v2.DataSource;
 import stroom.datasource.api.v2.DataSourceField;
 import stroom.query.api.v2.DocRef;
@@ -30,8 +32,10 @@ import stroom.query.api.v2.ResultRequest;
 import stroom.query.api.v2.SearchRequest;
 import stroom.query.api.v2.SearchResponse;
 import stroom.query.api.v2.TableSettings;
-import stroom.query.audit.FifoLogbackAppender;
-import stroom.query.audit.QueryResourceHttpClient;
+import stroom.query.audit.logback.FifoLogbackAppender;
+import stroom.query.audit.client.QueryResourceHttpClient;
+import stroom.query.audit.security.ServiceUser;
+import stroom.query.audit.security.TestAuthenticationApp;
 import stroom.util.shared.QueryApiException;
 
 import javax.ws.rs.core.Response;
@@ -61,20 +65,33 @@ public class AnnotationsResourcesIT {
 
     @ClassRule
     public static final DropwizardAppRule<Config> appRule = new DropwizardAppRule<>(App.class, resourceFilePath("config.yml"));
+    
+    @ClassRule
+    public static final DropwizardAppRule<TestAuthenticationApp.AuthConfig> authAppRule =
+            new DropwizardAppRule<>(TestAuthenticationApp.class, resourceFilePath("authConfig.yml"));
 
+    private static final String LOCALHOST = "localhost";
     private static AnnotationsHttpClient annotationsClient;
-
     private static QueryResourceHttpClient queryClient;
+    public static ServiceUser serviceUser;
 
     private static final ObjectMapper jacksonObjectMapper = new ObjectMapper();
-
+    
     @BeforeClass
     public static void setupClass() {
         int appPort = appRule.getLocalPort();
-        final String host = String.format("http://localhost:%d", appPort);
+        final String host = String.format("http://%s:%d", LOCALHOST, appPort);
 
         annotationsClient = new AnnotationsHttpClient(host);
         queryClient = new QueryResourceHttpClient(host);
+
+        final int authPort = authAppRule.getLocalPort();
+        final TestAuthenticationApp.Client authResourceClient = TestAuthenticationApp.client(LOCALHOST, authPort);
+        try {
+            serviceUser = authResourceClient.getAuthenticatedUser();
+        } catch (Exception e) {
+            fail(e.getLocalizedMessage());
+        }
     }
 
     @Before
@@ -94,7 +111,7 @@ public class AnnotationsResourcesIT {
     public void testWelcome() throws QueryApiException {
         final Response response = annotationsClient.welcome();
 
-        assertEquals(AnnotationsResourceImpl.WELCOME_TEXT, response.getEntity());
+        assertEquals(AuditedAnnotationsResourceImpl.WELCOME_TEXT, response.getEntity());
     }
 
     @Test
@@ -168,7 +185,7 @@ public class AnnotationsResourcesIT {
         getAnnotation(index, id);
         deleteAnnotation(index, id);
         
-        Response postDeleteResponse = annotationsClient.get(index, id);
+        Response postDeleteResponse = annotationsClient.get(serviceUser, index, id);
         assertEquals(HttpStatus.NOT_FOUND_404, postDeleteResponse.getStatus());
 
         // Create, Get, Delete, Get
@@ -372,7 +389,7 @@ public class AnnotationsResourcesIT {
 
     @Test
     public void testGetDataSource() throws QueryApiException, IOException {
-        Response response = queryClient.getDataSource(new DocRef());
+        Response response = queryClient.getDataSource(serviceUser, new DocRef());
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
@@ -423,7 +440,7 @@ public class AnnotationsResourcesIT {
                     .build())
                 .build();
 
-        final Response response = queryClient.search(request);
+        final Response response = queryClient.search(serviceUser, request);
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
@@ -455,7 +472,7 @@ public class AnnotationsResourcesIT {
         Annotation result = null;
 
         try {
-            final Response response = annotationsClient.create(index, id);
+            final Response response = annotationsClient.create(serviceUser, index, id);
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
             result = jacksonObjectMapper.readValue(response.getEntity().toString(), Annotation.class);
@@ -482,7 +499,7 @@ public class AnnotationsResourcesIT {
 
         try {
             // Set the content in an update
-            final Response response = annotationsClient.update(index, annotation.getId(), annotation);
+            final Response response = annotationsClient.update(serviceUser, index, annotation.getId(), annotation);
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
             result = jacksonObjectMapper.readValue(response.getEntity().toString(), Annotation.class);
@@ -526,7 +543,7 @@ public class AnnotationsResourcesIT {
         List<Annotation> result = null;
 
         try {
-            final Response response = annotationsClient.search(index, queryTerm, seekPosition);
+            final Response response = annotationsClient.search(serviceUser, index, queryTerm, seekPosition);
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
             result = jacksonObjectMapper.readValue(
@@ -551,7 +568,7 @@ public class AnnotationsResourcesIT {
         Annotation result = null;
 
         try {
-            final Response response = annotationsClient.get(index, id);
+            final Response response = annotationsClient.get(serviceUser, index, id);
 
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
@@ -572,7 +589,7 @@ public class AnnotationsResourcesIT {
      */
     private void deleteAnnotation(final String index, final String id) {
         try {
-            final Response response = annotationsClient.remove(index, id);
+            final Response response = annotationsClient.remove(serviceUser, index, id);
             assertEquals(HttpStatus.OK_200, response.getStatus());
         } catch (Exception | QueryApiException e) {
             fail(e.getLocalizedMessage());
@@ -589,7 +606,7 @@ public class AnnotationsResourcesIT {
         List<AnnotationHistory> result = null;
 
         try {
-            final Response response = annotationsClient.getHistory(index, id);
+            final Response response = annotationsClient.getHistory(serviceUser, index, id);
 
             assertEquals(HttpStatus.OK_200, response.getStatus());
 

@@ -8,16 +8,19 @@ import org.slf4j.LoggerFactory;
 import stroom.annotations.hibernate.Annotation;
 import stroom.annotations.hibernate.AnnotationHistory;
 import stroom.annotations.hibernate.HistoryOperation;
+import stroom.query.audit.security.ServiceUser;
 import stroom.query.hibernate.QueryableEntity;
 import stroom.util.shared.QueryApiException;
 
 import javax.inject.Inject;
+import javax.persistence.NoResultException;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.criteria.Root;
 import java.util.List;
+import java.util.Optional;
 
 public class AnnotationsServiceImpl implements AnnotationsService {
 
@@ -33,7 +36,8 @@ public class AnnotationsServiceImpl implements AnnotationsService {
     }
 
     @Override
-    public List<Annotation> search(final String index,
+    public List<Annotation> search(final ServiceUser authenticatedServiceUser,
+                                   final String index,
                                    final String q,
                                    final Integer seekPosition) throws QueryApiException {
         try (final Session session = database.openSession()){
@@ -72,10 +76,13 @@ public class AnnotationsServiceImpl implements AnnotationsService {
     }
 
     @Override
-    public Annotation get(final String index,
-                          final String id) throws QueryApiException {
+    public Optional<Annotation> get(final ServiceUser authenticatedServiceUser,
+                                    final String index,
+                                    final String id) throws QueryApiException {
         try (final Session session = database.openSession()) {
-            return getEntity(session, index, id);
+            return Optional.of(getEntity(session, index, id));
+        } catch (NoResultException e) {
+            return Optional.empty();
         } catch (final Exception e) {
             LOGGER.warn("Failed to get history of annotation", e);
             throw new QueryApiException(e);
@@ -83,8 +90,9 @@ public class AnnotationsServiceImpl implements AnnotationsService {
     }
 
     @Override
-    public List<AnnotationHistory> getHistory(final String index,
-                                        final String id) throws QueryApiException {
+    public Optional<List<AnnotationHistory>> getHistory(final ServiceUser authenticatedServiceUser,
+                                                        final String index,
+                                                        final String id) throws QueryApiException {
         try (final Session session = database.openSession()){
             final CriteriaBuilder cb = session.getCriteriaBuilder();
             final CriteriaQuery<AnnotationHistory> cq = cb.createQuery(AnnotationHistory.class);
@@ -95,7 +103,9 @@ public class AnnotationsServiceImpl implements AnnotationsService {
                     cb.equal(root.get(QueryableEntity.DATA_SOURCE_UUID), index)
             ));
 
-            return session.createQuery(cq).getResultList();
+            return Optional.of(session.createQuery(cq).getResultList());
+        } catch (NoResultException e) {
+            return Optional.empty();
         } catch (final Exception e) {
             LOGGER.warn("Failed to get history of annotation", e);
             throw new QueryApiException(e);
@@ -103,8 +113,9 @@ public class AnnotationsServiceImpl implements AnnotationsService {
     }
 
     @Override
-    public Annotation create(final String index,
-                             final String id) throws QueryApiException {
+    public Optional<Annotation> create(final ServiceUser authenticatedServiceUser,
+                                       final String index,
+                                       final String id) throws QueryApiException {
         Transaction tx = null;
 
         try (final Session session = database.openSession()) {
@@ -125,8 +136,10 @@ public class AnnotationsServiceImpl implements AnnotationsService {
 
             tx.commit();
 
-            return currentState;
+            return Optional.of(currentState);
 
+        } catch (NoResultException e) {
+            return Optional.empty();
         } catch (final Exception e) {
             if (tx!=null) tx.rollback();
             LOGGER.warn("Failed to get create annotation", e);
@@ -136,9 +149,10 @@ public class AnnotationsServiceImpl implements AnnotationsService {
     }
 
     @Override
-    public Annotation update(final String index,
-                             final String id,
-                             final Annotation annotationUpdate) throws QueryApiException {
+    public Optional<Annotation> update(final ServiceUser authenticatedServiceUser,
+                                       final String index,
+                                       final String id,
+                                       final Annotation annotationUpdate) throws QueryApiException {
         Transaction tx = null;
 
         try (final Session session = database.openSession()) {
@@ -170,8 +184,10 @@ public class AnnotationsServiceImpl implements AnnotationsService {
 
             tx.commit();
 
-            return currentState;
+            return Optional.of(currentState);
 
+        } catch (NoResultException e) {
+            return Optional.empty();
         } catch (final Exception e) {
             if (tx!=null) tx.rollback();
             LOGGER.warn("Failed to get update annotation", e);
@@ -180,8 +196,9 @@ public class AnnotationsServiceImpl implements AnnotationsService {
     }
 
     @Override
-    public void remove(final String index,
-                       final String id) throws QueryApiException {
+    public Optional<Boolean> remove(final ServiceUser authenticatedServiceUser,
+                                    final String index,
+                                    final String id) throws QueryApiException {
         Transaction tx = null;
 
         try (final Session session = database.openSession()) {
@@ -209,6 +226,10 @@ public class AnnotationsServiceImpl implements AnnotationsService {
             }
 
             tx.commit();
+
+            return Optional.of(Boolean.TRUE);
+        } catch (NoResultException e) {
+            return Optional.empty();
         } catch (final Exception e) {
             if (tx!=null) tx.rollback();
             LOGGER.warn("Failed to get create annotation", e);

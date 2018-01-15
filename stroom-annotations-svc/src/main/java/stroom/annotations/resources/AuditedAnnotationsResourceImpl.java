@@ -9,34 +9,49 @@ import event.logging.Query;
 import event.logging.Search;
 import event.logging.Term;
 import event.logging.TermCondition;
+import org.eclipse.jetty.http.HttpStatus;
 import stroom.annotations.hibernate.Annotation;
-import stroom.annotations.security.ServiceUser;
+import stroom.annotations.hibernate.Status;
+import stroom.annotations.model.ResponseMsgDTO;
+import stroom.annotations.service.AnnotationsService;
+import stroom.query.audit.security.ServiceUser;
 import stroom.util.shared.QueryApiException;
 
 import javax.inject.Inject;
 import javax.ws.rs.core.Response;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
 
-    private final AnnotationsResource annotationsResource;
+    private final AnnotationsService service;
 
     private final EventLoggingService eventLoggingService;
 
+    static final String WELCOME_TEXT = "Welcome to the annotations service";
+
     @Inject
-    public AuditedAnnotationsResourceImpl(final AnnotationsResource annotationsResource,
+    public AuditedAnnotationsResourceImpl(final AnnotationsService service,
                                           final EventLoggingService eventLoggingService) {
-        this.annotationsResource = annotationsResource;
+        this.service = service;
         this.eventLoggingService = eventLoggingService;
     }
 
     @Override
     public Response welcome() throws QueryApiException {
-        return annotationsResource.welcome();
+        return Response.ok(WELCOME_TEXT)
+                .build();
     }
 
     @Override
     public Response statusValues() throws QueryApiException {
-        return annotationsResource.statusValues();
+        final Map<String, String> statusValues = Arrays.stream(Status.values())
+                .collect(Collectors.toMap(Object::toString, Status::getDisplayText));
+
+        return Response.ok(statusValues)
+                .build();
     }
 
     @Override
@@ -48,7 +63,9 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
         Exception exception = null;
         
         try {
-            response = annotationsResource.search(authenticatedServiceUser, index, q, seekPosition);
+            final List<Annotation> annotations = service.search(authenticatedServiceUser, index, q, seekPosition);
+
+            response = Response.ok(annotations).build();
 
             return response;
         } finally {
@@ -97,7 +114,9 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
         Exception exception = null;
         
         try {
-            response =  annotationsResource.get(authenticatedServiceUser, index, id);
+            response =  service.get(authenticatedServiceUser, index, id)
+                    .map(d -> Response.ok(d).build())
+                    .orElse(Response.status(HttpStatus.NOT_FOUND_404).build());
 
             return response;
         } finally {
@@ -122,7 +141,9 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
         Exception exception = null;
 
         try {
-            response =  annotationsResource.getHistory(authenticatedServiceUser, index, id);
+            response =  service.getHistory(authenticatedServiceUser, index, id)
+                    .map(d -> Response.ok(d).build())
+                    .orElse(Response.status(HttpStatus.NOT_FOUND_404).build());
 
             return response;
         } finally {
@@ -146,7 +167,9 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
         QueryApiException exception = null;
 
         try {
-            response =  annotationsResource.create(authenticatedServiceUser, index, id);
+            response =  service.create(authenticatedServiceUser, index, id)
+                    .map(d -> Response.ok(d).build())
+                    .orElse(Response.status(HttpStatus.NOT_FOUND_404).build());
 
             return response;
         } finally {
@@ -172,7 +195,9 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
         Exception exception = null;
 
         try {
-            response =  annotationsResource.update(authenticatedServiceUser, index, id, annotation);
+            response =  service.update(authenticatedServiceUser, index, id, annotation)
+                    .map(d -> Response.ok(d).build())
+                    .orElse(Response.status(HttpStatus.NOT_FOUND_404).build());
 
             return response;
         } finally {
@@ -204,7 +229,13 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
         Exception exception = null;
 
         try {
-            response =  annotationsResource.remove(authenticatedServiceUser, index, id);
+            response =  service.remove(authenticatedServiceUser, index, id)
+                    .map(d -> Response
+                            .ok(ResponseMsgDTO.msg("Annotation deleted")
+                                    .recordsUpdated(d ? 1 : 0)
+                                    .build())
+                            .build())
+                    .orElse(Response.status(HttpStatus.NOT_FOUND_404).build());
 
             return response;
         } finally {

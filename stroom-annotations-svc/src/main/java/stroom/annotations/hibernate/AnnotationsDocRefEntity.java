@@ -5,12 +5,12 @@ import stroom.query.hibernate.DocRefEntity;
 import javax.persistence.Entity;
 
 @Entity(name="index_doc_ref")
-public class AnnotationIndex extends DocRefEntity {
+public class AnnotationsDocRefEntity extends DocRefEntity {
 
-    public static final class Builder extends DocRefEntity.Builder<AnnotationIndex, Builder> {
+    public static final class Builder extends DocRefEntity.Builder<AnnotationsDocRefEntity, Builder> {
 
         public Builder() {
-            super(new AnnotationIndex());
+            super(new AnnotationsDocRefEntity());
         }
 
         @Override

@@ -5,7 +5,7 @@ import io.dropwizard.auth.Auth;
 import io.dropwizard.validation.Validated;
 import org.hibernate.validator.constraints.Length;
 import stroom.annotations.hibernate.Annotation;
-import stroom.annotations.security.ServiceUser;
+import stroom.query.audit.security.ServiceUser;
 import stroom.util.shared.QueryApiException;
 
 import javax.validation.constraints.NotNull;
