@@ -5,8 +5,10 @@ CREATE TABLE annotation (
     status          VARCHAR(255) NOT NULL,
     assignTo        VARCHAR(255),
     content         VARCHAR(8092),
-    updatedBy       VARCHAR(255) NOT NULL,
-    lastUpdated     BIGINT UNSIGNED NOT NULL,
+    updateUser      VARCHAR(255) NOT NULL,
+    updateTime      BIGINT UNSIGNED NOT NULL,
+    createUser      VARCHAR(255) NOT NULL,
+    createTime      BIGINT UNSIGNED NOT NULL,
     PRIMARY KEY     (dataSourceUuid, id)
 ) ENGINE=InnoDB DEFAULT CHARSET latin1;
 
@@ -18,13 +20,19 @@ CREATE TABLE annotation_history (
     status          VARCHAR(255) NOT NULL,
     assignTo        VARCHAR(255),
     content         VARCHAR(8092),
-    updatedBy       VARCHAR(255) NOT NULL,
-    lastUpdated     BIGINT UNSIGNED NOT NULL,
+    updateUser      VARCHAR(255) NOT NULL,
+    updateTime      BIGINT UNSIGNED NOT NULL,
+    createUser      VARCHAR(255) NOT NULL,
+    createTime      BIGINT UNSIGNED NOT NULL,
     PRIMARY KEY     (id)
 ) ENGINE=InnoDB DEFAULT CHARSET latin1;
 
 CREATE TABLE index_doc_ref (
     uuid            VARCHAR(255) NOT NULL,
     name            VARCHAR(127) NOT NULL,
+    updateUser      VARCHAR(255) NOT NULL,
+    updateTime      BIGINT UNSIGNED NOT NULL,
+    createUser      VARCHAR(255) NOT NULL,
+    createTime      BIGINT UNSIGNED NOT NULL,
     PRIMARY KEY     (uuid)
 ) ENGINE=InnoDB DEFAULT CHARSET latin1;

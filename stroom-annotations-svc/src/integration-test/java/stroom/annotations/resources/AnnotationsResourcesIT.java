@@ -2,8 +2,17 @@ package stroom.annotations.resources;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.junit.WireMockClassRule;
 import io.dropwizard.testing.junit.DropwizardAppRule;
 import org.eclipse.jetty.http.HttpStatus;
+import org.jose4j.jwk.JsonWebKey;
+import org.jose4j.jwk.RsaJsonWebKey;
+import org.jose4j.jwk.RsaJwkGenerator;
+import org.jose4j.jws.AlgorithmIdentifiers;
+import org.jose4j.jws.JsonWebSignature;
+import org.jose4j.jwt.JwtClaims;
+import org.jose4j.lang.JoseException;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -16,8 +25,6 @@ import stroom.annotations.hibernate.Annotation;
 import stroom.annotations.hibernate.AnnotationHistory;
 import stroom.annotations.hibernate.HistoryOperation;
 import stroom.annotations.hibernate.Status;
-import stroom.annotations.service.AnnotationsService;
-import stroom.annotations.service.AnnotationsServiceImpl;
 import stroom.datasource.api.v2.DataSource;
 import stroom.datasource.api.v2.DataSourceField;
 import stroom.query.api.v2.DocRef;
@@ -32,12 +39,13 @@ import stroom.query.api.v2.ResultRequest;
 import stroom.query.api.v2.SearchRequest;
 import stroom.query.api.v2.SearchResponse;
 import stroom.query.api.v2.TableSettings;
-import stroom.query.audit.logback.FifoLogbackAppender;
 import stroom.query.audit.client.QueryResourceHttpClient;
+import stroom.query.audit.logback.FifoLogbackAppender;
 import stroom.query.audit.security.ServiceUser;
-import stroom.query.audit.security.TestAuthenticationApp;
-import stroom.util.shared.QueryApiException;
+import stroom.query.audit.service.DocRefEntity;
+import stroom.query.hibernate.QueryableEntity;
 
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.Arrays;
@@ -52,6 +60,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static io.dropwizard.testing.ResourceHelpers.resourceFilePath;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -65,11 +78,12 @@ public class AnnotationsResourcesIT {
 
     @ClassRule
     public static final DropwizardAppRule<Config> appRule = new DropwizardAppRule<>(App.class, resourceFilePath("config.yml"));
-    
-    @ClassRule
-    public static final DropwizardAppRule<TestAuthenticationApp.AuthConfig> authAppRule =
-            new DropwizardAppRule<>(TestAuthenticationApp.class, resourceFilePath("authConfig.yml"));
 
+    @ClassRule
+    public static WireMockClassRule wireMockRule = new WireMockClassRule(
+            WireMockConfiguration.options().port(10080));
+
+    private static final String VALID_USER_NAME = "testSubject";
     private static final String LOCALHOST = "localhost";
     private static AnnotationsHttpClient annotationsClient;
     private static QueryResourceHttpClient queryClient;
@@ -85,11 +99,44 @@ public class AnnotationsResourcesIT {
         annotationsClient = new AnnotationsHttpClient(host);
         queryClient = new QueryResourceHttpClient(host);
 
-        final int authPort = authAppRule.getLocalPort();
-        final TestAuthenticationApp.Client authResourceClient = TestAuthenticationApp.client(LOCALHOST, authPort);
+        stubFor(post(urlEqualTo("/api/authorisation/v1/isAuthorised"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", MediaType.TEXT_PLAIN)
+                        .withBody("Mock approval for authorisation")
+                        .withStatus(200)));
+
+        RsaJsonWebKey jwk;
         try {
-            serviceUser = authResourceClient.getAuthenticatedUser();
+            String jwkId = UUID.randomUUID().toString();
+            jwk = RsaJwkGenerator.generateJwk(2048);
+            jwk.setKeyId(jwkId);
         } catch (Exception e) {
+            fail(e.getLocalizedMessage());
+            return;
+        }
+
+        stubFor(get(urlEqualTo("/testAuthService/publicKey"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withBody(jwk.toJson(JsonWebKey.OutputControlLevel.PUBLIC_ONLY))
+                        .withStatus(200)));
+
+        JwtClaims claims = new JwtClaims();
+        claims.setIssuer("stroom");  // who creates the token and signs it
+        claims.setSubject(VALID_USER_NAME); // the subject/principal is whom the token is about
+
+        final JsonWebSignature jws = new JsonWebSignature();
+        jws.setPayload(claims.toJson());
+        jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
+        jws.setKey(jwk.getPrivateKey());
+        jws.setDoKeyValidation(false);
+
+        try {
+            serviceUser = new ServiceUser.Builder()
+                    .jwt(jws.getCompactSerialization())
+                    .name(VALID_USER_NAME)
+                    .build();
+        } catch (JoseException e) {
             fail(e.getLocalizedMessage());
         }
     }
@@ -108,18 +155,18 @@ public class AnnotationsResourcesIT {
     }
 
     @Test
-    public void testWelcome() throws QueryApiException {
+    public void testWelcome() throws Exception {
         final Response response = annotationsClient.welcome();
 
-        assertEquals(AuditedAnnotationsResourceImpl.WELCOME_TEXT, response.getEntity());
+        assertEquals(AuditedAnnotationsResourceImpl.WELCOME_TEXT, response.readEntity(String.class));
     }
 
     @Test
-    public void testStatusValues() throws IOException, QueryApiException {
+    public void testStatusValues() throws Exception {
         final Response response = annotationsClient.statusValues();
 
         final Map<String, String> responseStatusValues = jacksonObjectMapper.readValue(
-                response.getEntity().toString(), 
+                response.readEntity(String.class),
                 new TypeReference<Map<String, String>>(){});
         final Map<String, String> statusValues = Arrays.stream(Status.values())
                 .collect(Collectors.toMap(Object::toString, Status::getDisplayText));
@@ -178,7 +225,7 @@ public class AnnotationsResourcesIT {
     }
 
     @Test
-    public void testDelete() throws QueryApiException {
+    public void testDelete() throws Exception {
         final String index = UUID.randomUUID().toString();
         final String id = UUID.randomUUID().toString();
         createAnnotation(index, id);
@@ -376,7 +423,7 @@ public class AnnotationsResourcesIT {
                                 .map(Object::toString)
                                 .forEach(resultsSet::add);
                     }
-                } catch (QueryApiException | IOException e) {
+                } catch (Exception e) {
                     fail(e.getLocalizedMessage());
                 }
             });
@@ -388,12 +435,12 @@ public class AnnotationsResourcesIT {
     }
 
     @Test
-    public void testGetDataSource() throws QueryApiException, IOException {
+    public void testGetDataSource() throws Exception, IOException {
         Response response = queryClient.getDataSource(serviceUser, new DocRef());
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
-        final DataSource result = jacksonObjectMapper.readValue(response.getEntity().toString(), DataSource.class);
+        final DataSource result = jacksonObjectMapper.readValue(response.readEntity(String.class), DataSource.class);
 
         final Set<String> resultFieldNames = result.getFields().stream()
                 .map(DataSourceField::getName)
@@ -402,8 +449,10 @@ public class AnnotationsResourcesIT {
         assertTrue(resultFieldNames.contains(Annotation.ID));
         assertTrue(resultFieldNames.contains(Annotation.CONTENT));
         assertTrue(resultFieldNames.contains(Annotation.ASSIGN_TO));
-        assertTrue(resultFieldNames.contains(Annotation.LAST_UPDATED));
-        assertTrue(resultFieldNames.contains(Annotation.UPDATED_BY));
+        assertTrue(resultFieldNames.contains(DocRefEntity.CREATE_TIME));
+        assertTrue(resultFieldNames.contains(DocRefEntity.CREATE_USER));
+        assertTrue(resultFieldNames.contains(DocRefEntity.UPDATE_TIME));
+        assertTrue(resultFieldNames.contains(DocRefEntity.UPDATE_USER));
         assertTrue(resultFieldNames.contains(Annotation.STATUS));
 
         checkAuditLogs(1);
@@ -411,7 +460,7 @@ public class AnnotationsResourcesIT {
 
     private SearchResponse querySearch(final String index,
                                        final ExpressionOperator expressionOperator,
-                                       final OffsetRange offsetRange) throws QueryApiException, IOException {
+                                       final OffsetRange offsetRange) throws Exception, IOException {
 
         final String queryKey = UUID.randomUUID().toString();
         final SearchRequest request = new SearchRequest.Builder()
@@ -444,7 +493,7 @@ public class AnnotationsResourcesIT {
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
-        return jacksonObjectMapper.readValue(response.getEntity().toString(), SearchResponse.class);
+        return jacksonObjectMapper.readValue(response.readEntity(String.class), SearchResponse.class);
     }
 
     /**
@@ -475,13 +524,14 @@ public class AnnotationsResourcesIT {
             final Response response = annotationsClient.create(serviceUser, index, id);
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
-            result = jacksonObjectMapper.readValue(response.getEntity().toString(), Annotation.class);
+            result = jacksonObjectMapper.readValue(response.readEntity(String.class), Annotation.class);
             assertEquals(id, result.getId());
             assertEquals(Annotation.DEFAULT_CONTENT, result.getContent());
             assertEquals(Annotation.DEFAULT_ASSIGNEE, result.getAssignTo());
-            assertEquals(Annotation.DEFAULT_UPDATED_BY, result.getUpdatedBy());
+            assertEquals(VALID_USER_NAME, result.getCreateUser());
+            assertEquals(VALID_USER_NAME, result.getUpdateUser());
             assertEquals(Annotation.DEFAULT_STATUS, result.getStatus());
-        } catch (Exception | QueryApiException e) {
+        } catch (Exception e) {
             fail(e.getLocalizedMessage());
         }
 
@@ -502,9 +552,9 @@ public class AnnotationsResourcesIT {
             final Response response = annotationsClient.update(serviceUser, index, annotation.getId(), annotation);
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
-            result = jacksonObjectMapper.readValue(response.getEntity().toString(), Annotation.class);
+            result = jacksonObjectMapper.readValue(response.readEntity(String.class), Annotation.class);
             assertUserSetFieldsEqual(annotation, result);
-        } catch (Exception | QueryApiException e) {
+        } catch (Exception e) {
             fail(e.getLocalizedMessage());
         }
 
@@ -547,9 +597,9 @@ public class AnnotationsResourcesIT {
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
             result = jacksonObjectMapper.readValue(
-                    response.getEntity().toString(),
+                    response.readEntity(String.class),
                     new TypeReference<List<Annotation>>(){});
-        } catch (Exception | QueryApiException e) {
+        } catch (Exception e) {
             fail(e.getLocalizedMessage());
         }
 
@@ -572,10 +622,10 @@ public class AnnotationsResourcesIT {
 
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
-            result = jacksonObjectMapper.readValue(response.getEntity().toString(), Annotation.class);
+            result = jacksonObjectMapper.readValue(response.readEntity(String.class), Annotation.class);
 
             assertEquals(id, result.getId());
-        } catch (Exception | QueryApiException e) {
+        } catch (Exception e) {
             fail(e.getLocalizedMessage());
         }
 
@@ -591,7 +641,7 @@ public class AnnotationsResourcesIT {
         try {
             final Response response = annotationsClient.remove(serviceUser, index, id);
             assertEquals(HttpStatus.OK_200, response.getStatus());
-        } catch (Exception | QueryApiException e) {
+        } catch (Exception e) {
             fail(e.getLocalizedMessage());
         }
     }
@@ -611,9 +661,9 @@ public class AnnotationsResourcesIT {
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
             result = jacksonObjectMapper.readValue(
-                    response.getEntity().toString(),
+                    response.readEntity(String.class),
                     new TypeReference<List<AnnotationHistory>>() {});
-        } catch (Exception | QueryApiException e) {
+        } catch (Exception e) {
             fail(e.getLocalizedMessage());
         }
 

@@ -21,10 +21,6 @@ public class AnnotationHistory extends QueryableEntity {
 
     private String assignTo;
 
-    private Long lastUpdated;
-
-    private String updatedBy;
-
     private Status status;
 
     private String content;
@@ -77,15 +73,6 @@ public class AnnotationHistory extends QueryableEntity {
         this.assignTo = assignTo;
     }
 
-    @Column(name=Annotation.LAST_UPDATED)
-    public Long getLastUpdated() {
-        return lastUpdated;
-    }
-
-    public void setLastUpdated(Long lastUpdated) {
-        this.lastUpdated = lastUpdated;
-    }
-
     @Column(name=Annotation.CONTENT)
     public String getContent() {
         return content;
@@ -93,15 +80,6 @@ public class AnnotationHistory extends QueryableEntity {
 
     public void setContent(String content) {
         this.content = content;
-    }
-
-    @Column(name=Annotation.UPDATED_BY)
-    public String getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(String updatedBy) {
-        this.updatedBy = updatedBy;
     }
 
     @Override
@@ -112,8 +90,6 @@ public class AnnotationHistory extends QueryableEntity {
         sb.append(", operation='").append(operation).append('\'');
         sb.append(", annotationId='").append(annotationId).append('\'');
         sb.append(", assignTo='").append(assignTo).append('\'');
-        sb.append(", lastUpdated=").append(lastUpdated);
-        sb.append(", updatedBy='").append(updatedBy).append('\'');
         sb.append(", status=").append(status);
         sb.append(", content='").append(content).append('\'');
         sb.append('}');
@@ -143,16 +119,6 @@ public class AnnotationHistory extends QueryableEntity {
 
         public Builder assignTo(final String value) {
             this.instance.setAssignTo(value);
-            return self();
-        }
-
-        public Builder lastUpdated(final Long value) {
-            this.instance.setLastUpdated(value);
-            return self();
-        }
-
-        public Builder updatedBy(final String value) {
-            this.instance.setUpdatedBy(value);
             return self();
         }
 

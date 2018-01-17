@@ -17,15 +17,16 @@ import io.dropwizard.setup.Environment;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 import stroom.annotations.config.Config;
-import stroom.annotations.config.TokenConfig;
 import stroom.annotations.hibernate.Annotation;
 import stroom.annotations.hibernate.AnnotationHistory;
 import stroom.annotations.hibernate.AnnotationsDocRefEntity;
 import stroom.annotations.resources.AuditedAnnotationsResourceImpl;
 import stroom.annotations.service.AnnotationsDocRefServiceImpl;
+import stroom.query.audit.authorisation.AuthorisationService;
 import stroom.query.audit.rest.AuditedDocRefResourceImpl;
 import stroom.query.audit.security.RobustJwtAuthFilter;
 import stroom.query.audit.security.ServiceUser;
+import stroom.query.audit.security.TokenConfig;
 import stroom.query.audit.service.DocRefService;
 import stroom.query.hibernate.AuditedCriteriaQueryBundle;
 
@@ -73,8 +74,9 @@ public class App extends Application<Config> {
 
         @Inject
         public AuditedAnnotationsDocRefResource(final DocRefService<AnnotationsDocRefEntity> service,
-                                                final EventLoggingService eventLoggingService) {
-            super(service, eventLoggingService);
+                                                final EventLoggingService eventLoggingService,
+                                                final AuthorisationService authorisationService) {
+            super(service, eventLoggingService, authorisationService);
         }
     }
 
@@ -112,11 +114,7 @@ public class App extends Application<Config> {
                                                 final Environment environment) {
         environment.jersey().register(
                 new AuthDynamicFeature(
-                        new RobustJwtAuthFilter(
-                                tokenConfig.getJwsIssuer(),
-                                tokenConfig.getAlgorithm(),
-                                tokenConfig.getPublicKeyUrl()
-                        )
+                        new RobustJwtAuthFilter(tokenConfig)
                 ));
         environment.jersey().register(new AuthValueFactoryProvider.Binder<>(ServiceUser.class));
         environment.jersey().register(RolesAllowedDynamicFeature.class);

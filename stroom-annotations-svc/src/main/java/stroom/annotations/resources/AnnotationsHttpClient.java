@@ -1,10 +1,13 @@
 package stroom.annotations.resources;
 
+import org.glassfish.jersey.client.ClientConfig;
+import org.glassfish.jersey.client.ClientResponse;
 import stroom.annotations.hibernate.Annotation;
-import stroom.query.audit.client.SimpleJsonHttpClient;
 import stroom.query.audit.security.ServiceUser;
-import stroom.util.shared.QueryApiException;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.Response;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -16,7 +19,7 @@ public class AnnotationsHttpClient implements AnnotationsResource {
     private final Function<String, String> searchUrl;
     private final BiFunction<String, String, String> singleUrl;
     private final BiFunction<String, String, String> getHistoryUrl;
-    private final SimpleJsonHttpClient<QueryApiException> httpClient;
+    private final Client httpClient;
 
     public AnnotationsHttpClient(final String baseUrl) {
         this.baseUrl = baseUrl;
@@ -34,85 +37,92 @@ public class AnnotationsHttpClient implements AnnotationsResource {
                 this.baseUrl,
                 index,
                 id);
-        this.httpClient = new SimpleJsonHttpClient<>(QueryApiException::new);
+        httpClient = ClientBuilder.newClient(new ClientConfig().register(ClientResponse.class));
     }
 
     @Override
-    public Response welcome() throws QueryApiException {
-        return this.httpClient
-                .get(this.welcomeUrl)
-                .send();
+    public Response welcome() {
+        return httpClient
+                .target(this.welcomeUrl)
+                .request()
+                .get();
     }
 
     @Override
-    public Response statusValues() throws QueryApiException {
-        return this.httpClient
-                .get(this.statusValuesUrl)
-                .send();
+    public Response statusValues() {
+        return httpClient
+                .target(this.statusValuesUrl)
+                .request()
+                .get();
     }
 
     @Override
     public Response search(final ServiceUser authenticatedServiceUser,
                            final String index,
                            final String q,
-                           final Integer seekPosition) throws QueryApiException {
-        return this.httpClient
-                .get(this.searchUrl.apply(index))
+                           final Integer seekPosition) {
+        return httpClient
+                .target(this.searchUrl.apply(index))
                 .queryParam("q", q)
                 .queryParam("seekPosition", seekPosition)
-                .jwt(authenticatedServiceUser.getJwt())
-                .send();
+                .request()
+                .header("Authorization", "Bearer " + authenticatedServiceUser.getJwt())
+                .get();
     }
 
     @Override
     public Response get(final ServiceUser authenticatedServiceUser,
                         final String index,
-                        final String id) throws QueryApiException {
-        return this.httpClient
-                .get(this.singleUrl.apply(index, id))
-                .jwt(authenticatedServiceUser.getJwt())
-                .send();
+                        final String id) {
+        return httpClient
+                .target(this.singleUrl.apply(index, id))
+                .request()
+                .header("Authorization", "Bearer " + authenticatedServiceUser.getJwt())
+                .get();
     }
 
     @Override
     public Response getHistory(final ServiceUser authenticatedServiceUser,
                                final String index,
-                               final String id) throws QueryApiException {
-        return this.httpClient
-                .get(this.getHistoryUrl.apply(index, id))
-                .jwt(authenticatedServiceUser.getJwt())
-                .send();
+                               final String id) {
+        return httpClient
+                .target(this.getHistoryUrl.apply(index, id))
+                .request()
+                .header("Authorization", "Bearer " + authenticatedServiceUser.getJwt())
+                .get();
     }
 
     @Override
     public Response create(final ServiceUser authenticatedServiceUser,
                            final String index,
-                           final String id) throws QueryApiException {
-        return this.httpClient
-                .post(this.singleUrl.apply(index, id))
-                .jwt(authenticatedServiceUser.getJwt())
-                .send();
+                           final String id) {
+        return httpClient
+                .target(this.singleUrl.apply(index, id))
+                .request()
+                .header("Authorization", "Bearer " + authenticatedServiceUser.getJwt())
+                .post(Entity.json(""));
     }
 
     @Override
     public Response update(final ServiceUser authenticatedServiceUser,
                            final String index,
                            final String id,
-                           final Annotation annotation) throws QueryApiException {
-        return this.httpClient
-                .put(this.singleUrl.apply(index, id))
-                .body(annotation)
-                .jwt(authenticatedServiceUser.getJwt())
-                .send();
+                           final Annotation annotation) {
+        return httpClient
+                .target(this.singleUrl.apply(index, id))
+                .request()
+                .header("Authorization", "Bearer " + authenticatedServiceUser.getJwt())
+                .put(Entity.json(annotation));
     }
 
     @Override
     public Response remove(final ServiceUser authenticatedServiceUser,
                            final String index,
-                           final String id) throws QueryApiException {
-        return this.httpClient
-                .delete(this.singleUrl.apply(index, id))
-                .jwt(authenticatedServiceUser.getJwt())
-                .send();
+                           final String id) {
+        return httpClient
+                .target(this.singleUrl.apply(index, id))
+                .request()
+                .header("Authorization", "Bearer " + authenticatedServiceUser.getJwt())
+                .delete();
     }
 }

@@ -9,8 +9,8 @@ import stroom.annotations.hibernate.Annotation;
 import stroom.annotations.hibernate.AnnotationHistory;
 import stroom.annotations.hibernate.HistoryOperation;
 import stroom.query.audit.security.ServiceUser;
+import stroom.query.audit.service.DocRefEntity;
 import stroom.query.hibernate.QueryableEntity;
-import stroom.util.shared.QueryApiException;
 
 import javax.inject.Inject;
 import javax.persistence.NoResultException;
@@ -36,10 +36,10 @@ public class AnnotationsServiceImpl implements AnnotationsService {
     }
 
     @Override
-    public List<Annotation> search(final ServiceUser authenticatedServiceUser,
+    public List<Annotation> search(final ServiceUser user,
                                    final String index,
                                    final String q,
-                                   final Integer seekPosition) throws QueryApiException {
+                                   final Integer seekPosition) throws Exception {
         try (final Session session = database.openSession()){
             LOGGER.info(String.format("Searching the annotations for %s, pagination information (position=%d)",
                     q, seekPosition));
@@ -71,28 +71,28 @@ public class AnnotationsServiceImpl implements AnnotationsService {
 
         } catch (final Exception e) {
             LOGGER.warn("Failed to search for annotations", e);
-            throw new QueryApiException(e);
+            throw e;
         }
     }
 
     @Override
-    public Optional<Annotation> get(final ServiceUser authenticatedServiceUser,
+    public Optional<Annotation> get(final ServiceUser user,
                                     final String index,
-                                    final String id) throws QueryApiException {
+                                    final String id) throws Exception {
         try (final Session session = database.openSession()) {
             return Optional.of(getEntity(session, index, id));
         } catch (NoResultException e) {
             return Optional.empty();
         } catch (final Exception e) {
             LOGGER.warn("Failed to get history of annotation", e);
-            throw new QueryApiException(e);
+            throw e;
         }
     }
 
     @Override
-    public Optional<List<AnnotationHistory>> getHistory(final ServiceUser authenticatedServiceUser,
+    public Optional<List<AnnotationHistory>> getHistory(final ServiceUser user,
                                                         final String index,
-                                                        final String id) throws QueryApiException {
+                                                        final String id) throws Exception {
         try (final Session session = database.openSession()){
             final CriteriaBuilder cb = session.getCriteriaBuilder();
             final CriteriaQuery<AnnotationHistory> cq = cb.createQuery(AnnotationHistory.class);
@@ -108,14 +108,14 @@ public class AnnotationsServiceImpl implements AnnotationsService {
             return Optional.empty();
         } catch (final Exception e) {
             LOGGER.warn("Failed to get history of annotation", e);
-            throw new QueryApiException(e);
+            throw new Exception(e);
         }
     }
 
     @Override
-    public Optional<Annotation> create(final ServiceUser authenticatedServiceUser,
+    public Optional<Annotation> create(final ServiceUser user,
                                        final String index,
-                                       final String id) throws QueryApiException {
+                                       final String id) throws Exception {
         Transaction tx = null;
 
         try (final Session session = database.openSession()) {
@@ -124,9 +124,11 @@ public class AnnotationsServiceImpl implements AnnotationsService {
             final Annotation annotation = new Annotation.Builder()
                     .id(id)
                     .dataSourceUuid(index)
-                    .lastUpdated(System.currentTimeMillis())
+                    .updateTime(System.currentTimeMillis())
+                    .updateUser(user.getName())
+                    .createTime(System.currentTimeMillis())
+                    .createUser(user.getName())
                     .assignTo(Annotation.DEFAULT_ASSIGNEE)
-                    .updatedBy(Annotation.DEFAULT_UPDATED_BY)
                     .content(Annotation.DEFAULT_CONTENT)
                     .status(Annotation.DEFAULT_STATUS)
                     .build();
@@ -144,15 +146,15 @@ public class AnnotationsServiceImpl implements AnnotationsService {
             if (tx!=null) tx.rollback();
             LOGGER.warn("Failed to get create annotation", e);
 
-            throw new QueryApiException(e);
+            throw new Exception(e);
         }
     }
 
     @Override
-    public Optional<Annotation> update(final ServiceUser authenticatedServiceUser,
+    public Optional<Annotation> update(final ServiceUser user,
                                        final String index,
                                        final String id,
-                                       final Annotation annotationUpdate) throws QueryApiException {
+                                       final Annotation annotationUpdate) throws Exception {
         Transaction tx = null;
 
         try (final Session session = database.openSession()) {
@@ -162,7 +164,8 @@ public class AnnotationsServiceImpl implements AnnotationsService {
             final CriteriaUpdate<Annotation> cq = cb.createCriteriaUpdate(Annotation.class);
             final Root<Annotation> root = cq.from(Annotation.class);
 
-            cq.set(root.get(Annotation.LAST_UPDATED), System.currentTimeMillis());
+            cq.set(root.get(DocRefEntity.UPDATE_TIME), System.currentTimeMillis());
+            cq.set(root.get(DocRefEntity.UPDATE_USER), user.getName());
             cq.set(root.get(Annotation.ASSIGN_TO), annotationUpdate.getAssignTo());
             cq.set(root.get(Annotation.CONTENT), annotationUpdate.getContent());
             cq.set(root.get(Annotation.STATUS), annotationUpdate.getStatus());
@@ -191,20 +194,20 @@ public class AnnotationsServiceImpl implements AnnotationsService {
         } catch (final Exception e) {
             if (tx!=null) tx.rollback();
             LOGGER.warn("Failed to get update annotation", e);
-            throw new QueryApiException(e);
+            throw new Exception(e);
         }
     }
 
     @Override
-    public Optional<Boolean> remove(final ServiceUser authenticatedServiceUser,
+    public Optional<Boolean> remove(final ServiceUser user,
                                     final String index,
-                                    final String id) throws QueryApiException {
+                                    final String id) throws Exception {
         Transaction tx = null;
 
         try (final Session session = database.openSession()) {
 
             // Take the history snapshot before deletion happens
-            takeAnnotationHistoryDelete(session, index, id);
+            takeAnnotationHistoryDelete(user, session, index, id);
 
             tx = session.beginTransaction();
 
@@ -233,7 +236,7 @@ public class AnnotationsServiceImpl implements AnnotationsService {
         } catch (final Exception e) {
             if (tx!=null) tx.rollback();
             LOGGER.warn("Failed to get create annotation", e);
-            throw new QueryApiException(e);
+            throw new Exception(e);
         }
     }
 
@@ -260,9 +263,11 @@ public class AnnotationsServiceImpl implements AnnotationsService {
                 .dataSourceUuid(currentState.getDataSourceUuid())
                 .annotationId(currentState.getId())
                 .operation(operation)
-                .lastUpdated(currentState.getLastUpdated())
+                .updateTime(currentState.getUpdateTime())
+                .updateUser(currentState.getUpdateUser())
+                .createTime(currentState.getCreateTime())
+                .createUser(currentState.getCreateUser())
                 .assignTo(currentState.getAssignTo())
-                .updatedBy(currentState.getUpdatedBy())
                 .content(currentState.getContent())
                 .status(currentState.getStatus())
                 .build();
@@ -273,7 +278,8 @@ public class AnnotationsServiceImpl implements AnnotationsService {
         return currentState;
     }
 
-    private void takeAnnotationHistoryDelete(final Session session,
+    private void takeAnnotationHistoryDelete(final ServiceUser user,
+                                             final Session session,
                                              final String index,
                                              final String id) {
         final Annotation currentState = getEntity(session, index, id);
@@ -282,9 +288,11 @@ public class AnnotationsServiceImpl implements AnnotationsService {
                 .dataSourceUuid(index)
                 .annotationId(id)
                 .operation(HistoryOperation.DELETE)
-                .lastUpdated(System.currentTimeMillis())
+                .updateTime(System.currentTimeMillis())
+                .updateUser(user.getName())
+                .createTime(currentState.getCreateTime())
+                .createUser(currentState.getCreateUser())
                 .assignTo(currentState.getAssignTo())
-                .updatedBy(Annotation.DEFAULT_UPDATED_BY)
                 .content(currentState.getContent())
                 .status(currentState.getStatus())
                 .build();

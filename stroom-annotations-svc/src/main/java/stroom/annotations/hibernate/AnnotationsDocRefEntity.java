@@ -1,13 +1,13 @@
 package stroom.annotations.hibernate;
 
-import stroom.query.hibernate.DocRefEntity;
+import stroom.query.hibernate.DocRefHibernateEntity;
 
 import javax.persistence.Entity;
 
 @Entity(name="index_doc_ref")
-public class AnnotationsDocRefEntity extends DocRefEntity {
+public class AnnotationsDocRefEntity extends DocRefHibernateEntity {
 
-    public static final class Builder extends DocRefEntity.Builder<AnnotationsDocRefEntity, Builder> {
+    public static final class Builder extends DocRefHibernateEntity.Builder<AnnotationsDocRefEntity, Builder> {
 
         public Builder() {
             super(new AnnotationsDocRefEntity());

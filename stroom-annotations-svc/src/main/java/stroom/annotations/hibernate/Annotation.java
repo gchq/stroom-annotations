@@ -19,23 +19,16 @@ public class Annotation extends QueryableEntity {
     public static final String ID = "id";
     public static final String STATUS = "status";
     public static final String ASSIGN_TO = "assignTo";
-    public static final String LAST_UPDATED = "lastUpdated";
     public static final String CONTENT = "content";
-    public static final String UPDATED_BY = "updatedBy";
 
     public static final int MIN_ID_LENGTH = 3;
     public static final Status DEFAULT_STATUS = Status.QUEUED;
     public static final String DEFAULT_CONTENT = "";
-    public static final String DEFAULT_UPDATED_BY = "stroom-annotations-user";
     public static final String DEFAULT_ASSIGNEE = "";
 
     private String id;
 
     private String assignTo;
-
-    private Long lastUpdated;
-
-    private String updatedBy;
 
     private Status status;
 
@@ -125,36 +118,6 @@ public class Annotation extends QueryableEntity {
         this.assignTo = assignTo;
     }
 
-    public static class LastUpdatedField implements Supplier<DataSourceField> {
-
-        @Override
-        public DataSourceField get() {
-            return new DataSourceField(
-                    DataSourceField.DataSourceFieldType.DATE_FIELD,
-                    Annotation.LAST_UPDATED,
-                    true,
-                    Arrays.asList(
-                            ExpressionTerm.Condition.BETWEEN,
-                            ExpressionTerm.Condition.EQUALS,
-                            ExpressionTerm.Condition.GREATER_THAN,
-                            ExpressionTerm.Condition.GREATER_THAN_OR_EQUAL_TO,
-                            ExpressionTerm.Condition.LESS_THAN,
-                            ExpressionTerm.Condition.LESS_THAN_OR_EQUAL_TO
-                    )
-            );
-        }
-    }
-
-    @Column(name=LAST_UPDATED)
-    @IsDataSourceField(fieldSupplier = LastUpdatedField.class)
-    public Long getLastUpdated() {
-        return lastUpdated;
-    }
-
-    public void setLastUpdated(Long lastUpdated) {
-        this.lastUpdated = lastUpdated;
-    }
-
     public static class ContentField implements Supplier<DataSourceField> {
 
         @Override
@@ -181,42 +144,12 @@ public class Annotation extends QueryableEntity {
         this.content = content;
     }
 
-    public static class UpdatedByField implements Supplier<DataSourceField> {
-
-        @Override
-        public DataSourceField get() {
-            return new DataSourceField(
-                    DataSourceField.DataSourceFieldType.FIELD,
-                    Annotation.UPDATED_BY,
-                    true,
-                    Arrays.asList(
-                            ExpressionTerm.Condition.EQUALS,
-                            ExpressionTerm.Condition.CONTAINS,
-                            ExpressionTerm.Condition.IN,
-                            ExpressionTerm.Condition.IN_DICTIONARY
-                    )
-            );
-        }
-    }
-
-    @Column(name=UPDATED_BY)
-    @IsDataSourceField(fieldSupplier = UpdatedByField.class)
-    public String getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(String updatedBy) {
-        this.updatedBy = updatedBy;
-    }
-
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Annotation{");
         sb.append(super.toString()).append('\'');
         sb.append(", id='").append(assignTo).append('\'');
         sb.append(", assignTo='").append(assignTo).append('\'');
-        sb.append(", lastUpdated=").append(lastUpdated);
-        sb.append(", updatedBy='").append(updatedBy).append('\'');
         sb.append(", status=").append(status);
         sb.append(", content='").append(content).append('\'');
         sb.append('}');
@@ -253,16 +186,6 @@ public class Annotation extends QueryableEntity {
 
         public Builder assignTo(final String value) {
             this.instance.setAssignTo(value);
-            return self();
-        }
-
-        public Builder lastUpdated(final Long value) {
-            this.instance.setLastUpdated(value);
-            return self();
-        }
-
-        public Builder updatedBy(final String value) {
-            this.instance.setUpdatedBy(value);
             return self();
         }
 

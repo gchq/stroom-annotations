@@ -15,7 +15,6 @@ import stroom.annotations.hibernate.Status;
 import stroom.annotations.model.ResponseMsgDTO;
 import stroom.annotations.service.AnnotationsService;
 import stroom.query.audit.security.ServiceUser;
-import stroom.util.shared.QueryApiException;
 
 import javax.inject.Inject;
 import javax.ws.rs.core.Response;
@@ -40,13 +39,13 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response welcome() throws QueryApiException {
+    public Response welcome() {
         return Response.ok(WELCOME_TEXT)
                 .build();
     }
 
     @Override
-    public Response statusValues() throws QueryApiException {
+    public Response statusValues(){
         final Map<String, String> statusValues = Arrays.stream(Status.values())
                 .collect(Collectors.toMap(Object::toString, Status::getDisplayText));
 
@@ -58,7 +57,7 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     public Response search(final ServiceUser authenticatedServiceUser,
                            final String index,
                            final String q,
-                           final Integer seekPosition) throws QueryApiException {
+                           final Integer seekPosition){
         Response response;
         Exception exception = null;
         
@@ -66,8 +65,9 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
             final List<Annotation> annotations = service.search(authenticatedServiceUser, index, q, seekPosition);
 
             response = Response.ok(annotations).build();
-
-            return response;
+        } catch (Exception e) {
+            exception = e;
+            response = Response.serverError().build();
         } finally {
             final Event event = eventLoggingService.createEvent();
             final Event.EventDetail eventDetail = event.getEventDetail();
@@ -104,12 +104,14 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
 
             eventLoggingService.log(event);
         }
+
+        return response;
     }
 
     @Override
     public Response get(final ServiceUser authenticatedServiceUser,
                         final String index,
-                        final String id) throws QueryApiException {
+                        final String id){
         Response response;
         Exception exception = null;
         
@@ -118,7 +120,9 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
                     .map(d -> Response.ok(d).build())
                     .orElse(Response.status(HttpStatus.NOT_FOUND_404).build());
 
-            return response;
+        } catch (Exception e) {
+            exception = e;
+            response = Response.serverError().build();
         } finally {
             final Event event = eventLoggingService.createEvent();
             final Event.EventDetail eventDetail = event.getEventDetail();
@@ -131,12 +135,13 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
 
             eventLoggingService.log(event);
         }
+        return response;
     }
 
     @Override
     public Response getHistory(final ServiceUser authenticatedServiceUser,
                                final String index,
-                               final String id) throws QueryApiException {
+                               final String id){
         Response response;
         Exception exception = null;
 
@@ -144,8 +149,9 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
             response =  service.getHistory(authenticatedServiceUser, index, id)
                     .map(d -> Response.ok(d).build())
                     .orElse(Response.status(HttpStatus.NOT_FOUND_404).build());
-
-            return response;
+        } catch (Exception e) {
+            exception = e;
+            response = Response.serverError().build();
         } finally {
             final Event event = eventLoggingService.createEvent();
             final Event.EventDetail eventDetail = event.getEventDetail();
@@ -157,21 +163,23 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
 
             eventLoggingService.log(event);
         }
+        return response;
     }
 
     @Override
     public Response create(final ServiceUser authenticatedServiceUser,
                            final String index,
-                           final String id) throws QueryApiException {
+                           final String id){
         Response response;
-        QueryApiException exception = null;
+        Exception exception = null;
 
         try {
             response =  service.create(authenticatedServiceUser, index, id)
                     .map(d -> Response.ok(d).build())
                     .orElse(Response.status(HttpStatus.NOT_FOUND_404).build());
-
-            return response;
+        } catch (Exception e) {
+            exception = e;
+            response = Response.serverError().build();
         } finally {
             final Event event = eventLoggingService.createEvent();
             final Event.EventDetail eventDetail = event.getEventDetail();
@@ -184,13 +192,14 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
 
             eventLoggingService.log(event);
         }
+        return response;
     }
 
     @Override
     public Response update(final ServiceUser authenticatedServiceUser,
                            final String index,
                            final String id,
-                           final Annotation annotation) throws QueryApiException {
+                           final Annotation annotation){
         Response response;
         Exception exception = null;
 
@@ -198,8 +207,9 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
             response =  service.update(authenticatedServiceUser, index, id, annotation)
                     .map(d -> Response.ok(d).build())
                     .orElse(Response.status(HttpStatus.NOT_FOUND_404).build());
-
-            return response;
+        } catch (Exception e) {
+            exception = e;
+            response = Response.serverError().build();
         } finally {
             final Event event = eventLoggingService.createEvent();
             final Event.EventDetail eventDetail = event.getEventDetail();
@@ -219,12 +229,14 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
 
             eventLoggingService.log(event);
         }
+
+        return response;
     }
 
     @Override
     public Response remove(final ServiceUser authenticatedServiceUser,
                            final String index,
-                           final String id) throws QueryApiException {
+                           final String id) {
         Response response;
         Exception exception = null;
 
@@ -237,7 +249,9 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
                             .build())
                     .orElse(Response.status(HttpStatus.NOT_FOUND_404).build());
 
-            return response;
+        } catch (Exception e) {
+            exception = e;
+            response = Response.serverError().build();
         } finally {
             final Event event = eventLoggingService.createEvent();
             final Event.EventDetail eventDetail = event.getEventDetail();
@@ -250,6 +264,8 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
 
             eventLoggingService.log(event);
         }
+
+        return response;
     }
 
     private ObjectOutcome getOutcomeForId(final String id) {
