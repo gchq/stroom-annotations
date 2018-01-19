@@ -105,6 +105,7 @@ dependencies {
     testCompile testDeps.assertj
     testCompile testDeps.wiremock
 
+    integrationTestCompile testDeps.stroomQueryTesting
     integrationTestCompile testDeps.dropwizard_testing
     integrationTestCompile testDeps.moshi
 }

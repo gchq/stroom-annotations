@@ -10,6 +10,7 @@ import stroom.query.api.v2.DocRef;
 import stroom.query.api.v2.DocRefInfo;
 import stroom.query.audit.ExportDTO;
 import stroom.query.audit.security.ServiceUser;
+import stroom.query.audit.service.DocRefEntity;
 import stroom.query.audit.service.DocRefService;
 import stroom.query.hibernate.DocRefHibernateEntity;
 
@@ -36,7 +37,7 @@ public class AnnotationsDocRefServiceImpl implements DocRefService<AnnotationsDo
 
     @Override
     public String getType() {
-        return "AnnotationsIndex";
+        return AnnotationsDocRefEntity.TYPE;
     }
 
     @Override
@@ -253,11 +254,14 @@ public class AnnotationsDocRefServiceImpl implements DocRefService<AnnotationsDo
     @Override
     public ExportDTO exportDocument(final ServiceUser user,
                                     final String uuid) throws Exception {
-        final Optional<AnnotationsDocRefEntity> index = get(user, uuid);
+        final Optional<AnnotationsDocRefEntity> optionalIndex = get(user, uuid);
 
-        return new ExportDTO.Builder()
-                .message(index.isPresent() ? "is present" : "could not find document")
-                .build();
+        return optionalIndex.map(index -> new ExportDTO.Builder()
+                    .value(DocRefEntity.NAME, index.getName())
+                    .build())
+                .orElse(new ExportDTO.Builder()
+                        .message("could not find document")
+                        .build());
     }
 
     @Override

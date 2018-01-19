@@ -7,7 +7,9 @@ import javax.persistence.Entity;
 @Entity(name="index_doc_ref")
 public class AnnotationsDocRefEntity extends DocRefHibernateEntity {
 
-    public static final class Builder extends DocRefHibernateEntity.Builder<AnnotationsDocRefEntity, Builder> {
+    public static final String TYPE = "AnnotationsIndex";
+
+    public static final class Builder extends DocRefHibernateEntity.BaseBuilder<AnnotationsDocRefEntity, Builder> {
 
         public Builder() {
             super(new AnnotationsDocRefEntity());
