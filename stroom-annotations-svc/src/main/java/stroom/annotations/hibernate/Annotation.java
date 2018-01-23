@@ -38,16 +38,15 @@ public class Annotation extends QueryableEntity {
 
         @Override
         public DataSourceField get() {
-            return new DataSourceField(
-                    DataSourceField.DataSourceFieldType.ID,
-                    Annotation.ID,
-                    true,
-                    Arrays.asList(
+            return new DataSourceField.Builder()
+                    .type(DataSourceField.DataSourceFieldType.ID)
+                    .name(Annotation.ID)
+                    .queryable(true)
+                    .addConditions(
                             ExpressionTerm.Condition.EQUALS,
                             ExpressionTerm.Condition.IN,
                             ExpressionTerm.Condition.IN_DICTIONARY
-                    )
-            );
+                    ).build();
         }
     }
 
@@ -66,16 +65,15 @@ public class Annotation extends QueryableEntity {
 
         @Override
         public DataSourceField get() {
-            return new DataSourceField(
-                    DataSourceField.DataSourceFieldType.FIELD,
-                    Annotation.STATUS,
-                    true,
-                    Arrays.asList(
+            return new DataSourceField.Builder()
+                    .type(DataSourceField.DataSourceFieldType.FIELD)
+                    .name(Annotation.STATUS)
+                    .queryable(true)
+                    .addConditions(
                             ExpressionTerm.Condition.EQUALS,
                             ExpressionTerm.Condition.IN,
                             ExpressionTerm.Condition.IN_DICTIONARY
-                    )
-            );
+                    ).build();
         }
     }
 
@@ -94,17 +92,16 @@ public class Annotation extends QueryableEntity {
 
         @Override
         public DataSourceField get() {
-            return new DataSourceField(
-                    DataSourceField.DataSourceFieldType.FIELD,
-                    Annotation.ASSIGN_TO,
-                    true,
-                    Arrays.asList(
+            return new DataSourceField.Builder()
+                    .type(DataSourceField.DataSourceFieldType.FIELD)
+                    .name(Annotation.ASSIGN_TO)
+                    .queryable(true)
+                    .addConditions(
                             ExpressionTerm.Condition.EQUALS,
                             ExpressionTerm.Condition.CONTAINS,
                             ExpressionTerm.Condition.IN,
                             ExpressionTerm.Condition.IN_DICTIONARY
-                    )
-            );
+                    ).build();
         }
     }
 
@@ -122,15 +119,14 @@ public class Annotation extends QueryableEntity {
 
         @Override
         public DataSourceField get() {
-            return new DataSourceField(
-                    DataSourceField.DataSourceFieldType.FIELD,
-                    Annotation.CONTENT,
-                    true,
-                    Arrays.asList(
+            return new DataSourceField.Builder()
+                    .type(DataSourceField.DataSourceFieldType.FIELD)
+                    .name(Annotation.CONTENT)
+                    .queryable(true)
+                    .addConditions(
                             ExpressionTerm.Condition.EQUALS,
                             ExpressionTerm.Condition.CONTAINS
-                    )
-            );
+                    ).build();
         }
     }
 
