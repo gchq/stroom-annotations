@@ -24,10 +24,12 @@ import stroom.annotations.resources.AuditedAnnotationsResourceImpl;
 import stroom.annotations.service.AnnotationsDocRefServiceImpl;
 import stroom.query.audit.authorisation.AuthorisationService;
 import stroom.query.audit.rest.AuditedDocRefResourceImpl;
+import stroom.query.audit.rest.AuditedQueryResourceImpl;
 import stroom.query.audit.security.RobustJwtAuthFilter;
 import stroom.query.audit.security.ServiceUser;
 import stroom.query.audit.security.TokenConfig;
 import stroom.query.audit.service.DocRefService;
+import stroom.query.audit.service.QueryService;
 import stroom.query.hibernate.AuditedCriteriaQueryBundle;
 
 import javax.inject.Inject;
@@ -80,6 +82,17 @@ public class App extends Application<Config> {
         }
     }
 
+    public static final class AuditedAnnotationsQueryResource extends AuditedQueryResourceImpl<AnnotationsDocRefEntity> {
+
+        @Inject
+        public AuditedAnnotationsQueryResource(final EventLoggingService eventLoggingService,
+                                               final QueryService service,
+                                               final AuthorisationService authorisationService,
+                                               final DocRefService<AnnotationsDocRefEntity> docRefService) {
+            super(eventLoggingService, service, authorisationService, docRefService);
+        }
+    }
+
     private final AuditedCriteriaQueryBundle auditedQueryBundle =
             new AuditedCriteriaQueryBundle<>(Annotation.class,
 
@@ -90,8 +103,9 @@ public class App extends Application<Config> {
                         }
                     },
                     AnnotationsDocRefEntity.class,
-                    AuditedAnnotationsDocRefResource.class,
-                    AnnotationsDocRefServiceImpl.class);
+                    AuditedAnnotationsQueryResource.class,
+                    AnnotationsDocRefServiceImpl.class,
+                    AuditedAnnotationsDocRefResource.class);
 
     public static void main(final String[] args) throws Exception {
         new App().run(args);

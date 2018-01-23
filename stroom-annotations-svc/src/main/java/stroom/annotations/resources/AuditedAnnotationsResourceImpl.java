@@ -11,10 +11,16 @@ import event.logging.Term;
 import event.logging.TermCondition;
 import org.eclipse.jetty.http.HttpStatus;
 import stroom.annotations.hibernate.Annotation;
+import stroom.annotations.hibernate.AnnotationsDocRefEntity;
 import stroom.annotations.hibernate.Status;
 import stroom.annotations.model.ResponseMsgDTO;
 import stroom.annotations.service.AnnotationsService;
+import stroom.query.api.v2.DocRef;
+import stroom.query.audit.DocRefAuditWrapper;
+import stroom.query.audit.authorisation.AuthorisationService;
+import stroom.query.audit.authorisation.DocumentPermission;
 import stroom.query.audit.security.ServiceUser;
+import stroom.query.audit.service.DocRefService;
 
 import javax.inject.Inject;
 import javax.ws.rs.core.Response;
@@ -27,15 +33,23 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
 
     private final AnnotationsService service;
 
+    static final String WELCOME_TEXT = "Welcome to the annotations service";
+
     private final EventLoggingService eventLoggingService;
 
-    static final String WELCOME_TEXT = "Welcome to the annotations service";
+    private final AuthorisationService authorisationService;
+
+    private final DocRefService<AnnotationsDocRefEntity> docRefService;
 
     @Inject
     public AuditedAnnotationsResourceImpl(final AnnotationsService service,
-                                          final EventLoggingService eventLoggingService) {
+                                          final AuthorisationService authorisationService,
+                                          final EventLoggingService eventLoggingService,
+                                          final DocRefService<AnnotationsDocRefEntity> docRefService) {
         this.service = service;
         this.eventLoggingService = eventLoggingService;
+        this.authorisationService = authorisationService;
+        this.docRefService = docRefService;
     }
 
     @Override
@@ -54,218 +68,191 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     }
 
     @Override
-    public Response search(final ServiceUser authenticatedServiceUser,
-                           final String index,
+    public Response search(final ServiceUser user,
+                           final String indexDocRefUuid,
                            final String q,
-                           final Integer seekPosition){
-        Response response;
-        Exception exception = null;
-        
-        try {
-            final List<Annotation> annotations = service.search(authenticatedServiceUser, index, q, seekPosition);
+                           final Integer seekPosition) {
+        return DocRefAuditWrapper.<AnnotationsDocRefEntity>withUser(user)
+                .withDocRef(new DocRef.Builder()
+                        .type(AnnotationsDocRefEntity.TYPE)
+                        .uuid(indexDocRefUuid)
+                        .build())
+                .withDocRefEntity((docRef) -> docRefService.get(user, docRef.getUuid()))
+                .withAuthSupplier((docRef) -> authorisationService.isAuthorised(user,
+                        docRef,
+                        DocumentPermission.READ))
+                .withResponse(docRefEntity ->  {
+                    final List<Annotation> as = service.search(user, docRefEntity.getUuid(), q, seekPosition);
+                    return Response.ok(as).build();
+                })
+                .withPopulateAudit((eventDetail, response, exception) -> {
+                    eventDetail.setTypeId("SEARCH");
+                    eventDetail.setDescription("Freetext search through Annotations");
 
-            response = Response.ok(annotations).build();
-        } catch (Exception e) {
-            exception = e;
-            response = Response.serverError().build();
-        } finally {
-            final Event event = eventLoggingService.createEvent();
-            final Event.EventDetail eventDetail = event.getEventDetail();
+                    final Search search = new Search();
+                    eventDetail.setSearch(search);
 
-            eventDetail.setTypeId("SEARCH");
-            eventDetail.setDescription("Freetext search through Annotations");
+                    final Outcome outcome = new Outcome();
+                    outcome.setSuccess(null != exception);
+                    search.setOutcome(outcome);
 
-            final Search search = new Search();
-            eventDetail.setSearch(search);
+                    final Query query = new Query();
+                    search.setQuery(query);
 
-            final Outcome outcome = new Outcome();
-            outcome.setSuccess(null != exception);
-            search.setOutcome(outcome);
+                    final Query.Advanced queryTerms = new Query.Advanced();
+                    query.setAdvanced(queryTerms);
 
-            final Query query = new Query();
-            search.setQuery(query);
+                    final Term qTerm = new Term();
+                    queryTerms.getAdvancedQueryItems().add(qTerm);
+                    qTerm.setName("q");
+                    qTerm.setValue(q);
+                    qTerm.setCondition(TermCondition.CONTAINS);
 
-            final Query.Advanced queryTerms = new Query.Advanced();
-            query.setAdvanced(queryTerms);
-
-            final Term qTerm = new Term();
-            queryTerms.getAdvancedQueryItems().add(qTerm);
-            qTerm.setName("q");
-            qTerm.setValue(q);
-            qTerm.setCondition(TermCondition.CONTAINS);
-
-            if (null != seekPosition) {
-                final Term seekIdTerm = new Term();
-                queryTerms.getAdvancedQueryItems().add(seekIdTerm);
-                seekIdTerm.setName("seekPosition");
-                seekIdTerm.setValue(Integer.toString(seekPosition));
-                seekIdTerm.setCondition(TermCondition.GREATER_THAN);
-            }
-
-            eventLoggingService.log(event);
-        }
-
-        return response;
+                    if (null != seekPosition) {
+                        final Term seekIdTerm = new Term();
+                        queryTerms.getAdvancedQueryItems().add(seekIdTerm);
+                        seekIdTerm.setName("seekPosition");
+                        seekIdTerm.setValue(Integer.toString(seekPosition));
+                        seekIdTerm.setCondition(TermCondition.GREATER_THAN);
+                    }
+                }).callAndAudit(eventLoggingService);
     }
 
     @Override
-    public Response get(final ServiceUser authenticatedServiceUser,
-                        final String index,
-                        final String id){
-        Response response;
-        Exception exception = null;
-        
-        try {
-            response =  service.get(authenticatedServiceUser, index, id)
-                    .map(d -> Response.ok(d).build())
-                    .orElse(Response.status(HttpStatus.NOT_FOUND_404).build());
+    public Response get(final ServiceUser user,
+                        final String indexDocRefUuid,
+                        final String id) {
+        return DocRefAuditWrapper.<AnnotationsDocRefEntity>withUser(user)
+                .withDocRef(new DocRef.Builder()
+                        .type(AnnotationsDocRefEntity.TYPE)
+                        .uuid(indexDocRefUuid)
+                        .build())
+                .withDocRefEntity(docRef -> docRefService.get(user, docRef.getUuid()))
+                .withAuthSupplier((docRef) -> authorisationService.isAuthorised(user,
+                        docRef,
+                        DocumentPermission.READ))
+                .withResponse(docRefEntity -> service.get(user, docRefEntity.getUuid(), id)
+                        .map(d -> Response.ok(d).build())
+                        .orElse(Response.status(HttpStatus.NOT_FOUND_404).build()))
+                .withPopulateAudit((eventDetail, response, exception) -> {
+                    eventDetail.setTypeId("GET");
+                    eventDetail.setDescription("Get a specific Annotation by ID");
 
-        } catch (Exception e) {
-            exception = e;
-            response = Response.serverError().build();
-        } finally {
-            final Event event = eventLoggingService.createEvent();
-            final Event.EventDetail eventDetail = event.getEventDetail();
-
-            eventDetail.setTypeId("GET");
-            eventDetail.setDescription("Get a specific Annotation by ID");
-
-            eventDetail.setView(getOutcomeForId(id));
-            eventDetail.getView().getOutcome().setSuccess(null != exception);
-
-            eventLoggingService.log(event);
-        }
-        return response;
+                    eventDetail.setView(getOutcomeForId(id));
+                    eventDetail.getView().getOutcome().setSuccess(null != exception);
+                }).callAndAudit(eventLoggingService);
     }
 
     @Override
-    public Response getHistory(final ServiceUser authenticatedServiceUser,
-                               final String index,
-                               final String id){
-        Response response;
-        Exception exception = null;
+    public Response getHistory(final ServiceUser user,
+                               final String indexDocRefUuid,
+                               final String id) {
+        return DocRefAuditWrapper.<AnnotationsDocRefEntity>withUser(user)
+                .withDocRef(new DocRef.Builder()
+                        .type(AnnotationsDocRefEntity.TYPE)
+                        .uuid(indexDocRefUuid)
+                        .build())
+                .withDocRefEntity(docRef -> docRefService.get(user, docRef.getUuid()))
+                .withAuthSupplier(docRef -> authorisationService.isAuthorised(user,
+                        docRef,
+                        DocumentPermission.READ))
+                .withResponse(docRefEntity -> service.getHistory(user, docRefEntity.getUuid(), id)
+                        .map(d -> Response.ok(d).build())
+                        .orElse(Response.status(HttpStatus.NOT_FOUND_404).build()))
+                .withPopulateAudit((eventDetail, response, exception) -> {
+                    eventDetail.setTypeId("GET_HISTORY");
+                    eventDetail.setDescription("Get the history of a specific Annotation by ID");
 
-        try {
-            response =  service.getHistory(authenticatedServiceUser, index, id)
-                    .map(d -> Response.ok(d).build())
-                    .orElse(Response.status(HttpStatus.NOT_FOUND_404).build());
-        } catch (Exception e) {
-            exception = e;
-            response = Response.serverError().build();
-        } finally {
-            final Event event = eventLoggingService.createEvent();
-            final Event.EventDetail eventDetail = event.getEventDetail();
-            eventDetail.setTypeId("GET_HISTORY");
-            eventDetail.setDescription("Get the history of a specific Annotation by ID");
-
-            eventDetail.setView(getOutcomeForId(id));
-            eventDetail.getView().getOutcome().setSuccess(null != exception);
-
-            eventLoggingService.log(event);
-        }
-        return response;
+                    eventDetail.setView(getOutcomeForId(id));
+                    eventDetail.getView().getOutcome().setSuccess(null != exception);
+                }).callAndAudit(eventLoggingService);
     }
 
     @Override
-    public Response create(final ServiceUser authenticatedServiceUser,
-                           final String index,
-                           final String id){
-        Response response;
-        Exception exception = null;
-
-        try {
-            response =  service.create(authenticatedServiceUser, index, id)
-                    .map(d -> Response.ok(d).build())
-                    .orElse(Response.status(HttpStatus.NOT_FOUND_404).build());
-        } catch (Exception e) {
-            exception = e;
-            response = Response.serverError().build();
-        } finally {
-            final Event event = eventLoggingService.createEvent();
-            final Event.EventDetail eventDetail = event.getEventDetail();
-
-            eventDetail.setTypeId("CREATE");
-            eventDetail.setDescription("Create a new Annotation by a specific ID");
-
-            eventDetail.setCreate(getOutcomeForId(id));
-            eventDetail.getCreate().getOutcome().setSuccess(null != exception);
-
-            eventLoggingService.log(event);
-        }
-        return response;
-    }
-
-    @Override
-    public Response update(final ServiceUser authenticatedServiceUser,
-                           final String index,
-                           final String id,
-                           final Annotation annotation){
-        Response response;
-        Exception exception = null;
-
-        try {
-            response =  service.update(authenticatedServiceUser, index, id, annotation)
-                    .map(d -> Response.ok(d).build())
-                    .orElse(Response.status(HttpStatus.NOT_FOUND_404).build());
-        } catch (Exception e) {
-            exception = e;
-            response = Response.serverError().build();
-        } finally {
-            final Event event = eventLoggingService.createEvent();
-            final Event.EventDetail eventDetail = event.getEventDetail();
-
-            eventDetail.setTypeId("UPDATE");
-            eventDetail.setDescription("Update an new Annotation with a specific ID");
-
-            final Event.EventDetail.Update update = new Event.EventDetail.Update();
-            eventDetail.setUpdate(update);
-
-            final Outcome outcome = new Outcome();
-            update.setOutcome(outcome);
-
-            outcome.setSuccess(null != exception);
-
-            update.getData().add(getDataForId(id));
-
-            eventLoggingService.log(event);
-        }
-
-        return response;
-    }
-
-    @Override
-    public Response remove(final ServiceUser authenticatedServiceUser,
-                           final String index,
+    public Response create(final ServiceUser user,
+                           final String indexDocRefUuid,
                            final String id) {
-        Response response;
-        Exception exception = null;
+        return DocRefAuditWrapper.<AnnotationsDocRefEntity>withUser(user)
+                .withDocRef(new DocRef.Builder()
+                        .type(AnnotationsDocRefEntity.TYPE)
+                        .uuid(indexDocRefUuid)
+                        .build())
+                .withDocRefEntity(docRef -> docRefService.get(user, docRef.getUuid()))
+                .withAuthSupplier(docRef -> authorisationService.isAuthorised(user,
+                        docRef,
+                        DocumentPermission.UPDATE))
+                .withResponse(docRefEntity ->  service.create(user, indexDocRefUuid, id)
+                        .map(d -> Response.ok(d).build())
+                        .orElse(Response.status(HttpStatus.NOT_FOUND_404).build()))
+                .withPopulateAudit((eventDetail, response, exception) -> {
+                    eventDetail.setTypeId("CREATE");
+                    eventDetail.setDescription("Create a new Annotation by a specific ID");
 
-        try {
-            response =  service.remove(authenticatedServiceUser, index, id)
-                    .map(d -> Response
-                            .ok(ResponseMsgDTO.msg("Annotation deleted")
-                                    .recordsUpdated(d ? 1 : 0)
-                                    .build())
-                            .build())
-                    .orElse(Response.status(HttpStatus.NOT_FOUND_404).build());
+                    eventDetail.setCreate(getOutcomeForId(id));
+                    eventDetail.getCreate().getOutcome().setSuccess(null != exception);
+                }).callAndAudit(eventLoggingService);
+    }
 
-        } catch (Exception e) {
-            exception = e;
-            response = Response.serverError().build();
-        } finally {
-            final Event event = eventLoggingService.createEvent();
-            final Event.EventDetail eventDetail = event.getEventDetail();
+    @Override
+    public Response update(final ServiceUser user,
+                           final String indexDocRefUuid,
+                           final String id,
+                           final Annotation annotation) {
+        return DocRefAuditWrapper.<AnnotationsDocRefEntity>withUser(user)
+                .withDocRef(new DocRef.Builder()
+                        .type(AnnotationsDocRefEntity.TYPE)
+                        .uuid(indexDocRefUuid)
+                        .build())
+                .withDocRefEntity(docRef -> docRefService.get(user, docRef.getUuid()))
+                .withAuthSupplier(docRef -> authorisationService.isAuthorised(user,
+                        docRef,
+                        DocumentPermission.UPDATE))
+                .withResponse(docRefEntity -> service.update(user, indexDocRefUuid, id, annotation)
+                        .map(d -> Response.ok(d).build())
+                        .orElse(Response.status(HttpStatus.NOT_FOUND_404).build()))
+                .withPopulateAudit((eventDetail, response, exception) -> {
+                    eventDetail.setTypeId("UPDATE");
+                    eventDetail.setDescription("Update an new Annotation with a specific ID");
 
-            eventDetail.setTypeId("REMOVE");
-            eventDetail.setDescription("Remove an new Annotation with a specific ID");
+                    final Event.EventDetail.Update update = new Event.EventDetail.Update();
+                    eventDetail.setUpdate(update);
 
-            eventDetail.setDelete(getOutcomeForId(id));
-            eventDetail.getDelete().getOutcome().setSuccess(null != exception);
+                    final Outcome outcome = new Outcome();
+                    update.setOutcome(outcome);
 
-            eventLoggingService.log(event);
-        }
+                    outcome.setSuccess(null != exception);
 
-        return response;
+                    update.getData().add(getDataForId(id));
+                }).callAndAudit(eventLoggingService);
+    }
+
+    @Override
+    public Response remove(final ServiceUser user,
+                           final String indexDocRefUuid,
+                           final String id) {
+        return DocRefAuditWrapper.<AnnotationsDocRefEntity>withUser(user)
+                .withDocRef(new DocRef.Builder()
+                        .type(AnnotationsDocRefEntity.TYPE)
+                        .uuid(indexDocRefUuid)
+                        .build())
+                .withDocRefEntity(docRef -> docRefService.get(user, docRef.getUuid()))
+                .withAuthSupplier(docRef -> authorisationService.isAuthorised(user,
+                        docRef,
+                        DocumentPermission.DELETE))
+                .withResponse(docRefEntity -> service.remove(user, indexDocRefUuid, id)
+                        .map(d -> Response
+                                .ok(ResponseMsgDTO.msg("Annotation deleted")
+                                        .recordsUpdated(d ? 1 : 0)
+                                        .build())
+                                .build())
+                        .orElse(Response.status(HttpStatus.NOT_FOUND_404).build()))
+                .withPopulateAudit((eventDetail, response, exception) -> {
+                    eventDetail.setTypeId("REMOVE");
+                    eventDetail.setDescription("Remove an new Annotation with a specific ID");
+
+                    eventDetail.setDelete(getOutcomeForId(id));
+                    eventDetail.getDelete().getOutcome().setSuccess(null != exception);
+                }).callAndAudit(eventLoggingService);
     }
 
     private ObjectOutcome getOutcomeForId(final String id) {
