@@ -47,8 +47,10 @@ public class AnnotationsQueryResourceIT extends QueryResourceIT<AnnotationsDocRe
     }
 
     @Override
-    protected AnnotationsDocRefEntity getValidEntity(DocRef docRef) {
-        return new AnnotationsDocRefEntity.Builder().build();
+    protected AnnotationsDocRefEntity getValidEntity(final DocRef docRef) {
+        return new AnnotationsDocRefEntity.Builder()
+                .docRef(docRef)
+                .build();
     }
 
     @Before

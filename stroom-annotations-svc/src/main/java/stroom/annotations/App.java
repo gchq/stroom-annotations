@@ -72,20 +72,20 @@ public class App extends Application<Config> {
     };
 
 
-    public static final class AuditedAnnotationsDocRefResource extends AuditedDocRefResourceImpl<AnnotationsDocRefEntity> {
+    public static final class AuditedDocRefResource extends AuditedDocRefResourceImpl<AnnotationsDocRefEntity> {
 
         @Inject
-        public AuditedAnnotationsDocRefResource(final DocRefService<AnnotationsDocRefEntity> service,
+        public AuditedDocRefResource(final DocRefService<AnnotationsDocRefEntity> service,
                                                 final EventLoggingService eventLoggingService,
                                                 final AuthorisationService authorisationService) {
             super(service, eventLoggingService, authorisationService);
         }
     }
 
-    public static final class AuditedAnnotationsQueryResource extends AuditedQueryResourceImpl<AnnotationsDocRefEntity> {
+    public static final class AuditedQueryResource extends AuditedQueryResourceImpl<AnnotationsDocRefEntity> {
 
         @Inject
-        public AuditedAnnotationsQueryResource(final EventLoggingService eventLoggingService,
+        public AuditedQueryResource(final EventLoggingService eventLoggingService,
                                                final QueryService service,
                                                final AuthorisationService authorisationService,
                                                final DocRefService<AnnotationsDocRefEntity> docRefService) {
@@ -93,7 +93,12 @@ public class App extends Application<Config> {
         }
     }
 
-    private final AuditedCriteriaQueryBundle auditedQueryBundle =
+    private final AuditedCriteriaQueryBundle<Config,
+            Annotation,
+            AnnotationsDocRefEntity,
+            AuditedQueryResource,
+            AnnotationsDocRefServiceImpl,
+            AuditedDocRefResource> auditedQueryBundle =
             new AuditedCriteriaQueryBundle<>(Annotation.class,
 
                     new HibernateBundle<Config>(Annotation.class, AnnotationHistory.class, AnnotationsDocRefEntity.class) {
@@ -103,9 +108,9 @@ public class App extends Application<Config> {
                         }
                     },
                     AnnotationsDocRefEntity.class,
-                    AuditedAnnotationsQueryResource.class,
+                    AuditedQueryResource.class,
                     AnnotationsDocRefServiceImpl.class,
-                    AuditedAnnotationsDocRefResource.class);
+                    AuditedDocRefResource.class);
 
     public static void main(final String[] args) throws Exception {
         new App().run(args);
