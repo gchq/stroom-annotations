@@ -226,6 +226,8 @@ public class AnnotationsResourcesIT extends AbstractIT<AnnotationsDocRefEntity, 
         // Generate an UUID we can embed into the content of some annotations so we can find them
         final DocRef docRef = createDocument();
 
+        //checkAuditLogs(1);
+
         final int NUMBER_SEARCH_TERMS = 3;
         final int NUMBER_PAGES_EXPECTED = 3;
         final int ANNOTATIONS_PER_SEARCH_TERM = SEARCH_PAGE_LIMIT * NUMBER_PAGES_EXPECTED;
@@ -249,6 +251,8 @@ public class AnnotationsResourcesIT extends AbstractIT<AnnotationsDocRefEntity, 
                     .collect(Collectors.toSet());
             annotationsBySearchTerm.put(searchTerm, annotations);
         }
+
+        //checkAuditLogs(2 * TOTAL_ANNOTATIONS);
 
         // Print all the entries created
         LOGGER.info("Annotation ID's Created");
@@ -286,6 +290,7 @@ public class AnnotationsResourcesIT extends AbstractIT<AnnotationsDocRefEntity, 
             assertEquals(annotationsSet, resultsSet);
         });
 
+        // Create Doc, Create & Update Annotations, Search Per Term Per Page
         checkAuditLogs(1 + (2 * TOTAL_ANNOTATIONS) + (NUMBER_SEARCH_TERMS * NUMBER_PAGES_EXPECTED));
     }
 
