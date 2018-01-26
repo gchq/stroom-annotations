@@ -1,46 +1,68 @@
 package stroom.annotations.resources;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import io.dropwizard.testing.junit.DropwizardAppRule;
 import org.eclipse.jetty.http.HttpStatus;
-import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import stroom.annotations.App;
 import stroom.annotations.config.Config;
-import stroom.annotations.hibernate.*;
+import stroom.annotations.hibernate.Annotation;
+import stroom.annotations.hibernate.AnnotationHistory;
+import stroom.annotations.hibernate.AnnotationsDocRefEntity;
+import stroom.annotations.hibernate.HistoryOperation;
+import stroom.annotations.hibernate.Status;
 import stroom.query.api.v2.DocRef;
 import stroom.query.audit.authorisation.DocumentPermission;
 import stroom.query.audit.client.DocRefResourceHttpClient;
-import stroom.query.audit.logback.FifoLogbackAppender;
-import stroom.query.testing.AbstractIT;
+import stroom.query.testing.DropwizardAppWithClientsRule;
+import stroom.query.testing.FifoLogbackRule;
+import stroom.query.testing.StroomAuthenticationRule;
 
+import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.junit.Assert.*;
+import static io.dropwizard.testing.ResourceHelpers.resourceFilePath;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 import static stroom.annotations.service.AnnotationsServiceImpl.SEARCH_PAGE_LIMIT;
 
-public class AnnotationsResourcesIT extends AbstractIT<AnnotationsDocRefEntity, Config, App> {
+public class AnnotationsResourcesIT {
     private static final Logger LOGGER = LoggerFactory.getLogger(AnnotationsResourcesIT.class);
 
-    private AnnotationsHttpClient annotationsClient;
-    private DocRefResourceHttpClient<AnnotationsDocRefEntity> docRefClient;
+    @ClassRule
+    public static final DropwizardAppWithClientsRule<Config> appRule =
+            new DropwizardAppWithClientsRule<>(App.class, resourceFilePath("config.yml"));
+
+    @ClassRule
+    public static StroomAuthenticationRule authRule =
+            new StroomAuthenticationRule(WireMockConfiguration.options().port(10080), AnnotationsDocRefEntity.TYPE);
+
+    @Rule
+    public FifoLogbackRule auditLogRule = new FifoLogbackRule();
+
+    private final AnnotationsHttpClient annotationsClient;
+    private final DocRefResourceHttpClient<AnnotationsDocRefEntity> docRefClient;
 
     public AnnotationsResourcesIT() {
-        super(App.class, AnnotationsDocRefEntity.class, AnnotationsDocRefEntity.TYPE);
-    }
-
-    @Before
-    public final void beforeTest() {
-
-        annotationsClient = new AnnotationsHttpClient(getAppHost());
-        docRefClient = new DocRefResourceHttpClient<>(getAppHost());
-        FifoLogbackAppender.popLogs();
+        annotationsClient = appRule.getClient(AnnotationsHttpClient::new);
+        docRefClient = appRule.getClient(DocRefResourceHttpClient::new);
     }
 
     @Test
@@ -54,9 +76,8 @@ public class AnnotationsResourcesIT extends AbstractIT<AnnotationsDocRefEntity, 
     public void testStatusValues() throws Exception {
         final Response response = annotationsClient.statusValues();
 
-        final Map<String, String> responseStatusValues = jacksonObjectMapper.readValue(
-                response.readEntity(String.class),
-                new TypeReference<Map<String, String>>(){});
+        final Map<String, String> responseStatusValues =
+                response.readEntity(new GenericType<Map<String, String>>() {});
         final Map<String, String> statusValues = Arrays.stream(Status.values())
                 .collect(Collectors.toMap(Object::toString, Status::getDisplayText));
 
@@ -69,19 +90,19 @@ public class AnnotationsResourcesIT extends AbstractIT<AnnotationsDocRefEntity, 
         final DocRef docRef = createDocument();
         final String annotationId = UUID.randomUUID().toString();
 
-        final Response response = annotationsClient.create(adminUser(), docRef.getUuid(), annotationId);
+        final Response response = annotationsClient.create(authRule.adminUser(), docRef.getUuid(), annotationId);
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
-        final Annotation created = getFromBody(response, Annotation.class);
+        final Annotation created = response.readEntity(Annotation.class);
         assertEquals(annotationId, created.getId());
         assertEquals(Annotation.DEFAULT_CONTENT, created.getContent());
         assertEquals(Annotation.DEFAULT_ASSIGNEE, created.getAssignTo());
-        assertEquals(ADMIN_USER, created.getCreateUser());
-        assertEquals(ADMIN_USER, created.getUpdateUser());
+        assertEquals(authRule.adminUser().getName(), created.getCreateUser());
+        assertEquals(authRule.adminUser().getName(), created.getUpdateUser());
         assertEquals(Annotation.DEFAULT_STATUS, created.getStatus());
 
         // create document, create annotation
-        checkAuditLogs(2);
+        auditLogRule.checkAuditLogs(2);
     }
 
     @Test
@@ -89,14 +110,14 @@ public class AnnotationsResourcesIT extends AbstractIT<AnnotationsDocRefEntity, 
         final DocRef docRef = createDocument();
         final String annotationId = UUID.randomUUID().toString();
 
-        final Response response = annotationsClient.create(adminUser(), docRef.getUuid(), annotationId);
+        final Response response = annotationsClient.create(authRule.adminUser(), docRef.getUuid(), annotationId);
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         final Annotation annotationResponse = getAnnotation(docRef.getUuid(), annotationId);
         assertNotNull(annotationResponse);
 
         // Create Document, create annotation, get annotation
-        checkAuditLogs(3);
+        auditLogRule.checkAuditLogs(3);
     }
 
     @Test
@@ -122,7 +143,7 @@ public class AnnotationsResourcesIT extends AbstractIT<AnnotationsDocRefEntity, 
         });
 
         // Create Document, Records * create, update, get
-        checkAuditLogs(1 + (3 * RECORDS_TO_CREATE));
+        auditLogRule.checkAuditLogs(1 + (3 * RECORDS_TO_CREATE));
     }
 
     @Test
@@ -130,20 +151,20 @@ public class AnnotationsResourcesIT extends AbstractIT<AnnotationsDocRefEntity, 
         final DocRef docRef = createDocument();
         final String id = UUID.randomUUID().toString();
 
-        final Response createResponse = annotationsClient.create(adminUser(), docRef.getUuid(), id);
+        final Response createResponse = annotationsClient.create(authRule.adminUser(), docRef.getUuid(), id);
         assertEquals(HttpStatus.OK_200, createResponse.getStatus());
 
-        Response preDeleteGetResponse = annotationsClient.get(adminUser(), docRef.getUuid(), id);
+        Response preDeleteGetResponse = annotationsClient.get(authRule.adminUser(), docRef.getUuid(), id);
         assertEquals(HttpStatus.OK_200, preDeleteGetResponse.getStatus());
 
-        final Response deleteResponse = annotationsClient.remove(adminUser(), docRef.getUuid(), id);
+        final Response deleteResponse = annotationsClient.remove(authRule.adminUser(), docRef.getUuid(), id);
         assertEquals(HttpStatus.OK_200, deleteResponse.getStatus());
         
-        Response postDeleteGetResponse = annotationsClient.get(adminUser(), docRef.getUuid(), id);
+        Response postDeleteGetResponse = annotationsClient.get(authRule.adminUser(), docRef.getUuid(), id);
         assertEquals(HttpStatus.NOT_FOUND_404, postDeleteGetResponse.getStatus());
 
         // create document, create annotation, pre-get, Delete, post-get
-        checkAuditLogs(5);
+        auditLogRule.checkAuditLogs(5);
     }
 
     @Test
@@ -152,7 +173,7 @@ public class AnnotationsResourcesIT extends AbstractIT<AnnotationsDocRefEntity, 
         final String id = UUID.randomUUID().toString();
 
         final int numberUpdates = 5;
-        final Response createResponse = annotationsClient.create(adminUser(), docRef.getUuid(), id);
+        final Response createResponse = annotationsClient.create(authRule.adminUser(), docRef.getUuid(), id);
         assertEquals(HttpStatus.OK_200, createResponse.getStatus());
 
         final List<Annotation> annotationHistory =
@@ -165,7 +186,7 @@ public class AnnotationsResourcesIT extends AbstractIT<AnnotationsDocRefEntity, 
                         .peek(a -> {
                             // Update the annotation with new randomised details
                             final Response updateResponse = annotationsClient.update(
-                                    adminUser(),
+                                    authRule.adminUser(),
                                     docRef.getUuid(),
                                     a.getId(),
                                     a);
@@ -173,16 +194,14 @@ public class AnnotationsResourcesIT extends AbstractIT<AnnotationsDocRefEntity, 
                         }) // push update to database
                         .collect(Collectors.toList());
 
-        final Response deleteResponse = annotationsClient.remove(adminUser(), docRef.getUuid(), id);
+        final Response deleteResponse = annotationsClient.remove(authRule.adminUser(), docRef.getUuid(), id);
         assertEquals(HttpStatus.OK_200, deleteResponse.getStatus());
 
         // Get the history for this annotation
-        final Response getHistoryResponse = annotationsClient.getHistory(adminUser(), docRef.getUuid(), id);
+        final Response getHistoryResponse = annotationsClient.getHistory(authRule.adminUser(), docRef.getUuid(), id);
         assertEquals(HttpStatus.OK_200, getHistoryResponse.getStatus());
 
-        final List<AnnotationHistory> history = jacksonObjectMapper.readValue(
-                getHistoryResponse.readEntity(String.class),
-                new TypeReference<List<AnnotationHistory>>() {});
+        final List<AnnotationHistory> history = getHistoryResponse.readEntity(new GenericType<List<AnnotationHistory>>() {});
 
         // Check that the history contains all the expected events
         assertEquals(numberUpdates + 2, history.size());
@@ -194,7 +213,7 @@ public class AnnotationsResourcesIT extends AbstractIT<AnnotationsDocRefEntity, 
         assertEquals(HistoryOperation.DELETE, history.get(6).getOperation());
 
         // Create Document, Create Annotation, X updates, delete, getHistory
-        checkAuditLogs(4 + numberUpdates);
+        auditLogRule.checkAuditLogs(4 + numberUpdates);
     }
 
     @Test
@@ -218,7 +237,7 @@ public class AnnotationsResourcesIT extends AbstractIT<AnnotationsDocRefEntity, 
         assertUserSetFieldsEqual(annotation, page.get(0));
 
         // Create Document, Records * create, update, get
-        checkAuditLogs(5);
+        auditLogRule.checkAuditLogs(5);
     }
 
     @Test
@@ -291,7 +310,7 @@ public class AnnotationsResourcesIT extends AbstractIT<AnnotationsDocRefEntity, 
         });
 
         // Create Doc, Create & Update Annotations, Search Per Term Per Page
-        checkAuditLogs(1 + (2 * TOTAL_ANNOTATIONS) + (NUMBER_SEARCH_TERMS * NUMBER_PAGES_EXPECTED));
+        auditLogRule.checkAuditLogs(1 + (2 * TOTAL_ANNOTATIONS) + (NUMBER_SEARCH_TERMS * NUMBER_PAGES_EXPECTED));
     }
 
     /**
@@ -310,14 +329,14 @@ public class AnnotationsResourcesIT extends AbstractIT<AnnotationsDocRefEntity, 
                 .build();
 
         // Create a doc ref to hang the search from
-        giveFolderCreatePermission(adminUser(), parentFolderUuid);
-        final Response createResponse = docRefClient.createDocument(adminUser(), docRef.getUuid(), docRef.getName(), parentFolderUuid);
+        authRule.giveFolderCreatePermission(authRule.adminUser(), parentFolderUuid);
+        final Response createResponse = docRefClient.createDocument(authRule.adminUser(), docRef.getUuid(), docRef.getName(), parentFolderUuid);
         assertEquals(HttpStatus.OK_200, createResponse.getStatus());
 
         // Give the admin user complete permissions over the document
-        giveDocumentPermission(adminUser(), docRef.getUuid(), DocumentPermission.UPDATE);
-        giveDocumentPermission(adminUser(), docRef.getUuid(), DocumentPermission.READ);
-        giveDocumentPermission(adminUser(), docRef.getUuid(), DocumentPermission.DELETE);
+        authRule.giveDocumentPermission(authRule.adminUser(), docRef.getUuid(), DocumentPermission.UPDATE);
+        authRule.giveDocumentPermission(authRule.adminUser(), docRef.getUuid(), DocumentPermission.READ);
+        authRule.giveDocumentPermission(authRule.adminUser(), docRef.getUuid(), DocumentPermission.DELETE);
 
         return docRef;
     }
@@ -335,10 +354,10 @@ public class AnnotationsResourcesIT extends AbstractIT<AnnotationsDocRefEntity, 
         Annotation result = null;
 
         try {
-            final Response createResponse = annotationsClient.create(adminUser(), docRef.getUuid(), annotation.getId());
+            final Response createResponse = annotationsClient.create(authRule.adminUser(), docRef.getUuid(), annotation.getId());
             assertEquals(HttpStatus.OK_200, createResponse.getStatus());
 
-            final Response updateResponse = annotationsClient.update(adminUser(), docRef.getUuid(), annotation.getId(), annotation);
+            final Response updateResponse = annotationsClient.update(authRule.adminUser(), docRef.getUuid(), annotation.getId(), annotation);
             assertEquals(HttpStatus.OK_200, updateResponse.getStatus());
         } catch (Exception e) {
             fail(e.getLocalizedMessage());
@@ -379,12 +398,10 @@ public class AnnotationsResourcesIT extends AbstractIT<AnnotationsDocRefEntity, 
         List<Annotation> result = null;
 
         try {
-            final Response response = annotationsClient.search(adminUser(), docRef.getUuid(), queryTerm, seekPosition);
+            final Response response = annotationsClient.search(authRule.adminUser(), docRef.getUuid(), queryTerm, seekPosition);
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
-            result = jacksonObjectMapper.readValue(
-                    response.readEntity(String.class),
-                    new TypeReference<List<Annotation>>(){});
+            result = response.readEntity(new GenericType<List<Annotation>>(){});
         } catch (Exception e) {
             fail(e.getLocalizedMessage());
         }
@@ -404,11 +421,11 @@ public class AnnotationsResourcesIT extends AbstractIT<AnnotationsDocRefEntity, 
         Annotation result = null;
 
         try {
-            final Response response = annotationsClient.get(adminUser(), index, id);
+            final Response response = annotationsClient.get(authRule.adminUser(), index, id);
 
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
-            result = getFromBody(response, Annotation.class);
+            result = response.readEntity(Annotation.class);
 
             assertEquals(id, result.getId());
         } catch (Exception e) {

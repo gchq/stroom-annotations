@@ -1,19 +1,36 @@
 package stroom.annotations.resources;
 
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import io.dropwizard.testing.junit.DropwizardAppRule;
+import org.junit.ClassRule;
 import stroom.annotations.App;
 import stroom.annotations.config.Config;
 import stroom.annotations.hibernate.AnnotationsDocRefEntity;
 import stroom.query.audit.service.DocRefEntity;
 import stroom.query.testing.DocRefResourceIT;
+import stroom.query.testing.DropwizardAppWithClientsRule;
+import stroom.query.testing.StroomAuthenticationRule;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import static io.dropwizard.testing.ResourceHelpers.resourceFilePath;
+
 public class AnnotationsDocRefResourceIT
-        extends DocRefResourceIT<AnnotationsDocRefEntity, Config, App> {
+        extends DocRefResourceIT<AnnotationsDocRefEntity, Config> {
+
+    @ClassRule
+    public static final DropwizardAppWithClientsRule<Config> appRule =
+            new DropwizardAppWithClientsRule<>(App.class, resourceFilePath("config.yml"));
+
+    @ClassRule
+    public static StroomAuthenticationRule authRule =
+            new StroomAuthenticationRule(WireMockConfiguration.options().port(10080), AnnotationsDocRefEntity.TYPE);
 
     public AnnotationsDocRefResourceIT() {
-        super(App.class, AnnotationsDocRefEntity.class, AnnotationsDocRefEntity.TYPE);
+        super(AnnotationsDocRefEntity.class,
+                appRule,
+                authRule);
     }
 
     @Override

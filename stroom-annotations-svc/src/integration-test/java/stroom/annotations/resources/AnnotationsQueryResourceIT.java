@@ -1,7 +1,9 @@
 package stroom.annotations.resources;
 
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import io.dropwizard.testing.junit.DropwizardAppRule;
 import org.eclipse.jetty.http.HttpStatus;
-import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 import stroom.annotations.App;
 import stroom.annotations.config.Config;
@@ -10,24 +12,60 @@ import stroom.annotations.hibernate.AnnotationsDocRefEntity;
 import stroom.annotations.hibernate.Status;
 import stroom.datasource.api.v2.DataSource;
 import stroom.datasource.api.v2.DataSourceField;
-import stroom.query.api.v2.*;
-import stroom.query.audit.authorisation.DocumentPermission;
+import stroom.query.api.v2.DocRef;
+import stroom.query.api.v2.ExpressionOperator;
+import stroom.query.api.v2.ExpressionTerm;
+import stroom.query.api.v2.Field;
+import stroom.query.api.v2.FlatResult;
+import stroom.query.api.v2.OffsetRange;
+import stroom.query.api.v2.Query;
+import stroom.query.api.v2.QueryKey;
+import stroom.query.api.v2.Result;
+import stroom.query.api.v2.ResultRequest;
+import stroom.query.api.v2.SearchRequest;
+import stroom.query.api.v2.SearchResponse;
+import stroom.query.api.v2.TableSettings;
 import stroom.query.audit.service.DocRefEntity;
+import stroom.query.testing.DropwizardAppWithClientsRule;
 import stroom.query.testing.QueryResourceIT;
+import stroom.query.testing.StroomAuthenticationRule;
 
 import javax.ws.rs.core.Response;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.junit.Assert.*;
+import static io.dropwizard.testing.ResourceHelpers.resourceFilePath;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static stroom.annotations.service.AnnotationsServiceImpl.SEARCH_PAGE_LIMIT;
 
-public class AnnotationsQueryResourceIT extends QueryResourceIT<AnnotationsDocRefEntity, Config, App> {
-    private AnnotationsHttpClient annotationsClient;
+public class AnnotationsQueryResourceIT extends QueryResourceIT<AnnotationsDocRefEntity, Config> {
+
+    @ClassRule
+    public static final DropwizardAppWithClientsRule<Config> appRule =
+            new DropwizardAppWithClientsRule<>(App.class, resourceFilePath("config.yml"));
+
+    @ClassRule
+    public static StroomAuthenticationRule authRule =
+            new StroomAuthenticationRule(WireMockConfiguration.options().port(10080), AnnotationsDocRefEntity.TYPE);
+
+    private final AnnotationsHttpClient annotationsClient;
 
     public AnnotationsQueryResourceIT() {
-        super(App.class, AnnotationsDocRefEntity.class, AnnotationsDocRefEntity.TYPE);
+        super(AnnotationsDocRefEntity.class,
+                AnnotationsDocRefEntity.TYPE,
+                appRule,
+                authRule);
+
+        annotationsClient = appRule.getClient(AnnotationsHttpClient::new);
     }
 
     @Override
@@ -51,11 +89,6 @@ public class AnnotationsQueryResourceIT extends QueryResourceIT<AnnotationsDocRe
         return new AnnotationsDocRefEntity.Builder()
                 .docRef(docRef)
                 .build();
-    }
-
-    @Before
-    public final void beforeTest() {
-        annotationsClient = new AnnotationsHttpClient(getAppHost());
     }
 
     @Test
@@ -107,10 +140,10 @@ public class AnnotationsQueryResourceIT extends QueryResourceIT<AnnotationsDocRe
                 try {
                     final SearchRequest request = getValidSearchRequest(docRef, expressionOperator, offsetRange);
 
-                    final Response response = queryClient.search(adminUser(), request);
+                    final Response response = queryClient.search(authRule.adminUser(), request);
                     assertEquals(HttpStatus.OK_200, response.getStatus());
 
-                    final SearchResponse searchResponse = getFromBody(response, SearchResponse.class);
+                    final SearchResponse searchResponse = response.readEntity(SearchResponse.class);
 
                     for (final Result result : searchResponse.getResults()) {
                         assertTrue(result instanceof FlatResult);
@@ -130,7 +163,7 @@ public class AnnotationsQueryResourceIT extends QueryResourceIT<AnnotationsDocRe
         });
 
         // Create doc ref, update doc ref entity, create & update annotations, search per page
-        checkAuditLogs(2 + (2 * TOTAL_ANNOTATIONS) + (NUMBER_SEARCH_TERMS * NUMBER_PAGES_EXPECTED));
+        auditLogRule.checkAuditLogs(2 + (2 * TOTAL_ANNOTATIONS) + (NUMBER_SEARCH_TERMS * NUMBER_PAGES_EXPECTED));
     }
 
     @Test
@@ -138,16 +171,16 @@ public class AnnotationsQueryResourceIT extends QueryResourceIT<AnnotationsDocRe
         final QueryKey aQueryKey = new QueryKey(UUID.randomUUID().toString());
         final String unauthentiatedUsername = UUID.randomUUID().toString();
 
-        final Response authenticatedDestroyResponse = queryClient.destroy(adminUser(), aQueryKey);
+        final Response authenticatedDestroyResponse = queryClient.destroy(authRule.adminUser(), aQueryKey);
         assertEquals(HttpStatus.NOT_FOUND_404, authenticatedDestroyResponse.getStatus());
 
         final Response unauthenticatedDestroyResponse = queryClient.destroy(
-                unauthenticatedUser(unauthentiatedUsername),
+                authRule.unauthenticatedUser(unauthentiatedUsername),
                 aQueryKey);
         assertEquals(HttpStatus.UNAUTHORIZED_401, unauthenticatedDestroyResponse.getStatus());
 
         // Just the authenticated destroy
-        checkAuditLogs(1);
+        auditLogRule.checkAuditLogs(1);
     }
 
     protected SearchRequest getValidSearchRequest(final DocRef docRef,
@@ -194,10 +227,10 @@ public class AnnotationsQueryResourceIT extends QueryResourceIT<AnnotationsDocRe
         Annotation result = null;
 
         try {
-            final Response createResponse = annotationsClient.create(adminUser(), docRefUuid, annotation.getId());
+            final Response createResponse = annotationsClient.create(authRule.adminUser(), docRefUuid, annotation.getId());
             assertEquals(HttpStatus.OK_200, createResponse.getStatus());
 
-            final Response updateResponse = annotationsClient.update(adminUser(), docRefUuid, annotation.getId(), annotation);
+            final Response updateResponse = annotationsClient.update(authRule.adminUser(), docRefUuid, annotation.getId(), annotation);
             assertEquals(HttpStatus.OK_200, updateResponse.getStatus());
         } catch (Exception e) {
             fail(e.getLocalizedMessage());
