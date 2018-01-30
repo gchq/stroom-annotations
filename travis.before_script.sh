@@ -22,7 +22,7 @@ else
     export JAVA_OPTS=-Xmx1024m
 
     echo "Start all the services we need to run the integration tests in stroom"
-    docker-compose -f stroom-annotations-svc/src/integration-test/resources/stroomAnnotationsTestDb.yml up -d
+    docker-compose -f stroomAnnotationsTestDb.yml up -d
 fi
 
 exit 0

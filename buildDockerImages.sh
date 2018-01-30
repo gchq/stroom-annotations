@@ -21,5 +21,5 @@
 # Exclude tests because we want this to be fast. I guess you'd better test the build before releasing.
 ./gradlew clean build shadowJar -x test -x integrationTest
 
-docker build --tag gchq/stroom-annotations-service:v0.0.3-alpha stroom-annotations-svc/.
-docker build --tag gchq/stroom-annotations-ui:v0.0.3-alpha stroom-annotations-ui/.
+docker build --tag gchq/stroom-annotations-service:SNAPSHOT stroom-annotations-svc/.
+docker build --tag gchq/stroom-annotations-ui:SNAPSHOT stroom-annotations-ui/.
