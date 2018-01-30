@@ -28,8 +28,9 @@ logging:
     io.dropwizard: INFO
     org.eclipse.jetty: INFO
     org.flywaydb: INFO
-    "AUDIT":
+    AUDIT  :
       level: INFO
+      additive: false
       appenders:
         - type: fifo
   appenders:
