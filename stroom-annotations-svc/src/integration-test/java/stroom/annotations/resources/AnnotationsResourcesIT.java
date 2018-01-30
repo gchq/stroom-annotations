@@ -274,31 +274,31 @@ public class AnnotationsResourcesIT {
         //checkAuditLogs(2 * TOTAL_ANNOTATIONS);
 
         // Print all the entries created
-        LOGGER.info("Annotation ID's Created");
+        LOGGER.trace("Annotation ID's Created");
         annotationsBySearchTerm.entrySet().forEach(s -> {
-            LOGGER.info(String.format("Search Term: %s", s.getKey()));
+            LOGGER.trace(String.format("Search Term: %s", s.getKey()));
 
             s.getValue().forEach(annotationDTO -> {
-                LOGGER.info(String.format("\t%s", annotationDTO.getId()));
+                LOGGER.trace(String.format("\t%s", annotationDTO.getId()));
             });
         });
 
-        LOGGER.info("Annotation ID's Found");
+        LOGGER.trace("Annotation ID's Found");
         annotationsBySearchTerm.forEach((searchTerm, annotationsSet) -> {
-            LOGGER.info(String.format("Search Term: %s", searchTerm));
+            LOGGER.trace(String.format("Search Term: %s", searchTerm));
 
             final Set<Annotation> resultsSet = new HashSet<>();
 
             // Get all the expected pages
             int seekPosition = 0;
             for (int page = 0; page < NUMBER_PAGES_EXPECTED; page++) {
-                LOGGER.info(String.format("Page Found %d", page));
+                LOGGER.trace(String.format("Page Found %d", page));
 
-                List<Annotation> thisPage = searchAnnotation(docRef, searchTerm, seekPosition);
+                final List<Annotation> thisPage = searchAnnotation(docRef, searchTerm, seekPosition);
 
                 // ensures all of these new results do not already appear in our gathered results
                 for (final Annotation result: thisPage) {
-                    LOGGER.info(String.format("\t%s", result.getId()));
+                    LOGGER.trace(String.format("\t%s", result.getId()));
                     assertFalse(resultsSet.contains(result));
                     seekPosition++;
                 }
