@@ -143,7 +143,6 @@ public class AnnotationsServiceImpl implements AnnotationsService {
         } catch (NoResultException e) {
             return Optional.empty();
         } catch (final Exception e) {
-            if (tx!=null) tx.rollback();
             LOGGER.warn("Failed to get create annotation", e);
 
             throw new Exception(e);
@@ -192,7 +191,6 @@ public class AnnotationsServiceImpl implements AnnotationsService {
         } catch (NoResultException e) {
             return Optional.empty();
         } catch (final Exception e) {
-            if (tx!=null) tx.rollback();
             LOGGER.warn("Failed to get update annotation", e);
             throw new Exception(e);
         }
@@ -234,7 +232,6 @@ public class AnnotationsServiceImpl implements AnnotationsService {
         } catch (NoResultException e) {
             return Optional.empty();
         } catch (final Exception e) {
-            if (tx!=null) tx.rollback();
             LOGGER.warn("Failed to get create annotation", e);
             throw new Exception(e);
         }

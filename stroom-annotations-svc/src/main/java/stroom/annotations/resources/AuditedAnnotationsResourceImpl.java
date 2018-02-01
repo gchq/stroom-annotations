@@ -33,7 +33,7 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
 
     private final AnnotationsService service;
 
-    static final String WELCOME_TEXT = "Welcome to the annotations service";
+    public static final String WELCOME_TEXT = "Welcome to the annotations service";
 
     private final EventLoggingService eventLoggingService;
 
@@ -67,6 +67,8 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
                 .build();
     }
 
+    public static String SEARCH_ANNOTATIONS = "SEARCH_ANNOTATIONS";
+
     @Override
     public Response search(final ServiceUser user,
                            final String indexDocRefUuid,
@@ -86,7 +88,7 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
                     return Response.ok(as).build();
                 })
                 .withPopulateAudit((eventDetail, response, exception) -> {
-                    eventDetail.setTypeId("SEARCH");
+                    eventDetail.setTypeId(SEARCH_ANNOTATIONS);
                     eventDetail.setDescription("Freetext search through Annotations");
 
                     final Search search = new Search();
@@ -118,6 +120,8 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
                 }).callAndAudit(eventLoggingService);
     }
 
+    public static String GET_ANNOTATION = "GET_ANNOTATION";
+
     @Override
     public Response get(final ServiceUser user,
                         final String indexDocRefUuid,
@@ -135,13 +139,15 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
                         .map(d -> Response.ok(d).build())
                         .orElse(Response.status(HttpStatus.NOT_FOUND_404).build()))
                 .withPopulateAudit((eventDetail, response, exception) -> {
-                    eventDetail.setTypeId("GET");
+                    eventDetail.setTypeId(GET_ANNOTATION);
                     eventDetail.setDescription("Get a specific Annotation by ID");
 
                     eventDetail.setView(getOutcomeForId(id));
                     eventDetail.getView().getOutcome().setSuccess(null != exception);
                 }).callAndAudit(eventLoggingService);
     }
+
+    public static String GET_ANNOTATION_HISTORY = "GET_ANNOTATION_HISTORY";
 
     @Override
     public Response getHistory(final ServiceUser user,
@@ -160,13 +166,15 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
                         .map(d -> Response.ok(d).build())
                         .orElse(Response.status(HttpStatus.NOT_FOUND_404).build()))
                 .withPopulateAudit((eventDetail, response, exception) -> {
-                    eventDetail.setTypeId("GET_HISTORY");
+                    eventDetail.setTypeId(GET_ANNOTATION_HISTORY);
                     eventDetail.setDescription("Get the history of a specific Annotation by ID");
 
                     eventDetail.setView(getOutcomeForId(id));
                     eventDetail.getView().getOutcome().setSuccess(null != exception);
                 }).callAndAudit(eventLoggingService);
     }
+
+    public static String CREATE_ANNOTATION = "CREATE_ANNOTATION";
 
     @Override
     public Response create(final ServiceUser user,
@@ -185,13 +193,15 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
                         .map(d -> Response.ok(d).build())
                         .orElse(Response.status(HttpStatus.NOT_FOUND_404).build()))
                 .withPopulateAudit((eventDetail, response, exception) -> {
-                    eventDetail.setTypeId("CREATE");
+                    eventDetail.setTypeId(CREATE_ANNOTATION);
                     eventDetail.setDescription("Create a new Annotation by a specific ID");
 
                     eventDetail.setCreate(getOutcomeForId(id));
                     eventDetail.getCreate().getOutcome().setSuccess(null != exception);
                 }).callAndAudit(eventLoggingService);
     }
+
+    public static String UPDATE_ANNOTATION = "UPDATE_ANNOTATION";
 
     @Override
     public Response update(final ServiceUser user,
@@ -211,7 +221,7 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
                         .map(d -> Response.ok(d).build())
                         .orElse(Response.status(HttpStatus.NOT_FOUND_404).build()))
                 .withPopulateAudit((eventDetail, response, exception) -> {
-                    eventDetail.setTypeId("UPDATE");
+                    eventDetail.setTypeId(UPDATE_ANNOTATION);
                     eventDetail.setDescription("Update an new Annotation with a specific ID");
 
                     final Event.EventDetail.Update update = new Event.EventDetail.Update();
@@ -225,6 +235,8 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
                     update.getData().add(getDataForId(id));
                 }).callAndAudit(eventLoggingService);
     }
+
+    public static String REMOVE_ANNOTATION = "REMOVE_ANNOTATION";
 
     @Override
     public Response remove(final ServiceUser user,
@@ -247,7 +259,7 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
                                 .build())
                         .orElse(Response.status(HttpStatus.NOT_FOUND_404).build()))
                 .withPopulateAudit((eventDetail, response, exception) -> {
-                    eventDetail.setTypeId("REMOVE");
+                    eventDetail.setTypeId(REMOVE_ANNOTATION);
                     eventDetail.setDescription("Remove an new Annotation with a specific ID");
 
                     eventDetail.setDelete(getOutcomeForId(id));

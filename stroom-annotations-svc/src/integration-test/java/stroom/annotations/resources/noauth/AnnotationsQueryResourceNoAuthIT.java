@@ -1,7 +1,5 @@
-package stroom.annotations.resources;
+package stroom.annotations.resources.noauth;
 
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
-import io.dropwizard.testing.junit.DropwizardAppRule;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -10,6 +8,8 @@ import stroom.annotations.config.Config;
 import stroom.annotations.hibernate.Annotation;
 import stroom.annotations.hibernate.AnnotationsDocRefEntity;
 import stroom.annotations.hibernate.Status;
+import stroom.annotations.resources.AnnotationsHttpClient;
+import stroom.annotations.resources.AuditedAnnotationsResourceImpl;
 import stroom.datasource.api.v2.DataSource;
 import stroom.datasource.api.v2.DataSourceField;
 import stroom.query.api.v2.DocRef;
@@ -25,10 +25,13 @@ import stroom.query.api.v2.ResultRequest;
 import stroom.query.api.v2.SearchRequest;
 import stroom.query.api.v2.SearchResponse;
 import stroom.query.api.v2.TableSettings;
+import stroom.query.audit.rest.AuditedDocRefResourceImpl;
+import stroom.query.audit.rest.AuditedQueryResourceImpl;
+import stroom.query.audit.security.NoAuthValueFactoryProvider;
 import stroom.query.audit.service.DocRefEntity;
 import stroom.query.testing.DropwizardAppWithClientsRule;
-import stroom.query.testing.QueryResourceIT;
-import stroom.query.testing.StroomAuthenticationRule;
+import stroom.query.testing.FifoLogbackRule;
+import stroom.query.testing.QueryResourceNoAuthIT;
 
 import javax.ws.rs.core.Response;
 import java.util.Collection;
@@ -46,24 +49,20 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static stroom.annotations.service.AnnotationsServiceImpl.SEARCH_PAGE_LIMIT;
+import static stroom.query.testing.FifoLogbackRule.containsAllOf;
 
-public class AnnotationsQueryResourceIT extends QueryResourceIT<AnnotationsDocRefEntity, Config> {
+public class AnnotationsQueryResourceNoAuthIT extends QueryResourceNoAuthIT<AnnotationsDocRefEntity, Config> {
 
     @ClassRule
     public static final DropwizardAppWithClientsRule<Config> appRule =
-            new DropwizardAppWithClientsRule<>(App.class, resourceFilePath("config.yml"));
-
-    @ClassRule
-    public static StroomAuthenticationRule authRule =
-            new StroomAuthenticationRule(WireMockConfiguration.options().port(10080), AnnotationsDocRefEntity.TYPE);
+            new DropwizardAppWithClientsRule<>(App.class, resourceFilePath("config_noauth.yml"));
 
     private final AnnotationsHttpClient annotationsClient;
 
-    public AnnotationsQueryResourceIT() {
+    public AnnotationsQueryResourceNoAuthIT() {
         super(AnnotationsDocRefEntity.class,
                 AnnotationsDocRefEntity.TYPE,
-                appRule,
-                authRule);
+                appRule);
 
         annotationsClient = appRule.getClient(AnnotationsHttpClient::new);
     }
@@ -95,6 +94,10 @@ public class AnnotationsQueryResourceIT extends QueryResourceIT<AnnotationsDocRe
     public void testQuerySearch() {
         final DocRef docRef = createDocument();
 
+        auditLogRule.check().thereAreAtLeast(2)
+                .containsOrdered(containsAllOf(AuditedDocRefResourceImpl.CREATE_DOC_REF, docRef.getUuid()))
+                .containsOrdered(containsAllOf(AuditedDocRefResourceImpl.UPDATE_DOC_REF, docRef.getUuid()));
+
         final int NUMBER_SEARCH_TERMS = 2;
         final int NUMBER_PAGES_EXPECTED = 3;
         final int ANNOTATIONS_PER_SEARCH_TERM = SEARCH_PAGE_LIMIT * NUMBER_PAGES_EXPECTED;
@@ -102,6 +105,7 @@ public class AnnotationsQueryResourceIT extends QueryResourceIT<AnnotationsDocRe
         final List<String> contentSearchTerms = IntStream.range(0, NUMBER_SEARCH_TERMS)
                 .mapToObj(i -> UUID.randomUUID().toString())
                 .collect(Collectors.toList());
+
 
         // Create some test data for each search term
         final Map<String, Set<Annotation>> annotationsBySearchTerm = new HashMap<>();
@@ -119,6 +123,28 @@ public class AnnotationsQueryResourceIT extends QueryResourceIT<AnnotationsDocRe
             annotationsBySearchTerm.put(contentSearchTerm, annotations);
         }
 
+        // Check for create/update audit logs for all annotations
+        final FifoLogbackRule.LogChecker createUpdateAuditChecker =
+                auditLogRule.check().thereAreAtLeast(2 * TOTAL_ANNOTATIONS);
+        annotationsBySearchTerm.values().stream()
+                .flatMap(Set::stream)
+                .forEach(annotation -> {
+                    createUpdateAuditChecker
+                            .containsAnywhere(
+                                    containsAllOf(
+                                            AuditedAnnotationsResourceImpl.CREATE_ANNOTATION,
+                                            annotation.getId()
+                                    )
+                            )
+                            .containsAnywhere(
+                                    containsAllOf(
+                                            AuditedAnnotationsResourceImpl.UPDATE_ANNOTATION,
+                                            annotation.getId()
+                                    )
+                            );
+                });
+
+        // Precalculate the page offsets
         final Collection<OffsetRange> pageOffsets = IntStream.range(0, NUMBER_PAGES_EXPECTED)
                 .mapToObj(value -> new OffsetRange.Builder()
                         .length((long) SEARCH_PAGE_LIMIT)
@@ -140,7 +166,7 @@ public class AnnotationsQueryResourceIT extends QueryResourceIT<AnnotationsDocRe
                 try {
                     final SearchRequest request = getValidSearchRequest(docRef, expressionOperator, offsetRange);
 
-                    final Response response = queryClient.search(authRule.adminUser(), request);
+                    final Response response = queryClient.search(NoAuthValueFactoryProvider.ADMIN_USER, request);
                     assertEquals(HttpStatus.OK_200, response.getStatus());
 
                     final SearchResponse searchResponse = response.readEntity(SearchResponse.class);
@@ -162,25 +188,32 @@ public class AnnotationsQueryResourceIT extends QueryResourceIT<AnnotationsDocRe
             assertEquals(expectedAnnotationIds, resultsSet);
         });
 
-        // Create doc ref, update doc ref entity, create & update annotations, search per page
-        auditLogRule.checkAuditLogs(2 + (2 * TOTAL_ANNOTATIONS) + (NUMBER_SEARCH_TERMS * NUMBER_PAGES_EXPECTED));
+        // Check all the audit logs exist
+        final FifoLogbackRule.LogChecker pageSearchAuditChecker =
+                auditLogRule.check().thereAreAtLeast(NUMBER_SEARCH_TERMS * NUMBER_PAGES_EXPECTED);
+        annotationsBySearchTerm.forEach(
+                (searchTerm, s) -> pageOffsets.forEach(
+                        o -> pageSearchAuditChecker.containsOrdered(
+                                containsAllOf(
+                                        AuditedQueryResourceImpl.QUERY_SEARCH,
+                                        docRef.getUuid(),
+                                        searchTerm
+                                )
+                        )
+                )
+        );
     }
 
     @Test
     public void testDestroy() {
         final QueryKey aQueryKey = new QueryKey(UUID.randomUUID().toString());
-        final String unauthentiatedUsername = UUID.randomUUID().toString();
 
-        final Response authenticatedDestroyResponse = queryClient.destroy(authRule.adminUser(), aQueryKey);
+        final Response authenticatedDestroyResponse = queryClient.destroy(NoAuthValueFactoryProvider.ADMIN_USER, aQueryKey);
         assertEquals(HttpStatus.NOT_FOUND_404, authenticatedDestroyResponse.getStatus());
 
-        final Response unauthenticatedDestroyResponse = queryClient.destroy(
-                authRule.unauthenticatedUser(unauthentiatedUsername),
-                aQueryKey);
-        assertEquals(HttpStatus.UNAUTHORIZED_401, unauthenticatedDestroyResponse.getStatus());
-
         // Just the authenticated destroy
-        auditLogRule.checkAuditLogs(1);
+        auditLogRule.check().thereAreAtLeast(1)
+                .containsOrdered(containsAllOf(AuditedQueryResourceImpl.QUERY_DESTROY, aQueryKey.getUuid()));
     }
 
     protected SearchRequest getValidSearchRequest(final DocRef docRef,
@@ -227,10 +260,16 @@ public class AnnotationsQueryResourceIT extends QueryResourceIT<AnnotationsDocRe
         Annotation result = null;
 
         try {
-            final Response createResponse = annotationsClient.create(authRule.adminUser(), docRefUuid, annotation.getId());
+            final Response createResponse = annotationsClient.create(
+                    NoAuthValueFactoryProvider.ADMIN_USER,
+                    docRefUuid,
+                    annotation.getId());
             assertEquals(HttpStatus.OK_200, createResponse.getStatus());
 
-            final Response updateResponse = annotationsClient.update(authRule.adminUser(), docRefUuid, annotation.getId(), annotation);
+            final Response updateResponse = annotationsClient.update(
+                    NoAuthValueFactoryProvider.ADMIN_USER, docRefUuid,
+                    annotation.getId(),
+                    annotation);
             assertEquals(HttpStatus.OK_200, updateResponse.getStatus());
         } catch (Exception e) {
             fail(e.getLocalizedMessage());

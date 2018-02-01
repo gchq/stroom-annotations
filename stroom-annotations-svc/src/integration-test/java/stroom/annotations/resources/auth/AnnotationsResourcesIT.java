@@ -1,7 +1,6 @@
-package stroom.annotations.resources;
+package stroom.annotations.resources.auth;
 
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
-import io.dropwizard.testing.junit.DropwizardAppRule;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -15,16 +14,18 @@ import stroom.annotations.hibernate.AnnotationHistory;
 import stroom.annotations.hibernate.AnnotationsDocRefEntity;
 import stroom.annotations.hibernate.HistoryOperation;
 import stroom.annotations.hibernate.Status;
+import stroom.annotations.resources.AnnotationsHttpClient;
+import stroom.annotations.resources.AuditedAnnotationsResourceImpl;
 import stroom.query.api.v2.DocRef;
 import stroom.query.audit.authorisation.DocumentPermission;
 import stroom.query.audit.client.DocRefResourceHttpClient;
+import stroom.query.audit.rest.AuditedDocRefResourceImpl;
 import stroom.query.testing.DropwizardAppWithClientsRule;
 import stroom.query.testing.FifoLogbackRule;
 import stroom.query.testing.StroomAuthenticationRule;
 
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,13 +43,14 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static stroom.annotations.service.AnnotationsServiceImpl.SEARCH_PAGE_LIMIT;
+import static stroom.query.testing.FifoLogbackRule.containsAllOf;
 
 public class AnnotationsResourcesIT {
     private static final Logger LOGGER = LoggerFactory.getLogger(AnnotationsResourcesIT.class);
 
     @ClassRule
     public static final DropwizardAppWithClientsRule<Config> appRule =
-            new DropwizardAppWithClientsRule<>(App.class, resourceFilePath("config.yml"));
+            new DropwizardAppWithClientsRule<>(App.class, resourceFilePath("config_auth.yml"));
 
     @ClassRule
     public static StroomAuthenticationRule authRule =
@@ -66,14 +68,14 @@ public class AnnotationsResourcesIT {
     }
 
     @Test
-    public void testWelcome() throws Exception {
+    public void testWelcome() {
         final Response response = annotationsClient.welcome();
 
         assertEquals(AuditedAnnotationsResourceImpl.WELCOME_TEXT, response.readEntity(String.class));
     }
 
     @Test
-    public void testStatusValues() throws Exception {
+    public void testStatusValues() {
         final Response response = annotationsClient.statusValues();
 
         final Map<String, String> responseStatusValues =
@@ -86,7 +88,7 @@ public class AnnotationsResourcesIT {
     }
 
     @Test
-    public void testCreateAnnotation() throws IOException {
+    public void testCreateAnnotation() {
         final DocRef docRef = createDocument();
         final String annotationId = UUID.randomUUID().toString();
 
@@ -102,11 +104,13 @@ public class AnnotationsResourcesIT {
         assertEquals(Annotation.DEFAULT_STATUS, created.getStatus());
 
         // create document, create annotation
-        auditLogRule.checkAuditLogs(2);
+        auditLogRule.check().thereAreAtLeast(2)
+                .containsOrdered(containsAllOf(AuditedDocRefResourceImpl.CREATE_DOC_REF, docRef.getUuid()))
+                .containsOrdered(containsAllOf(AuditedAnnotationsResourceImpl.CREATE_ANNOTATION, annotationId));
     }
 
     @Test
-    public void testCreateAndGetAnnotation() throws IOException {
+    public void testCreateAndGetAnnotation() {
         final DocRef docRef = createDocument();
         final String annotationId = UUID.randomUUID().toString();
 
@@ -117,7 +121,10 @@ public class AnnotationsResourcesIT {
         assertNotNull(annotationResponse);
 
         // Create Document, create annotation, get annotation
-        auditLogRule.checkAuditLogs(3);
+        auditLogRule.check().thereAreAtLeast(3)
+                .containsOrdered(containsAllOf(AuditedDocRefResourceImpl.CREATE_DOC_REF, docRef.getUuid()))
+                .containsOrdered(containsAllOf(AuditedAnnotationsResourceImpl.CREATE_ANNOTATION, annotationId))
+                .containsOrdered(containsAllOf(AuditedAnnotationsResourceImpl.GET_ANNOTATION, annotationId));
     }
 
     @Test
@@ -139,15 +146,25 @@ public class AnnotationsResourcesIT {
         // Try and fetch each annotation
         annotations.forEach((id, annotation) -> {
             final Annotation annotationResponse = getAnnotation(docRef.getUuid(), id);
-            assertUserSetFieldsEqual(annotation, annotationResponse);
+            assertEquals(annotation.getId(), annotationResponse.getId());
+            assertEquals(annotation.getAssignTo(), annotationResponse.getAssignTo());
+            assertEquals(annotation.getContent(), annotationResponse.getContent());
+            assertEquals(annotation.getStatus(), annotationResponse.getStatus());
         });
 
         // Create Document, Records * create, update, get
-        auditLogRule.checkAuditLogs(1 + (3 * RECORDS_TO_CREATE));
+        final FifoLogbackRule.LogChecker logChecker = auditLogRule.check()
+                .thereAreAtLeast(1 + (3 * RECORDS_TO_CREATE))
+                .containsOrdered(containsAllOf(AuditedDocRefResourceImpl.CREATE_DOC_REF, docRef.getUuid()));
+
+        annotations.values().forEach(a -> logChecker
+                    .containsAnywhere(containsAllOf(AuditedAnnotationsResourceImpl.CREATE_ANNOTATION, a.getId()))
+                    .containsAnywhere(containsAllOf(AuditedAnnotationsResourceImpl.UPDATE_ANNOTATION, a.getId()))
+                    .containsAnywhere(containsAllOf(AuditedAnnotationsResourceImpl.GET_ANNOTATION, a.getId())));
     }
 
     @Test
-    public void testDelete() throws Exception {
+    public void testDelete() {
         final DocRef docRef = createDocument();
         final String id = UUID.randomUUID().toString();
 
@@ -164,11 +181,17 @@ public class AnnotationsResourcesIT {
         assertEquals(HttpStatus.NOT_FOUND_404, postDeleteGetResponse.getStatus());
 
         // create document, create annotation, pre-get, Delete, post-get
-        auditLogRule.checkAuditLogs(5);
+        auditLogRule.check()
+                .thereAreAtLeast(5)
+                .containsOrdered(containsAllOf(AuditedDocRefResourceImpl.CREATE_DOC_REF, docRef.getUuid()))
+                .containsOrdered(containsAllOf(AuditedAnnotationsResourceImpl.CREATE_ANNOTATION, id))
+                .containsOrdered(containsAllOf(AuditedAnnotationsResourceImpl.GET_ANNOTATION, id))
+                .containsOrdered(containsAllOf(AuditedAnnotationsResourceImpl.REMOVE_ANNOTATION, id))
+                .containsOrdered(containsAllOf(AuditedAnnotationsResourceImpl.GET_ANNOTATION, id));
     }
 
     @Test
-    public void testGetHistory() throws Exception {
+    public void testGetHistory() {
         final DocRef docRef = createDocument();
         final String id = UUID.randomUUID().toString();
 
@@ -212,8 +235,17 @@ public class AnnotationsResourcesIT {
         });
         assertEquals(HistoryOperation.DELETE, history.get(6).getOperation());
 
-        // Create Document, Create Annotation, X updates, delete, getHistory
-        auditLogRule.checkAuditLogs(4 + numberUpdates);
+        // Check the audit log
+        final FifoLogbackRule.LogChecker logChecker = auditLogRule.check()
+                .thereAreAtLeast(4 + numberUpdates)
+                .containsOrdered(containsAllOf(AuditedDocRefResourceImpl.CREATE_DOC_REF, docRef.getUuid()))
+                .containsOrdered(containsAllOf(AuditedAnnotationsResourceImpl.CREATE_ANNOTATION, id));
+
+        IntStream.range(0, numberUpdates)
+                .forEach(i -> logChecker.containsOrdered(containsAllOf(AuditedAnnotationsResourceImpl.UPDATE_ANNOTATION, id)));
+
+        logChecker.containsOrdered(containsAllOf(AuditedAnnotationsResourceImpl.REMOVE_ANNOTATION, id))
+                .containsOrdered(containsAllOf(AuditedAnnotationsResourceImpl.GET_ANNOTATION_HISTORY, id));
     }
 
     @Test
@@ -228,16 +260,25 @@ public class AnnotationsResourcesIT {
                         .build();
         createAndUpdateAnnotation(docRef, annotation);
 
-        // Try and fetch each annotation
+        // Try and fetch the annotation
         final Annotation annotationResponse = getAnnotation(docRef.getUuid(), annotation.getId());
         assertEquals(annotation.getContent(), annotationResponse.getContent());
 
         final List<Annotation> page = searchAnnotation(docRef, annotation.getContent());
         assertEquals(1, page.size());
-        assertUserSetFieldsEqual(annotation, page.get(0));
+        final Annotation firstFound = page.get(0);
 
-        // Create Document, Records * create, update, get
-        auditLogRule.checkAuditLogs(5);
+        assertEquals(annotation.getId(), firstFound.getId());
+        assertEquals(annotation.getAssignTo(), firstFound.getAssignTo());
+        assertEquals(annotation.getContent(), firstFound.getContent());
+        assertEquals(annotation.getStatus(), firstFound.getStatus());
+
+        auditLogRule.check().thereAreAtLeast(5)
+                .containsOrdered(containsAllOf(AuditedDocRefResourceImpl.CREATE_DOC_REF, docRef.getUuid()))
+                .containsOrdered(containsAllOf(AuditedAnnotationsResourceImpl.CREATE_ANNOTATION, annotation.getId()))
+                .containsOrdered(containsAllOf(AuditedAnnotationsResourceImpl.UPDATE_ANNOTATION, annotation.getId()))
+                .containsOrdered(containsAllOf(AuditedAnnotationsResourceImpl.GET_ANNOTATION, annotation.getId()))
+                .containsOrdered(containsAllOf(AuditedAnnotationsResourceImpl.SEARCH_ANNOTATIONS, annotation.getContent()));
     }
 
     @Test
@@ -245,7 +286,8 @@ public class AnnotationsResourcesIT {
         // Generate an UUID we can embed into the content of some annotations so we can find them
         final DocRef docRef = createDocument();
 
-        //checkAuditLogs(1);
+        auditLogRule.check().thereAreAtLeast(1)
+                .containsOrdered(containsAllOf(AuditedDocRefResourceImpl.CREATE_DOC_REF, docRef.getUuid()));
 
         final int NUMBER_SEARCH_TERMS = 3;
         final int NUMBER_PAGES_EXPECTED = 3;
@@ -271,7 +313,22 @@ public class AnnotationsResourcesIT {
             annotationsBySearchTerm.put(searchTerm, annotations);
         }
 
-        //checkAuditLogs(2 * TOTAL_ANNOTATIONS);
+        // Check for create/update audit logs for all annotations
+        final FifoLogbackRule.LogChecker createUpdateAuditChecker =
+                auditLogRule.check().thereAreAtLeast(2 * TOTAL_ANNOTATIONS);
+        annotationsBySearchTerm.values().stream()
+                .flatMap(Set::stream)
+                .forEach(annotation -> {
+                    createUpdateAuditChecker
+                            .containsAnywhere(
+                                    containsAllOf(
+                                            AuditedAnnotationsResourceImpl.CREATE_ANNOTATION,
+                                            annotation.getId()))
+                            .containsAnywhere(
+                                    containsAllOf(
+                                            AuditedAnnotationsResourceImpl.UPDATE_ANNOTATION,
+                                            annotation.getId()));
+                });
 
         // Print all the entries created
         LOGGER.trace("Annotation ID's Created");
@@ -309,8 +366,19 @@ public class AnnotationsResourcesIT {
             assertEquals(annotationsSet, resultsSet);
         });
 
-        // Create Doc, Create & Update Annotations, Search Per Term Per Page
-        auditLogRule.checkAuditLogs(1 + (2 * TOTAL_ANNOTATIONS) + (NUMBER_SEARCH_TERMS * NUMBER_PAGES_EXPECTED));
+        // Check all the audit logs exist for page searching
+        final FifoLogbackRule.LogChecker pageSearchAuditChecker =
+                auditLogRule.check().thereAreAtLeast(NUMBER_SEARCH_TERMS * NUMBER_PAGES_EXPECTED);
+        annotationsBySearchTerm.forEach(
+                (searchTerm, s) -> IntStream.range(0, NUMBER_PAGES_EXPECTED).forEach(
+                        o -> pageSearchAuditChecker.containsOrdered(
+                                containsAllOf(
+                                        AuditedAnnotationsResourceImpl.SEARCH_ANNOTATIONS,
+                                        searchTerm
+                                )
+                        )
+                )
+        );
     }
 
     /**
@@ -364,13 +432,6 @@ public class AnnotationsResourcesIT {
         }
 
         return result;
-    }
-
-    private void assertUserSetFieldsEqual(final Annotation first, final Annotation second) {
-        assertEquals(first.getId(), second.getId());
-        assertEquals(first.getAssignTo(), second.getAssignTo());
-        assertEquals(first.getContent(), second.getContent());
-        assertEquals(first.getStatus(), second.getStatus());
     }
 
     /**

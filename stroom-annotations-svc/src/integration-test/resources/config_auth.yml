@@ -1,20 +1,20 @@
 server:
   adminMinThreads: 1
   adminMaxThreads: 10
-  adminContextPath: ${ADMIN_CONTEXT_PATH:- /}
-  applicationContextPath: ${APPLICATION_CONTEXT_PATH:- /}
+  adminContextPath: /
+  applicationContextPath: /
   applicationConnectors:
-    - type: ${APPLICATION_CONNEXTOR_TYPE:- http}
-      port: ${APPLICATION_CONNEXTOR_PORT:- 8199}
+    - type:  http
+      port: 8199
   adminConnectors:
-    - type: ${ADMIN_CONNEXTOR_TYPE:- http}
-      port: ${ADMIN_CONNEXTOR_PORT:- 8200}
+    - type: http
+      port: 8200
 
 database:
   driverClass: org.mariadb.jdbc.Driver
-  user: ${DB_USER:- stroomuser}
-  password: ${DB_PASSWORD:- stroompassword1}
-  url: ${DB_URL:- jdbc:mariadb://localhost:3310/annotations}
+  user: stroomuser
+  password: stroompassword1
+  url: jdbc:mariadb://localhost:4410/annotations
   maxWaitForConnection: 1s
   validationQuery: "/* MyApplication Health Check */ SELECT 1"
   minSize: 8
@@ -27,13 +27,13 @@ database:
     hibernate.hbm2ddl.auto: validate
 
 logging:
-  level: ${LOGGING_LEVEL:- ERROR}
+  level: OFF
   loggers:
     stroom: DEBUG
     io.dropwizard: INFO
     org.eclipse.jetty: INFO
     org.flywaydb: INFO
-    AUDIT  :
+    AUDIT:
       level: INFO
       additive: false
       appenders:
@@ -44,10 +44,11 @@ logging:
       timeZone: UTC
 
 token:
-  publicKeyUrl: ${JWS_PUBLIC_KEY_URL:- http://stroom-auth-service:8099/token/v1/publickey}
-  jwsIssuer: ${JWS_ISSUER:- stroom}
-  algorithm: ${JWS_ALGORITHM:- RS256}
+  publicKeyUrl: http://localhost:10080/testAuthService/publicKey
+  jwsIssuer: stroom
+  algorithm: RS256
+
 
 authorisationService:
-  url: ${AUTHORISATION_SERVICE_URL:- http://stroom:8080/api/authorisation/v1}
-  isAuthorisedPath: ${AUTHORISATION_SERVICE_IS_AUTHORISED_PATH:- /isAuthorised}
+  url: http://localhost:10080/api/authorisation/v1
+  isAuthorisedPath: /isAuthorised

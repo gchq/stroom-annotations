@@ -1,7 +1,6 @@
-package stroom.annotations.resources;
+package stroom.annotations.resources.auth;
 
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
-import io.dropwizard.testing.junit.DropwizardAppRule;
 import org.junit.ClassRule;
 import stroom.annotations.App;
 import stroom.annotations.config.Config;
@@ -21,7 +20,7 @@ public class AnnotationsDocRefResourceIT
 
     @ClassRule
     public static final DropwizardAppWithClientsRule<Config> appRule =
-            new DropwizardAppWithClientsRule<>(App.class, resourceFilePath("config.yml"));
+            new DropwizardAppWithClientsRule<>(App.class, resourceFilePath("config_auth.yml"));
 
     @ClassRule
     public static StroomAuthenticationRule authRule =
@@ -40,7 +39,7 @@ public class AnnotationsDocRefResourceIT
 
     @Override
     protected Map<String, String> exportValues(AnnotationsDocRefEntity docRefEntity) {
-        final Map values = new HashMap<>();
+        final Map<String, String> values = new HashMap<>();
         values.put(DocRefEntity.NAME, docRefEntity.getName());
         return values;
     }
