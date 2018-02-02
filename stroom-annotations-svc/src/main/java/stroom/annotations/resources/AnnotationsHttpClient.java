@@ -9,10 +9,12 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.Response;
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-public class AnnotationsHttpClient implements AnnotationsResource {
+public class AnnotationsHttpClient implements AnnotationsResource, Closeable {
     private final String baseUrl;
     private final String welcomeUrl;
     private final String statusValuesUrl;
@@ -124,5 +126,10 @@ public class AnnotationsHttpClient implements AnnotationsResource {
                 .request()
                 .header("Authorization", "Bearer " + authenticatedServiceUser.getJwt())
                 .delete();
+    }
+
+    @Override
+    public void close() throws IOException {
+        httpClient.close();
     }
 }

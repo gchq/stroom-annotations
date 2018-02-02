@@ -12,7 +12,7 @@ public class AnnotationsDocRefServiceImpl
         extends DocRefServiceCriteriaImpl<AnnotationsDocRefEntity, AnnotationsDocRefEntity.Builder> {
 
     @Inject
-    public AnnotationsDocRefServiceImpl(SessionFactory database) {
+    public AnnotationsDocRefServiceImpl(final SessionFactory database) {
         super(database, AnnotationsDocRefEntity.class);
     }
 

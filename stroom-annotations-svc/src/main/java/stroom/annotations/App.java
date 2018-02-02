@@ -1,6 +1,5 @@
 package stroom.annotations;
 
-import event.logging.EventLoggingService;
 import io.dropwizard.Application;
 import io.dropwizard.ConfiguredBundle;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
@@ -13,20 +12,19 @@ import io.dropwizard.hibernate.HibernateBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
+import org.glassfish.hk2.api.TypeLiteral;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import stroom.annotations.config.Config;
 import stroom.annotations.hibernate.Annotation;
 import stroom.annotations.hibernate.AnnotationHistory;
 import stroom.annotations.hibernate.AnnotationsDocRefEntity;
 import stroom.annotations.resources.AuditedAnnotationsResourceImpl;
 import stroom.annotations.service.AnnotationsDocRefServiceImpl;
-import stroom.query.audit.authorisation.AuthorisationService;
-import stroom.query.audit.rest.AuditedDocRefResourceImpl;
-import stroom.query.audit.rest.AuditedQueryResourceImpl;
+import stroom.annotations.service.AnnotationsService;
+import stroom.annotations.service.AnnotationsServiceImpl;
 import stroom.query.audit.service.DocRefService;
-import stroom.query.audit.service.QueryService;
 import stroom.query.hibernate.AuditedCriteriaQueryBundle;
 
-import javax.inject.Inject;
 import javax.servlet.DispatcherType;
 import javax.servlet.FilterRegistration;
 import java.util.EnumSet;
@@ -65,34 +63,10 @@ public class App extends Application<Config> {
 
     };
 
-
-    public static final class AuditedDocRefResource extends AuditedDocRefResourceImpl<AnnotationsDocRefEntity> {
-
-        @Inject
-        public AuditedDocRefResource(final DocRefService<AnnotationsDocRefEntity> service,
-                                                final EventLoggingService eventLoggingService,
-                                                final AuthorisationService authorisationService) {
-            super(service, eventLoggingService, authorisationService);
-        }
-    }
-
-    public static final class AuditedQueryResource extends AuditedQueryResourceImpl<AnnotationsDocRefEntity> {
-
-        @Inject
-        public AuditedQueryResource(final EventLoggingService eventLoggingService,
-                                               final QueryService service,
-                                               final AuthorisationService authorisationService,
-                                               final DocRefService<AnnotationsDocRefEntity> docRefService) {
-            super(eventLoggingService, service, authorisationService, docRefService);
-        }
-    }
-
     private final AuditedCriteriaQueryBundle<Config,
             Annotation,
             AnnotationsDocRefEntity,
-            AuditedQueryResource,
-            AnnotationsDocRefServiceImpl,
-            AuditedDocRefResource> auditedQueryBundle =
+            AnnotationsDocRefServiceImpl> auditedQueryBundle =
             new AuditedCriteriaQueryBundle<>(Annotation.class,
 
                     new HibernateBundle<Config>(Annotation.class, AnnotationHistory.class, AnnotationsDocRefEntity.class) {
@@ -102,9 +76,7 @@ public class App extends Application<Config> {
                         }
                     },
                     AnnotationsDocRefEntity.class,
-                    AuditedQueryResource.class,
-                    AnnotationsDocRefServiceImpl.class,
-                    AuditedDocRefResource.class);
+                    AnnotationsDocRefServiceImpl.class);
 
     public static void main(final String[] args) throws Exception {
         new App().run(args);
@@ -117,7 +89,14 @@ public class App extends Application<Config> {
         // And we want to configure authentication before the resources
         configureCors(environment);
 
-        environment.jersey().register(new Module(configuration));
+        environment.jersey().register(new AbstractBinder() {
+            @Override
+            protected void configure() {
+                bind(configuration).to(Config.class);
+                bind(AnnotationsServiceImpl.class).to(AnnotationsService.class);
+                bind(AnnotationsDocRefServiceImpl.class).to(new TypeLiteral<DocRefService<AnnotationsDocRefEntity>>() {});
+            }
+        });
         environment.jersey().register(AuditedAnnotationsResourceImpl.class);
     }
 

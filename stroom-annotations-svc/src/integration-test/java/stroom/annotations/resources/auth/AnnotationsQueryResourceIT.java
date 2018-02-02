@@ -274,9 +274,11 @@ public class AnnotationsQueryResourceIT extends QueryResourceIT<AnnotationsDocRe
         try {
             final Response createResponse = annotationsClient.create(authRule.adminUser(), docRefUuid, annotation.getId());
             assertEquals(HttpStatus.OK_200, createResponse.getStatus());
+            createResponse.close();
 
             final Response updateResponse = annotationsClient.update(authRule.adminUser(), docRefUuid, annotation.getId(), annotation);
             assertEquals(HttpStatus.OK_200, updateResponse.getStatus());
+            updateResponse.close();
         } catch (Exception e) {
             fail(e.getLocalizedMessage());
         }
