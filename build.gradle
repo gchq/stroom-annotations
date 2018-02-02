@@ -84,6 +84,8 @@ ext.testVersions = [
     junit: '4.12'
 ]
 
+// The pull of stroom query goes strangely wrong with truncated version string if this extra line is not there on my VM
+
 ext.deps = [
 
     //------Stroom-libs---------------
