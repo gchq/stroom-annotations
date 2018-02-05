@@ -47,6 +47,7 @@ token:
   publicKeyUrl: ${JWS_PUBLIC_KEY_URL:- http://stroom-auth-service:8099/token/v1/publickey}
   jwsIssuer: ${JWS_ISSUER:- stroom}
   algorithm: ${JWS_ALGORITHM:- RS256}
+  skipAuth: ${SKIP_AUTH:- false}
 
 authorisationService:
   url: ${AUTHORISATION_SERVICE_URL:- http://stroom:8080/api/authorisation/v1}
