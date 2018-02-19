@@ -94,6 +94,7 @@ ext.deps = [
     stroomQueryApi: "stroom:stroom-query-api:$versions.stroomQuery",
     stroomQueryCommon: "stroom:stroom-query-common:$versions.stroomQuery",
     stroomQueryAudit: "stroom:stroom-query-audit:$versions.stroomQuery",
+    stroomQueryJooq: "stroom:stroom-query-jooq:$versions.stroomQuery",
     stroomQueryHibernate: "stroom:stroom-query-hibernate:$versions.stroomQuery",
 
     //------3rd Party-libs---------------

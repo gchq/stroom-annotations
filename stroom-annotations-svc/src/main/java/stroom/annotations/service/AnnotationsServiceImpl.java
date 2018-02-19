@@ -1,38 +1,66 @@
 package stroom.annotations.service;
 
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
+import org.jooq.Configuration;
+import org.jooq.DSLContext;
+import org.jooq.Record;
+import org.jooq.Table;
+import org.jooq.impl.DSL;
+import org.jooq.types.ULong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import stroom.annotations.hibernate.Annotation;
 import stroom.annotations.hibernate.AnnotationHistory;
 import stroom.annotations.hibernate.HistoryOperation;
-import stroom.query.audit.model.DocRefEntity;
+import stroom.annotations.hibernate.Status;
 import stroom.query.audit.model.QueryableEntity;
 import stroom.query.audit.security.ServiceUser;
+import stroom.query.jooq.DocRefJooqEntity;
+import stroom.query.jooq.JooqEntity;
 
 import javax.inject.Inject;
-import javax.persistence.NoResultException;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaDelete;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.CriteriaUpdate;
-import javax.persistence.criteria.Root;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+
+import static org.jooq.impl.DSL.field;
+import static org.jooq.impl.DSL.or;
 
 public class AnnotationsServiceImpl implements AnnotationsService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AnnotationsServiceImpl.class);
 
-    private SessionFactory database;
+    private final DSLContext database;
+
+    private final Table<Record> annotationTable;
+    private final Table<Record> historyTable;
 
     public static final int SEARCH_PAGE_LIMIT = 10;
 
     @Inject
-    public AnnotationsServiceImpl(final SessionFactory database) {
-        this.database = database;
+    public AnnotationsServiceImpl(final Configuration jooqConfig) {
+        this.database = DSL.using(jooqConfig);
+        this.annotationTable = Optional.ofNullable(Annotation.class.getAnnotation(JooqEntity.class))
+                .map(JooqEntity::tableName)
+                .map(DSL::table)
+                .orElseThrow(() -> new IllegalArgumentException("The Annotation Class must be annotated with JooqEntity"));
+        this.historyTable = Optional.ofNullable(AnnotationHistory.class.getAnnotation(JooqEntity.class))
+                .map(JooqEntity::tableName)
+                .map(DSL::table)
+                .orElseThrow(() -> new IllegalArgumentException("The Annotation Class must be annotated with JooqEntity"));
+    }
+
+    private Annotation convertRecord(final Record record) {
+        return new Annotation.Builder()
+                .id(record.getValue(field(Annotation.ID, String.class)))
+                .dataSourceUuid(record.getValue(field(QueryableEntity.DATA_SOURCE_UUID, String.class)))
+                .assignTo(record.getValue(field(Annotation.ASSIGN_TO, String.class)))
+                .content(record.getValue(field(Annotation.CONTENT, String.class)))
+                .status(record.getValue(field(Annotation.STATUS, String.class)))
+                .createUser(record.getValue(DocRefJooqEntity.CREATE_USER_FIELD))
+                .createTime(record.getValue(DocRefJooqEntity.CREATE_TIME_FIELD).longValue())
+                .updateUser(record.getValue(DocRefJooqEntity.UPDATE_USER_FIELD))
+                .updateTime(record.getValue(DocRefJooqEntity.UPDATE_TIME_FIELD).longValue())
+                .build();
     }
 
     @Override
@@ -40,113 +68,91 @@ public class AnnotationsServiceImpl implements AnnotationsService {
                                    final String index,
                                    final String q,
                                    final Integer seekPosition) throws Exception {
-        try (final Session session = database.openSession()){
+        return database.transactionResult(configuration -> {
             LOGGER.info(String.format("Searching the annotations for %s, pagination information (position=%d)",
                     q, seekPosition));
 
-            final CriteriaBuilder cb = session.getCriteriaBuilder();
-
-            final CriteriaQuery<Annotation> cq = cb.createQuery(Annotation.class);
-            final Root<Annotation> root = cq.from(Annotation.class);
-
             final String likeTerm = String.format("%%%s%%", q);
 
-            cq.where(
-                    cb.and(
-                            cb.equal(root.get(QueryableEntity.DATA_SOURCE_UUID), index),
-                            cb.or(
-                                    cb.like(root.get(Annotation.ID), likeTerm),
-                                    cb.like(root.get(Annotation.CONTENT), likeTerm),
-                                    cb.like(root.get(Annotation.ASSIGN_TO), likeTerm)
-                            )
-                    )
-            );
-
-            cq.orderBy(cb.desc(root.get(Annotation.ID)));
-
-            return session.createQuery(cq)
-                    .setMaxResults(SEARCH_PAGE_LIMIT)
-                    .setFirstResult((seekPosition != null) ? seekPosition : 0)
-                    .getResultList();
-
-        } catch (final Exception e) {
-            LOGGER.warn("Failed to search for annotations", e);
-            throw e;
-        }
+            return DSL.using(configuration)
+                    .select()
+                    .from(annotationTable)
+                    .where(field(QueryableEntity.DATA_SOURCE_UUID, String.class).equal(index))
+                    .and(or(
+                            field(Annotation.ID, String.class).like(likeTerm),
+                            field(Annotation.CONTENT, String.class).like(likeTerm),
+                            field(Annotation.ASSIGN_TO, String.class).like(likeTerm)
+                    ))
+                    .limit(SEARCH_PAGE_LIMIT)
+                    .offset((seekPosition != null) ? seekPosition : 0)
+                    .fetch()
+                    .into(Annotation.class);
+        });
     }
 
     @Override
     public Optional<Annotation> get(final ServiceUser user,
                                     final String index,
                                     final String id) throws Exception {
-        try (final Session session = database.openSession()) {
-            return Optional.of(getEntity(session, index, id));
-        } catch (NoResultException e) {
-            return Optional.empty();
-        } catch (final Exception e) {
-            LOGGER.warn("Failed to get history of annotation", e);
-            throw e;
-        }
+        return database.transactionResult(configuration -> {
+            final Annotation result = DSL.using(configuration)
+                    .select()
+                    .from(annotationTable)
+                    .where(field(QueryableEntity.DATA_SOURCE_UUID, String.class).equal(index))
+                    .and(field(Annotation.ID, String.class).equal(id))
+                    .fetchOneInto(Annotation.class);
+            return Optional.ofNullable(result);
+        });
     }
 
     @Override
     public Optional<List<AnnotationHistory>> getHistory(final ServiceUser user,
                                                         final String index,
                                                         final String id) throws Exception {
-        try (final Session session = database.openSession()){
-            final CriteriaBuilder cb = session.getCriteriaBuilder();
-            final CriteriaQuery<AnnotationHistory> cq = cb.createQuery(AnnotationHistory.class);
-            final Root<AnnotationHistory> root = cq.from(AnnotationHistory.class);
-
-            cq.where(cb.and(
-                    cb.equal(root.get(AnnotationHistory.ANNOTATION_ID), id),
-                    cb.equal(root.get(QueryableEntity.DATA_SOURCE_UUID), index)
-            ));
-
-            return Optional.of(session.createQuery(cq).getResultList());
-        } catch (NoResultException e) {
-            return Optional.empty();
-        } catch (final Exception e) {
-            LOGGER.warn("Failed to get history of annotation", e);
-            throw new Exception(e);
-        }
+        return database.transactionResult(configuration ->
+                Optional.of(DSL.using(configuration).select()
+                        .from(historyTable)
+                        .where(field(QueryableEntity.DATA_SOURCE_UUID, String.class).equal(index))
+                        .and(field(AnnotationHistory.ANNOTATION_ID, String.class).equal(id))
+                        .fetch()
+                        .into(AnnotationHistory.class)
+                ).filter(a -> a.size() > 0));
     }
 
     @Override
     public Optional<Annotation> create(final ServiceUser user,
                                        final String index,
                                        final String id) throws Exception {
-        Transaction tx = null;
+        return database.transactionResult(configuration -> {
+            final ULong now = ULong.valueOf(System.currentTimeMillis());
 
-        try (final Session session = database.openSession()) {
-            tx = session.beginTransaction();
+            DSL.using(configuration)
+                    .insertInto(annotationTable)
+                    .columns(
+                            field(QueryableEntity.DATA_SOURCE_UUID, String.class),
+                            DocRefJooqEntity.CREATE_USER_FIELD,
+                            DocRefJooqEntity.CREATE_TIME_FIELD,
+                            DocRefJooqEntity.UPDATE_USER_FIELD,
+                            DocRefJooqEntity.UPDATE_TIME_FIELD,
+                            field(Annotation.ID, String.class),
+                            field(Annotation.CONTENT, String.class),
+                            field(Annotation.ASSIGN_TO, String.class),
+                            field(Annotation.STATUS, String.class))
+                    .values(index,
+                            user.getName(),
+                            now,
+                            user.getName(),
+                            now,
+                            id,
+                            Annotation.DEFAULT_CONTENT,
+                            Annotation.DEFAULT_ASSIGNEE,
+                            Annotation.DEFAULT_STATUS.toString())
+                    .execute();
 
-            final Annotation annotation = new Annotation.Builder()
-                    .id(id)
-                    .dataSourceUuid(index)
-                    .updateTime(System.currentTimeMillis())
-                    .updateUser(user.getName())
-                    .createTime(System.currentTimeMillis())
-                    .createUser(user.getName())
-                    .assignTo(Annotation.DEFAULT_ASSIGNEE)
-                    .content(Annotation.DEFAULT_CONTENT)
-                    .status(Annotation.DEFAULT_STATUS)
-                    .build();
-            session.persist(annotation);
+            final Annotation currentState = updateHistoryAndReturn(configuration, index, id, HistoryOperation.CREATE);
 
-            final Annotation currentState = updateHistoryAndReturn(session, index, id, HistoryOperation.CREATE);
-
-            tx.commit();
-
-            return Optional.of(currentState);
-
-        } catch (NoResultException e) {
-            return Optional.empty();
-        } catch (final Exception e) {
-            LOGGER.warn("Failed to create annotation", e);
-
-            throw new Exception(e);
-        }
+            return Optional.ofNullable(currentState);
+        });
     }
 
     @Override
@@ -154,121 +160,87 @@ public class AnnotationsServiceImpl implements AnnotationsService {
                                        final String index,
                                        final String id,
                                        final Annotation annotationUpdate) throws Exception {
-        Transaction tx = null;
+        return database.transactionResult(configuration -> {
+            final ULong now = ULong.valueOf(System.currentTimeMillis());
 
-        try (final Session session = database.openSession()) {
-            tx = session.beginTransaction();
-
-            final CriteriaBuilder cb = session.getCriteriaBuilder();
-            final CriteriaUpdate<Annotation> cq = cb.createCriteriaUpdate(Annotation.class);
-            final Root<Annotation> root = cq.from(Annotation.class);
-
-            cq.set(root.get(DocRefEntity.UPDATE_TIME), System.currentTimeMillis());
-            cq.set(root.get(DocRefEntity.UPDATE_USER), user.getName());
-            cq.set(root.get(Annotation.ASSIGN_TO), annotationUpdate.getAssignTo());
-            cq.set(root.get(Annotation.CONTENT), annotationUpdate.getContent());
-            cq.set(root.get(Annotation.STATUS), annotationUpdate.getStatus());
-
-            cq.where(
-                    cb.and(
-                            cb.equal(root.get(QueryableEntity.DATA_SOURCE_UUID), index),
-                            cb.equal(root.get(Annotation.ID), id)
-                    )
-            );
-
-            int rowsAffected = session.createQuery(cq).executeUpdate();
+            int rowsAffected = DSL.using(configuration)
+                    .update(annotationTable)
+                    .set(field(Annotation.ASSIGN_TO, String.class), annotationUpdate.getAssignTo())
+                    .set(field(Annotation.STATUS, String.class), Optional.ofNullable(annotationUpdate.getStatus()).map(Object::toString).orElse(null))
+                    .set(field(Annotation.CONTENT, String.class), annotationUpdate.getContent())
+                    .set(DocRefJooqEntity.UPDATE_USER_FIELD, user.getName())
+                    .set(DocRefJooqEntity.UPDATE_TIME_FIELD, now)
+                    .where(field(QueryableEntity.DATA_SOURCE_UUID, String.class).equal(index))
+                    .and(field(Annotation.ID, String.class).equal(id))
+                    .execute();
 
             if (rowsAffected == 0) {
                 throw new Exception("Zero rows affected by the update");
             }
 
-            final Annotation currentState = updateHistoryAndReturn(session, index, id, HistoryOperation.UPDATE);
-
-            tx.commit();
+            final Annotation currentState = updateHistoryAndReturn(configuration, index, id, HistoryOperation.UPDATE);
 
             return Optional.of(currentState);
-
-        } catch (NoResultException e) {
-            return Optional.empty();
-        } catch (final Exception e) {
-            LOGGER.warn("Failed to update annotation", e);
-            throw new Exception(e);
-        }
+        });
     }
 
     @Override
     public Optional<Boolean> remove(final ServiceUser user,
                                     final String index,
                                     final String id) throws Exception {
-        Transaction tx = null;
+        return database.transactionResult(configuration -> {
+            takeAnnotationHistoryDelete(user, configuration, index, id);
 
-        try (final Session session = database.openSession()) {
+            int rowsAffected = DSL.using(configuration).deleteFrom(annotationTable)
+                    .where(field(QueryableEntity.DATA_SOURCE_UUID, String.class).equal(index))
+                    .and(field(Annotation.ID, String.class).equal(id))
+                    .execute();
 
-            // Take the history snapshot before deletion happens
-            takeAnnotationHistoryDelete(user, session, index, id);
-
-            tx = session.beginTransaction();
-
-            final CriteriaBuilder cb = session.getCriteriaBuilder();
-
-            final CriteriaDelete<Annotation> cq = cb.createCriteriaDelete(Annotation.class);
-            final Root<Annotation> root = cq.from(Annotation.class);
-
-            cq.where(
-                    cb.and(
-                            cb.equal(root.get(QueryableEntity.DATA_SOURCE_UUID), index),
-                            cb.equal(root.get(Annotation.ID), id)
-                    )
-            );
-
-            int rowsAffected = session.createQuery(cq).executeUpdate();
             if (rowsAffected == 0) {
                 throw new Exception("Zero rows affected by the update");
             }
 
-            tx.commit();
-
             return Optional.of(Boolean.TRUE);
-        } catch (NoResultException e) {
-            return Optional.empty();
-        } catch (final Exception e) {
-            LOGGER.warn("Failed to remove annotation", e);
-            throw new Exception(e);
-        }
+        });
     }
 
-    private Annotation getEntity(final Session session, final String index, final String id) {
-        final CriteriaBuilder cb = session.getCriteriaBuilder();
-
-        final CriteriaQuery<Annotation> cq = cb.createQuery(Annotation.class);
-        final Root<Annotation> root = cq.from(Annotation.class);
-        cq.where(cb.and(
-                cb.equal(root.get(Annotation.ID), id),
-                cb.equal(root.get(QueryableEntity.DATA_SOURCE_UUID), index)
-        ));
-
-        return session.createQuery(cq).getSingleResult();
-    }
-
-    private Annotation updateHistoryAndReturn(final Session session,
+    private Annotation updateHistoryAndReturn(final Configuration jooqConfiguration,
                                         final String index,
                                         final String id,
                                         final HistoryOperation operation) {
-        final Annotation currentState = getEntity(session, index, id);
+        final Annotation currentState = DSL.using(jooqConfiguration)
+                .select()
+                .from(annotationTable)
+                .where(field(QueryableEntity.DATA_SOURCE_UUID, String.class).equal(index))
+                .and(field(Annotation.ID, String.class).equal(id))
+                .fetchOneInto(Annotation.class);
 
-        final AnnotationHistory history = new AnnotationHistory.Builder()
-                .dataSourceUuid(currentState.getDataSourceUuid())
-                .annotationId(currentState.getId())
-                .operation(operation)
-                .updateTime(currentState.getUpdateTime())
-                .updateUser(currentState.getUpdateUser())
-                .createTime(currentState.getCreateTime())
-                .createUser(currentState.getCreateUser())
-                .assignTo(currentState.getAssignTo())
-                .content(currentState.getContent())
-                .status(currentState.getStatus())
-                .build();
-        session.persist(history);
+        Objects.requireNonNull(currentState);
+
+        DSL.using(jooqConfiguration)
+                .insertInto(historyTable)
+                .columns(
+                        field(QueryableEntity.DATA_SOURCE_UUID, String.class),
+                        DocRefJooqEntity.CREATE_USER_FIELD,
+                        DocRefJooqEntity.CREATE_TIME_FIELD,
+                        DocRefJooqEntity.UPDATE_USER_FIELD,
+                        DocRefJooqEntity.UPDATE_TIME_FIELD,
+                        field(AnnotationHistory.OPERATION, String.class),
+                        field(AnnotationHistory.ANNOTATION_ID, String.class),
+                        field(Annotation.CONTENT, String.class),
+                        field(Annotation.ASSIGN_TO, String.class),
+                        field(Annotation.STATUS, String.class))
+                .values(currentState.getDataSourceUuid(),
+                        currentState.getCreateUser(),
+                        ULong.valueOf(currentState.getCreateTime()),
+                        currentState.getUpdateUser(),
+                        ULong.valueOf(currentState.getUpdateTime()),
+                        operation.toString(),
+                        currentState.getId(),
+                        currentState.getContent(),
+                        currentState.getAssignTo(),
+                        currentState.getStatus().toString())
+                .execute();
 
         LOGGER.trace(String.format("History Point Taken for Annotation %s", currentState.getId()));
 
@@ -276,24 +248,40 @@ public class AnnotationsServiceImpl implements AnnotationsService {
     }
 
     private void takeAnnotationHistoryDelete(final ServiceUser user,
-                                             final Session session,
+                                             final Configuration jooqConfiguration,
                                              final String index,
                                              final String id) {
-        final Annotation currentState = getEntity(session, index, id);
+        final Annotation currentState = DSL.using(jooqConfiguration)
+                .select()
+                .from(annotationTable)
+                .where(field(QueryableEntity.DATA_SOURCE_UUID, String.class).equal(index))
+                .and(field(Annotation.ID, String.class).equal(id))
+                .fetchOneInto(Annotation.class);
 
-        final AnnotationHistory history = new AnnotationHistory.Builder()
-                .dataSourceUuid(index)
-                .annotationId(id)
-                .operation(HistoryOperation.DELETE)
-                .updateTime(System.currentTimeMillis())
-                .updateUser(user.getName())
-                .createTime(currentState.getCreateTime())
-                .createUser(currentState.getCreateUser())
-                .assignTo(currentState.getAssignTo())
-                .content(currentState.getContent())
-                .status(currentState.getStatus())
-                .build();
-        session.persist(history);
+        DSL.using(jooqConfiguration)
+                .insertInto(historyTable)
+                .columns(
+                        field(QueryableEntity.DATA_SOURCE_UUID, String.class),
+                        DocRefJooqEntity.CREATE_USER_FIELD,
+                        DocRefJooqEntity.CREATE_TIME_FIELD,
+                        DocRefJooqEntity.UPDATE_USER_FIELD,
+                        DocRefJooqEntity.UPDATE_TIME_FIELD,
+                        field(AnnotationHistory.OPERATION, String.class),
+                        field(AnnotationHistory.ANNOTATION_ID, String.class),
+                        field(Annotation.CONTENT, String.class),
+                        field(Annotation.ASSIGN_TO, String.class),
+                        field(Annotation.STATUS, String.class))
+                .values(currentState.getDataSourceUuid(),
+                        currentState.getCreateUser(),
+                        ULong.valueOf(currentState.getCreateTime()),
+                        currentState.getUpdateUser(),
+                        ULong.valueOf(currentState.getUpdateTime()),
+                        HistoryOperation.DELETE.toString(),
+                        currentState.getId(),
+                        currentState.getContent(),
+                        currentState.getAssignTo(),
+                        currentState.getStatus().toString())
+                .execute();
 
         LOGGER.trace(String.format("History Point Taken for Annotation %s", id));
     }

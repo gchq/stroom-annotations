@@ -216,6 +216,7 @@ public class AnnotationsQueryResourceNoAuthIT extends QueryResourceNoAuthIT<Anno
                 .containsOrdered(containsAllOf(AuditedQueryResourceImpl.QUERY_DESTROY, aQueryKey.getUuid()));
     }
 
+    @Override
     protected SearchRequest getValidSearchRequest(final DocRef docRef,
                                                 final ExpressionOperator expressionOperator,
                                                 final OffsetRange offsetRange) {

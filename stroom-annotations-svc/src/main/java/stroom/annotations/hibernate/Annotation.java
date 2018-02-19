@@ -4,18 +4,14 @@ import stroom.datasource.api.v2.DataSourceField;
 import stroom.query.api.v2.ExpressionTerm;
 import stroom.query.audit.model.IsDataSourceField;
 import stroom.query.audit.model.QueryableEntity;
-import stroom.query.hibernate.QueryableHibernateEntity;
+import stroom.query.jooq.JooqEntity;
+import stroom.query.jooq.QueryableJooqEntity;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.Id;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-@Entity(name="annotation")
-public class Annotation extends QueryableHibernateEntity {
+@JooqEntity(tableName="annotation")
+public class Annotation extends QueryableJooqEntity {
     public static final String ID = "id";
     public static final String STATUS = "status";
     public static final String ASSIGN_TO = "assignTo";
@@ -50,8 +46,6 @@ public class Annotation extends QueryableHibernateEntity {
         }
     }
 
-    @Id
-    @Column(name=ID)
     @IsDataSourceField(fieldSupplier = IdField.class)
     public String getId() {
         return id;
@@ -77,8 +71,6 @@ public class Annotation extends QueryableHibernateEntity {
         }
     }
 
-    @Enumerated(EnumType.STRING)
-    @Column(name=STATUS)
     @IsDataSourceField(fieldSupplier = StatusField.class)
     public Status getStatus() {
         return status;
@@ -105,7 +97,6 @@ public class Annotation extends QueryableHibernateEntity {
         }
     }
 
-    @Column(name=ASSIGN_TO)
     @IsDataSourceField(fieldSupplier = AssignToField.class)
     public String getAssignTo() {
         return assignTo;
@@ -130,7 +121,6 @@ public class Annotation extends QueryableHibernateEntity {
         }
     }
 
-    @Column(name=CONTENT)
     @IsDataSourceField(fieldSupplier = ContentField.class)
     public String getContent() {
         return content;
@@ -188,6 +178,10 @@ public class Annotation extends QueryableHibernateEntity {
         public Builder status(final Status value) {
             this.instance.setStatus(value);
             return self();
+        }
+
+        public Builder status(final String value) {
+            return status(Status.valueOf(value));
         }
 
         public Builder content(final String value) {

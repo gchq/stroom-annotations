@@ -1,12 +1,11 @@
 package stroom.annotations.hibernate;
 
 import stroom.query.audit.model.DocRefEntity;
-import stroom.query.hibernate.DocRefHibernateEntity;
+import stroom.query.jooq.DocRefJooqEntity;
+import stroom.query.jooq.JooqEntity;
 
-import javax.persistence.Entity;
-
-@Entity(name="index_doc_ref")
-public class AnnotationsDocRefEntity extends DocRefHibernateEntity {
+@JooqEntity(tableName="index_doc_ref")
+public class AnnotationsDocRefEntity extends DocRefJooqEntity {
 
     public static final String TYPE = "AnnotationsIndex";
 

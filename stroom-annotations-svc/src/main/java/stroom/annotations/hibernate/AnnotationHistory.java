@@ -2,16 +2,11 @@ package stroom.annotations.hibernate;
 
 
 import stroom.query.audit.model.QueryableEntity;
-import stroom.query.hibernate.QueryableHibernateEntity;
+import stroom.query.jooq.JooqEntity;
+import stroom.query.jooq.QueryableJooqEntity;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.Id;
-
-@Entity(name="annotation_history")
-public class AnnotationHistory extends QueryableHibernateEntity {
+@JooqEntity(tableName="annotation_history")
+public class AnnotationHistory extends QueryableJooqEntity {
     public static final String ANNOTATION_ID = "annotationId";
     public static final String OPERATION = "operation";
 
@@ -27,8 +22,6 @@ public class AnnotationHistory extends QueryableHibernateEntity {
 
     private String content;
 
-    @Id
-    @Column(name=Annotation.ID)
     public int getId() {
         return id;
     }
@@ -37,8 +30,6 @@ public class AnnotationHistory extends QueryableHibernateEntity {
         this.id = id;
     }
 
-    @Enumerated(EnumType.STRING)
-    @Column(name=OPERATION)
     public HistoryOperation getOperation() {
         return operation;
     }
@@ -47,7 +38,6 @@ public class AnnotationHistory extends QueryableHibernateEntity {
         this.operation = operation;
     }
 
-    @Column(name=ANNOTATION_ID)
     public String getAnnotationId() {
         return annotationId;
     }
@@ -56,8 +46,6 @@ public class AnnotationHistory extends QueryableHibernateEntity {
         this.annotationId = annotationId;
     }
 
-    @Enumerated(EnumType.STRING)
-    @Column(name=Annotation.STATUS)
     public Status getStatus() {
         return status;
     }
@@ -66,7 +54,6 @@ public class AnnotationHistory extends QueryableHibernateEntity {
         this.status = status;
     }
 
-    @Column(name=Annotation.ASSIGN_TO)
     public String getAssignTo() {
         return assignTo;
     }
@@ -75,7 +62,6 @@ public class AnnotationHistory extends QueryableHibernateEntity {
         this.assignTo = assignTo;
     }
 
-    @Column(name=Annotation.CONTENT)
     public String getContent() {
         return content;
     }

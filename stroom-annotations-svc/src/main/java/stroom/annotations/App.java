@@ -1,5 +1,7 @@
 package stroom.annotations;
 
+import com.bendb.dropwizard.jooq.JooqBundle;
+import com.bendb.dropwizard.jooq.JooqFactory;
 import io.dropwizard.Application;
 import io.dropwizard.ConfiguredBundle;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
@@ -8,7 +10,6 @@ import io.dropwizard.db.DataSourceFactory;
 import io.dropwizard.db.ManagedDataSource;
 import io.dropwizard.flyway.FlywayBundle;
 import io.dropwizard.flyway.FlywayFactory;
-import io.dropwizard.hibernate.HibernateBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
@@ -16,14 +17,13 @@ import org.glassfish.hk2.api.TypeLiteral;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import stroom.annotations.config.Config;
 import stroom.annotations.hibernate.Annotation;
-import stroom.annotations.hibernate.AnnotationHistory;
 import stroom.annotations.hibernate.AnnotationsDocRefEntity;
 import stroom.annotations.resources.AuditedAnnotationsResourceImpl;
 import stroom.annotations.service.AnnotationsDocRefServiceImpl;
 import stroom.annotations.service.AnnotationsService;
 import stroom.annotations.service.AnnotationsServiceImpl;
 import stroom.query.audit.service.DocRefService;
-import stroom.query.hibernate.AuditedCriteriaQueryBundle;
+import stroom.query.jooq.AuditedJooqQueryBundle;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.FilterRegistration;
@@ -63,17 +63,21 @@ public class App extends Application<Config> {
 
     };
 
-    private final AuditedCriteriaQueryBundle<Config,
-            Annotation,
-            AnnotationsDocRefEntity,
-            AnnotationsDocRefServiceImpl> auditedQueryBundle =
-            new AuditedCriteriaQueryBundle<>(Annotation.class,
+    private final AuditedJooqQueryBundle<Config,
+                Annotation,
+                AnnotationsDocRefEntity,
+                AnnotationsDocRefServiceImpl> auditedQueryBundle =
+            new AuditedJooqQueryBundle<>(Annotation.class,
 
-                    new HibernateBundle<Config>(Annotation.class, AnnotationHistory.class, AnnotationsDocRefEntity.class) {
-                        @Override
+                    new JooqBundle<Config>() {
                         public DataSourceFactory getDataSourceFactory(Config configuration) {
                             return configuration.getDataSourceFactory();
                         }
+
+                        public JooqFactory getJooqFactory(Config configuration) {
+                            return configuration.getJooqFactory();
+                        }
+
                     },
                     AnnotationsDocRefEntity.class,
                     AnnotationsDocRefServiceImpl.class);
