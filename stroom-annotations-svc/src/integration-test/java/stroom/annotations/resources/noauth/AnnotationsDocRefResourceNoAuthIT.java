@@ -4,7 +4,7 @@ import org.junit.ClassRule;
 import stroom.annotations.App;
 import stroom.annotations.config.Config;
 import stroom.annotations.hibernate.AnnotationsDocRefEntity;
-import stroom.query.audit.service.DocRefEntity;
+import stroom.query.audit.model.DocRefEntity;
 import stroom.query.testing.DocRefResourceNoAuthIT;
 import stroom.query.testing.DropwizardAppWithClientsRule;
 

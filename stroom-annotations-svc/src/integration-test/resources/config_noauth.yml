@@ -5,10 +5,10 @@ server:
   applicationContextPath: /
   applicationConnectors:
     - type:  http
-      port: 8199
+      port: 18199
   adminConnectors:
     - type: http
-      port: 8200
+      port: 18200
 
 database:
   driverClass: org.mariadb.jdbc.Driver

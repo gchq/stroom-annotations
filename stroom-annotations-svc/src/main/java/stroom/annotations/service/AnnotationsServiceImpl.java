@@ -8,9 +8,9 @@ import org.slf4j.LoggerFactory;
 import stroom.annotations.hibernate.Annotation;
 import stroom.annotations.hibernate.AnnotationHistory;
 import stroom.annotations.hibernate.HistoryOperation;
+import stroom.query.audit.model.DocRefEntity;
+import stroom.query.audit.model.QueryableEntity;
 import stroom.query.audit.security.ServiceUser;
-import stroom.query.audit.service.DocRefEntity;
-import stroom.query.hibernate.QueryableEntity;
 
 import javax.inject.Inject;
 import javax.persistence.NoResultException;
@@ -143,7 +143,7 @@ public class AnnotationsServiceImpl implements AnnotationsService {
         } catch (NoResultException e) {
             return Optional.empty();
         } catch (final Exception e) {
-            LOGGER.warn("Failed to get create annotation", e);
+            LOGGER.warn("Failed to create annotation", e);
 
             throw new Exception(e);
         }
@@ -191,7 +191,7 @@ public class AnnotationsServiceImpl implements AnnotationsService {
         } catch (NoResultException e) {
             return Optional.empty();
         } catch (final Exception e) {
-            LOGGER.warn("Failed to get update annotation", e);
+            LOGGER.warn("Failed to update annotation", e);
             throw new Exception(e);
         }
     }
@@ -232,7 +232,7 @@ public class AnnotationsServiceImpl implements AnnotationsService {
         } catch (NoResultException e) {
             return Optional.empty();
         } catch (final Exception e) {
-            LOGGER.warn("Failed to get create annotation", e);
+            LOGGER.warn("Failed to remove annotation", e);
             throw new Exception(e);
         }
     }

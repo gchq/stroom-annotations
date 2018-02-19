@@ -1,6 +1,8 @@
 package stroom.annotations.hibernate;
 
-import stroom.query.hibernate.QueryableEntity;
+
+import stroom.query.audit.model.QueryableEntity;
+import stroom.query.hibernate.QueryableHibernateEntity;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -9,7 +11,7 @@ import javax.persistence.Enumerated;
 import javax.persistence.Id;
 
 @Entity(name="annotation_history")
-public class AnnotationHistory extends QueryableEntity {
+public class AnnotationHistory extends QueryableHibernateEntity {
     public static final String ANNOTATION_ID = "annotationId";
     public static final String OPERATION = "operation";
 
@@ -96,7 +98,7 @@ public class AnnotationHistory extends QueryableEntity {
         return sb.toString();
     }
 
-    public static final class Builder extends QueryableEntity.Builder<AnnotationHistory, Builder> {
+    public static final class Builder extends QueryableEntity.BaseBuilder<AnnotationHistory, Builder> {
 
         public Builder() {
             super(new AnnotationHistory());

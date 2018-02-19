@@ -28,7 +28,7 @@ import stroom.query.api.v2.SearchResponse;
 import stroom.query.api.v2.TableSettings;
 import stroom.query.audit.rest.AuditedDocRefResourceImpl;
 import stroom.query.audit.rest.AuditedQueryResourceImpl;
-import stroom.query.audit.service.DocRefEntity;
+import stroom.query.audit.model.DocRefEntity;
 import stroom.query.testing.DropwizardAppWithClientsRule;
 import stroom.query.testing.FifoLogbackRule;
 import stroom.query.testing.QueryResourceIT;

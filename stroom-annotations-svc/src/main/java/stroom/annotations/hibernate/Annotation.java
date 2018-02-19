@@ -2,8 +2,9 @@ package stroom.annotations.hibernate;
 
 import stroom.datasource.api.v2.DataSourceField;
 import stroom.query.api.v2.ExpressionTerm;
-import stroom.query.hibernate.IsDataSourceField;
-import stroom.query.hibernate.QueryableEntity;
+import stroom.query.audit.model.IsDataSourceField;
+import stroom.query.audit.model.QueryableEntity;
+import stroom.query.hibernate.QueryableHibernateEntity;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -14,7 +15,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 @Entity(name="annotation")
-public class Annotation extends QueryableEntity {
+public class Annotation extends QueryableHibernateEntity {
     public static final String ID = "id";
     public static final String STATUS = "status";
     public static final String ASSIGN_TO = "assignTo";
@@ -168,7 +169,7 @@ public class Annotation extends QueryableEntity {
         return Objects.hash(super.hashCode(), id, assignTo, status, content);
     }
 
-    public static final class Builder extends QueryableEntity.Builder<Annotation, Builder> {
+    public static final class Builder extends QueryableEntity.BaseBuilder<Annotation, Builder> {
 
         public Builder() {
             super(new Annotation());
