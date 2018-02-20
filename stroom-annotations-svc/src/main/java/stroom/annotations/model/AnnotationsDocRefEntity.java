@@ -1,4 +1,4 @@
-package stroom.annotations.hibernate;
+package stroom.annotations.model;
 
 import stroom.query.audit.model.DocRefEntity;
 import stroom.query.jooq.DocRefJooqEntity;

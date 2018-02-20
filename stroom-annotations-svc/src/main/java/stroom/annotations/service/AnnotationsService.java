@@ -1,7 +1,7 @@
 package stroom.annotations.service;
 
-import stroom.annotations.hibernate.Annotation;
-import stroom.annotations.hibernate.AnnotationHistory;
+import stroom.annotations.model.Annotation;
+import stroom.annotations.model.AnnotationHistory;
 import stroom.query.audit.security.ServiceUser;
 
 import java.util.List;

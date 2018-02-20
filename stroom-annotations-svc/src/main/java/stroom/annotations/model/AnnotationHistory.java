@@ -1,14 +1,20 @@
-package stroom.annotations.hibernate;
+package stroom.annotations.model;
 
 
+import org.jooq.Field;
 import stroom.query.audit.model.QueryableEntity;
 import stroom.query.jooq.JooqEntity;
 import stroom.query.jooq.QueryableJooqEntity;
+
+import static org.jooq.impl.DSL.field;
 
 @JooqEntity(tableName="annotation_history")
 public class AnnotationHistory extends QueryableJooqEntity {
     public static final String ANNOTATION_ID = "annotationId";
     public static final String OPERATION = "operation";
+
+    public static final Field<String> ANNOTATION_ID_FIELD = field(ANNOTATION_ID, String.class);
+    public static final Field<String> OPERATION_FIELD = field(OPERATION, String.class);
 
     private int id;
 

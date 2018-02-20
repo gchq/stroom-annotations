@@ -1,5 +1,6 @@
-package stroom.annotations.hibernate;
+package stroom.annotations.model;
 
+import org.jooq.Field;
 import stroom.datasource.api.v2.DataSourceField;
 import stroom.query.api.v2.ExpressionTerm;
 import stroom.query.audit.model.IsDataSourceField;
@@ -10,12 +11,19 @@ import stroom.query.jooq.QueryableJooqEntity;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+import static org.jooq.impl.DSL.field;
+
 @JooqEntity(tableName="annotation")
 public class Annotation extends QueryableJooqEntity {
     public static final String ID = "id";
     public static final String STATUS = "status";
     public static final String ASSIGN_TO = "assignTo";
     public static final String CONTENT = "content";
+
+    public static final Field<String> ID_FIELD = field(ID, String.class);
+    public static final Field<String> CONTENT_FIELD = field(CONTENT, String.class);
+    public static final Field<String> ASSIGN_TO_FIELD = field(ASSIGN_TO, String.class);
+    public static final Field<String> STATUS_FIELD = field(STATUS, String.class);
 
     public static final int MIN_ID_LENGTH = 3;
     public static final Status DEFAULT_STATUS = Status.QUEUED;

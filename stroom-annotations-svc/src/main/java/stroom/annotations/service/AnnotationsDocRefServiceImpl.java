@@ -1,7 +1,7 @@
 package stroom.annotations.service;
 
 import org.jooq.Configuration;
-import stroom.annotations.hibernate.AnnotationsDocRefEntity;
+import stroom.annotations.model.AnnotationsDocRefEntity;
 import stroom.query.jooq.DocRefServiceJooqImpl;
 
 import javax.inject.Inject;

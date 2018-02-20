@@ -1,4 +1,4 @@
-package stroom.annotations.hibernate;
+package stroom.annotations.model;
 
 public enum Status {
     QUEUED("Queued"),
