@@ -1,17 +1,20 @@
-package stroom.annotations.hibernate;
+package stroom.annotations.model;
 
-import stroom.query.hibernate.QueryableEntity;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.Id;
+import org.jooq.Field;
+import stroom.query.audit.model.QueryableEntity;
+import stroom.query.jooq.JooqEntity;
+import stroom.query.jooq.QueryableJooqEntity;
 
-@Entity(name="annotation_history")
-public class AnnotationHistory extends QueryableEntity {
+import static org.jooq.impl.DSL.field;
+
+@JooqEntity(tableName="annotation_history")
+public class AnnotationHistory extends QueryableJooqEntity {
     public static final String ANNOTATION_ID = "annotationId";
     public static final String OPERATION = "operation";
+
+    public static final Field<String> ANNOTATION_ID_FIELD = field(ANNOTATION_ID, String.class);
+    public static final Field<String> OPERATION_FIELD = field(OPERATION, String.class);
 
     private int id;
 
@@ -25,8 +28,6 @@ public class AnnotationHistory extends QueryableEntity {
 
     private String content;
 
-    @Id
-    @Column(name=Annotation.ID)
     public int getId() {
         return id;
     }
@@ -35,8 +36,6 @@ public class AnnotationHistory extends QueryableEntity {
         this.id = id;
     }
 
-    @Enumerated(EnumType.STRING)
-    @Column(name=OPERATION)
     public HistoryOperation getOperation() {
         return operation;
     }
@@ -45,7 +44,6 @@ public class AnnotationHistory extends QueryableEntity {
         this.operation = operation;
     }
 
-    @Column(name=ANNOTATION_ID)
     public String getAnnotationId() {
         return annotationId;
     }
@@ -54,8 +52,6 @@ public class AnnotationHistory extends QueryableEntity {
         this.annotationId = annotationId;
     }
 
-    @Enumerated(EnumType.STRING)
-    @Column(name=Annotation.STATUS)
     public Status getStatus() {
         return status;
     }
@@ -64,7 +60,6 @@ public class AnnotationHistory extends QueryableEntity {
         this.status = status;
     }
 
-    @Column(name=Annotation.ASSIGN_TO)
     public String getAssignTo() {
         return assignTo;
     }
@@ -73,7 +68,6 @@ public class AnnotationHistory extends QueryableEntity {
         this.assignTo = assignTo;
     }
 
-    @Column(name=Annotation.CONTENT)
     public String getContent() {
         return content;
     }
@@ -96,7 +90,7 @@ public class AnnotationHistory extends QueryableEntity {
         return sb.toString();
     }
 
-    public static final class Builder extends QueryableEntity.Builder<AnnotationHistory, Builder> {
+    public static final class Builder extends QueryableEntity.BaseBuilder<AnnotationHistory, Builder> {
 
         public Builder() {
             super(new AnnotationHistory());

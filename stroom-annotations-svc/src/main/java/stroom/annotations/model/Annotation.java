@@ -1,24 +1,29 @@
-package stroom.annotations.hibernate;
+package stroom.annotations.model;
 
+import org.jooq.Field;
 import stroom.datasource.api.v2.DataSourceField;
 import stroom.query.api.v2.ExpressionTerm;
-import stroom.query.hibernate.IsDataSourceField;
-import stroom.query.hibernate.QueryableEntity;
+import stroom.query.audit.model.IsDataSourceField;
+import stroom.query.audit.model.QueryableEntity;
+import stroom.query.jooq.JooqEntity;
+import stroom.query.jooq.QueryableJooqEntity;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.Id;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-@Entity(name="annotation")
-public class Annotation extends QueryableEntity {
+import static org.jooq.impl.DSL.field;
+
+@JooqEntity(tableName="annotation")
+public class Annotation extends QueryableJooqEntity {
     public static final String ID = "id";
     public static final String STATUS = "status";
     public static final String ASSIGN_TO = "assignTo";
     public static final String CONTENT = "content";
+
+    public static final Field<String> ID_FIELD = field(ID, String.class);
+    public static final Field<String> CONTENT_FIELD = field(CONTENT, String.class);
+    public static final Field<String> ASSIGN_TO_FIELD = field(ASSIGN_TO, String.class);
+    public static final Field<String> STATUS_FIELD = field(STATUS, String.class);
 
     public static final int MIN_ID_LENGTH = 3;
     public static final Status DEFAULT_STATUS = Status.QUEUED;
@@ -49,8 +54,6 @@ public class Annotation extends QueryableEntity {
         }
     }
 
-    @Id
-    @Column(name=ID)
     @IsDataSourceField(fieldSupplier = IdField.class)
     public String getId() {
         return id;
@@ -76,8 +79,6 @@ public class Annotation extends QueryableEntity {
         }
     }
 
-    @Enumerated(EnumType.STRING)
-    @Column(name=STATUS)
     @IsDataSourceField(fieldSupplier = StatusField.class)
     public Status getStatus() {
         return status;
@@ -104,7 +105,6 @@ public class Annotation extends QueryableEntity {
         }
     }
 
-    @Column(name=ASSIGN_TO)
     @IsDataSourceField(fieldSupplier = AssignToField.class)
     public String getAssignTo() {
         return assignTo;
@@ -129,7 +129,6 @@ public class Annotation extends QueryableEntity {
         }
     }
 
-    @Column(name=CONTENT)
     @IsDataSourceField(fieldSupplier = ContentField.class)
     public String getContent() {
         return content;
@@ -168,7 +167,7 @@ public class Annotation extends QueryableEntity {
         return Objects.hash(super.hashCode(), id, assignTo, status, content);
     }
 
-    public static final class Builder extends QueryableEntity.Builder<Annotation, Builder> {
+    public static final class Builder extends QueryableEntity.BaseBuilder<Annotation, Builder> {
 
         public Builder() {
             super(new Annotation());
@@ -187,6 +186,10 @@ public class Annotation extends QueryableEntity {
         public Builder status(final Status value) {
             this.instance.setStatus(value);
             return self();
+        }
+
+        public Builder status(final String value) {
+            return status(Status.valueOf(value));
         }
 
         public Builder content(final String value) {

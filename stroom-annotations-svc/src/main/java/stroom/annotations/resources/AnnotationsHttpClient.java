@@ -2,7 +2,7 @@ package stroom.annotations.resources;
 
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.client.ClientResponse;
-import stroom.annotations.hibernate.Annotation;
+import stroom.annotations.model.Annotation;
 import stroom.query.audit.security.ServiceUser;
 
 import javax.ws.rs.client.Client;

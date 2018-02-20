@@ -5,9 +5,9 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import stroom.annotations.App;
 import stroom.annotations.config.Config;
-import stroom.annotations.hibernate.Annotation;
-import stroom.annotations.hibernate.AnnotationsDocRefEntity;
-import stroom.annotations.hibernate.Status;
+import stroom.annotations.model.Annotation;
+import stroom.annotations.model.AnnotationsDocRefEntity;
+import stroom.annotations.model.Status;
 import stroom.annotations.resources.AnnotationsHttpClient;
 import stroom.annotations.resources.AuditedAnnotationsResourceImpl;
 import stroom.datasource.api.v2.DataSource;
@@ -25,10 +25,10 @@ import stroom.query.api.v2.ResultRequest;
 import stroom.query.api.v2.SearchRequest;
 import stroom.query.api.v2.SearchResponse;
 import stroom.query.api.v2.TableSettings;
+import stroom.query.audit.model.DocRefEntity;
 import stroom.query.audit.rest.AuditedDocRefResourceImpl;
 import stroom.query.audit.rest.AuditedQueryResourceImpl;
 import stroom.query.audit.security.NoAuthValueFactoryProvider;
-import stroom.query.audit.service.DocRefEntity;
 import stroom.query.testing.DropwizardAppWithClientsRule;
 import stroom.query.testing.FifoLogbackRule;
 import stroom.query.testing.QueryResourceNoAuthIT;
@@ -216,6 +216,7 @@ public class AnnotationsQueryResourceNoAuthIT extends QueryResourceNoAuthIT<Anno
                 .containsOrdered(containsAllOf(AuditedQueryResourceImpl.QUERY_DESTROY, aQueryKey.getUuid()));
     }
 
+    @Override
     protected SearchRequest getValidSearchRequest(final DocRef docRef,
                                                 final ExpressionOperator expressionOperator,
                                                 final OffsetRange offsetRange) {

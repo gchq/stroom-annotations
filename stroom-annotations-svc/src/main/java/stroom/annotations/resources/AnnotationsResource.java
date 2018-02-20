@@ -4,7 +4,7 @@ import com.codahale.metrics.annotation.Timed;
 import io.dropwizard.auth.Auth;
 import io.dropwizard.validation.Validated;
 import org.hibernate.validator.constraints.Length;
-import stroom.annotations.hibernate.Annotation;
+import stroom.annotations.model.Annotation;
 import stroom.query.audit.security.ServiceUser;
 
 import javax.validation.constraints.NotNull;

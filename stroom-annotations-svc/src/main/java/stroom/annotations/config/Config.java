@@ -1,5 +1,6 @@
 package stroom.annotations.config;
 
+import com.bendb.dropwizard.jooq.JooqFactory;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dropwizard.Configuration;
 import io.dropwizard.db.DataSourceFactory;
@@ -21,6 +22,11 @@ public class Config extends Configuration implements HasAuthorisationConfig, Has
 
     @Valid
     @NotNull
+    @JsonProperty("jooq")
+    private JooqFactory jooqFactory = new JooqFactory();
+
+    @Valid
+    @NotNull
     @JsonProperty("flyway")
     private FlywayFactory flywayFactory = new FlywayFactory();
 
@@ -34,6 +40,10 @@ public class Config extends Configuration implements HasAuthorisationConfig, Has
 
     public final DataSourceFactory getDataSourceFactory() {
         return this.dataSourceFactory;
+    }
+
+    public final JooqFactory getJooqFactory() {
+        return jooqFactory;
     }
 
     public final FlywayFactory getFlywayFactory() {
