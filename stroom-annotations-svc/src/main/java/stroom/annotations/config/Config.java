@@ -9,12 +9,15 @@ import stroom.query.audit.authorisation.AuthorisationServiceConfig;
 import stroom.query.audit.authorisation.HasAuthorisationConfig;
 import stroom.query.audit.security.HasTokenConfig;
 import stroom.query.audit.security.TokenConfig;
+import stroom.query.jooq.HasDataSourceFactory;
+import stroom.query.jooq.HasJooqFactory;
+import stroom.query.jooq.HasFlywayFactory;
 
 import javax.annotation.Nullable;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
-public class Config extends Configuration implements HasAuthorisationConfig, HasTokenConfig {
+public class Config extends Configuration implements HasAuthorisationConfig, HasTokenConfig, HasDataSourceFactory, HasJooqFactory, HasFlywayFactory {
     @Valid
     @NotNull
     @JsonProperty("database")
