@@ -22,4 +22,4 @@
 ./gradlew clean build shadowJar -x test -x integrationTest
 
 docker build --tag gchq/stroom-annotations-service:LOCAL stroom-annotations-svc/.
-#docker build --tag gchq/stroom-annotations-ui:LOCAL stroom-annotations-ui/.
+docker build --tag gchq/stroom-annotations-ui:LOCAL stroom-annotations-ui/.
