@@ -57,7 +57,7 @@ export const searchAnnotations = (indexUuid, searchTermRaw) => {
         const state = getState()
         const jwsToken = state.authentication.idToken
 
-        return fetch(`${state.config.annotationsServiceUrl}/search/${indexUuid}/?q=${searchTerm}`, {
+        return fetch(`${state.config.annotationsServiceUrl}/annotations/v1/search/${indexUuid}/?q=${searchTerm}`, {
             headers: {
                 'Accept': 'application/json',
                 'Authorization': 'Bearer ' + jwsToken
@@ -91,7 +91,7 @@ export const moreAnnotations = (indexUuid) => {
         let state = getState()
         const jwsToken = state.authentication.idToken
 
-        return fetch(`${state.config.annotationsServiceUrl}/search/${indexUuid}/?q=${state.manageAnnotations.searchTerm}&seekPosition=${state.manageAnnotations.annotations.length}`, {
+        return fetch(`${state.config.annotationsServiceUrl}/annotations/v1/search/${indexUuid}/?q=${state.manageAnnotations.searchTerm}&seekPosition=${state.manageAnnotations.annotations.length}`, {
             headers: {
                 'Accept': 'application/json',
                 'Authorization': 'Bearer ' + jwsToken

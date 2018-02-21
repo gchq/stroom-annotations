@@ -37,7 +37,7 @@ export const fetchStatusValues = (id) => {
 
         const state = getState()
 
-        return fetch(`${state.config.annotationsServiceUrl}/static/statusValues`)
+        return fetch(`${state.config.annotationsServiceUrl}/annotations/v1/static/statusValues`)
               .then(
                 response => response.json(),
                 // Do not use catch, because that will also catch

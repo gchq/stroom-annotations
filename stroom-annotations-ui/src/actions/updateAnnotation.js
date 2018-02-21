@@ -48,7 +48,7 @@ export const updateAnnotation = (indexUuid, id, annotation) => {
         const state = getState()
         const jwsToken = state.authentication.idToken
 
-        return fetch(`${state.config.annotationsServiceUrl}/single/${indexUuid}/${id}`,
+        return fetch(`${state.config.annotationsServiceUrl}/annotations/v1/single/${indexUuid}/${id}`,
             {
                 method: "PUT",
                 headers: {

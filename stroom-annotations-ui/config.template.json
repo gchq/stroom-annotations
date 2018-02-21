@@ -3,5 +3,5 @@
     "authorisationServiceUrl": "https://IP_ADDRESS/stroom/api/authorisation/v1",
     "advertisedUrl": "https://IP_ADDRESS:5001",
     "appClientId": "stroom-annotations",
-    "annotationsServiceUrl": "https://IP_ADDRESS/annotationsService/annotations/v1"
+    "annotationsServiceUrl": "https://IP_ADDRESS/annotationsService"
 }
