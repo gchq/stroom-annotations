@@ -66,15 +66,15 @@ export const updateAnnotation = (indexUuid, id, annotation) => {
                 // any errors in the dispatch and resulting render,
                 // causing an loop of 'Unexpected batch number' errors.
                 // https://github.com/facebook/react/issues/6895
-                error => console.log('An error occured.', error)
+                error => {
+                    dispatch(receiveUpdateAnnotationFailed(thisApiCallId, error))
+                    dispatch(sendToSnackbar('Failed to Update Annotation ' + error))
+                }
               )
               .then(json => {
                 if (json.id) {
                     dispatch(receiveUpdateAnnotation(thisApiCallId, id, json))
                     dispatch(sendToSnackbar('Annotation Updated'))
-                } else {
-                    dispatch(receiveUpdateAnnotationFailed(thisApiCallId, json.msg))
-                    dispatch(sendToSnackbar('Failed to Update Annotation ' + json.msg))
                 }
               })
     }

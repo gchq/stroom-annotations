@@ -1,7 +1,7 @@
 {
-    "authenticationServiceUrl": "http://IP_ADDRESS/authService/authentication/v1",
-    "authorisationServiceUrl": "http://IP_ADDRESS:8080/api/authorisation/v1",
-    "advertisedUrl": "http://IP_ADDRESS:5001",
+    "authenticationServiceUrl": "https://IP_ADDRESS/authService/authentication/v1",
+    "authorisationServiceUrl": "https://IP_ADDRESS/stroom/api/authorisation/v1",
+    "advertisedUrl": "https://IP_ADDRESS:5001",
     "appClientId": "stroom-annotations",
-    "annotationsServiceUrl": "http://IP_ADDRESS:8199/annotations/v1"
+    "annotationsServiceUrl": "https://IP_ADDRESS/annotationsService/annotations/v1"
 }

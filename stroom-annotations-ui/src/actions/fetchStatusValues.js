@@ -44,14 +44,14 @@ export const fetchStatusValues = (id) => {
                 // any errors in the dispatch and resulting render,
                 // causing an loop of 'Unexpected batch number' errors.
                 // https://github.com/facebook/react/issues/6895
-                error => console.log('An error occured.', error)
+                error => {
+                    dispatch(receiveFetchStatusValuesFailed(thisApiCallId, error))
+                    dispatch(sendToSnackbar('Failed to Fetch Status Values ' + error))
+                }
               )
               .then(json => {
                 if (json) {
                     dispatch(receiveFetchStatusValues(thisApiCallId, json))
-                } else {
-                    dispatch(receiveFetchStatusValuesFailed(thisApiCallId, json.msg))
-                    dispatch(sendToSnackbar('Failed to Fetch Status Values ' + json.msg))
                 }
               })
     }

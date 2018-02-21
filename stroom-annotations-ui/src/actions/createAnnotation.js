@@ -54,6 +54,10 @@ export const createAnnotation = (indexUuid, id) => {
                         throw new Error(response.statusText)
                     }
                     return response.json()
+                },
+                error => {
+                    dispatch(receiveCreateAnnotationFailed(thisApiCallId, error.message))
+                    dispatch(sendToSnackbar('Failed to Create Annotation ' + error.message))
                 }
             )
             .then(json => {
@@ -61,9 +65,6 @@ export const createAnnotation = (indexUuid, id) => {
                     dispatch(receiveCreateAnnotation(thisApiCallId, id, json))
                     dispatch(sendToSnackbar('Annotation Created'))
                 }
-            }).catch(error => {
-                dispatch(receiveCreateAnnotationFailed(thisApiCallId, error.message))
-                dispatch(sendToSnackbar('Failed to Create Annotation ' + error.message))
             })
     }
 }

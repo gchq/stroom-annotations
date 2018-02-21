@@ -53,7 +53,6 @@ export const fetchAnnotationHistory = (indexUuid, id) => {
                 // https://github.com/facebook/react/issues/6895
                 error => {
                     dispatch(receiveFetchAnnotationHistoryFailed(thisApiCallId, error))
-                    return undefined;
                 }
               )
               .then(json => {

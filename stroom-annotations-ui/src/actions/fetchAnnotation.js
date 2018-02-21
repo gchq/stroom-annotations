@@ -62,15 +62,16 @@ export const fetchAnnotation = (indexUuid, id) => {
                         throw new Error(response.statusText)
                     }
                     return response.json()
+                },
+                error => {
+                    dispatch(receiveFetchAnnotationFailed(thisApiCallId, error))
+                    dispatch(sendToSnackbar('Failed to Fetch Annotations ' + error))
                 }
             )
             .then(json => {
                 if (json) {
                     dispatch(receiveFetchAnnotation(thisApiCallId, id, json))
                 }
-            }).catch(error => {
-                dispatch(receiveFetchAnnotationFailed(thisApiCallId, error))
-                dispatch(sendToSnackbar('Failed to Fetch Annotations ' + error))
             })
     }
 }

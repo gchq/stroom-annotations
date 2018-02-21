@@ -70,13 +70,13 @@ export const searchAnnotations = (indexUuid, searchTermRaw) => {
                         throw new Error(response.statusText)
                     }
                     return response.json()
+                },
+                error => {
+                    dispatch(receiveSearchAnnotationsFailed(thisApiCallId, error))
+                    dispatch(sendToSnackbar('Failed to Search Annotations ' + error))
                 }
             )
             .then(json => dispatch(receiveSearchAnnotations(thisApiCallId, json, false)) )
-            .catch(error => {
-                dispatch(receiveSearchAnnotationsFailed(thisApiCallId, error))
-                dispatch(sendToSnackbar('Failed to Search Annotations ' + error))
-            })
     }
 }
 
@@ -104,12 +104,12 @@ export const moreAnnotations = (indexUuid) => {
                         throw new Error(response.statusText)
                     }
                     return response.json()
+                },
+                error => {
+                    dispatch(receiveSearchAnnotationsFailed(thisApiCallId, error))
+                    dispatch(sendToSnackbar('Failed to Fetch More Annotations ' + error))
                 }
             )
             .then(json => dispatch(receiveSearchAnnotations(thisApiCallId, json, true)) )
-            .catch(error => {
-                dispatch(receiveSearchAnnotationsFailed(thisApiCallId, error))
-                dispatch(sendToSnackbar('Failed to Fetch More Annotations ' + error))
-            })
     }
 }
