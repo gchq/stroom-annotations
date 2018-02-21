@@ -31,4 +31,4 @@ cp ../package.json work/
 cp -r ../src work/
 cp -r ../public work/
 
-docker build --tag gchq/stroom-auth-ui:${ver} .
+docker build --tag gchq/stroom-annotations-ui:${ver} .
