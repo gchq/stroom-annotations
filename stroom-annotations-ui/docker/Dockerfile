@@ -44,8 +44,8 @@ RUN yarn build
 FROM base
 COPY --from=build /root/app/build /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/nginx.conf
-EXPOSE 5000
-EXPOSE 9443
+EXPOSE 5001
+EXPOSE 9444
 
 VOLUME [ "/etc/nginx/certs" ]
 
