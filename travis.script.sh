@@ -21,7 +21,7 @@ if [ -n "$TRAVIS_TAG" ]; then
 
     ANNOTATIONS_UI_TAG="gchq/stroom-annotations-ui:${TRAVIS_TAG}"
     echo "Building stroom-annotations-ui with tag ${ANNOTATIONS_UI_TAG}"
-    ./stroom-annotations-ui/docker/build ${TRAVIS_TAG}
+    ./stroom-annotations-ui/docker/build.sh ${TRAVIS_TAG}
     echo "Pushing ${ANNOTATIONS_UI_TAG}"
     docker push ${ANNOTATIONS_UI_TAG}
 else
