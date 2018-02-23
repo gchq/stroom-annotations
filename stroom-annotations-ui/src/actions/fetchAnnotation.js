@@ -48,7 +48,7 @@ export const fetchAnnotation = (indexUuid, id) => {
         const state = getState()
         const jwsToken = state.authentication.idToken
 
-        return fetch(`${state.config.annotationsServiceUrl}/single/${indexUuid}/${id}`, {
+        return fetch(`${state.config.annotationsServiceUrl}/annotations/v1/single/${indexUuid}/${id}`, {
             headers: {
                 'Accept': 'application/json',
                 'Authorization': 'Bearer ' + jwsToken
@@ -62,15 +62,16 @@ export const fetchAnnotation = (indexUuid, id) => {
                         throw new Error(response.statusText)
                     }
                     return response.json()
+                },
+                error => {
+                    dispatch(receiveFetchAnnotationFailed(thisApiCallId, error))
+                    dispatch(sendToSnackbar('Failed to Fetch Annotations ' + error))
                 }
             )
             .then(json => {
                 if (json) {
                     dispatch(receiveFetchAnnotation(thisApiCallId, id, json))
                 }
-            }).catch(error => {
-                dispatch(receiveFetchAnnotationFailed(thisApiCallId, error))
-                dispatch(sendToSnackbar('Failed to Fetch Annotations ' + error))
             })
     }
 }

@@ -27,7 +27,7 @@
     "stroom-js": "https://github.com/gchq/stroom-js.git#dist"
   },
   "scripts": {
-    "start": "BROWSER=none PORT=5001 react-scripts start",
+    "start": "./config.template.sh && BROWSER=none PORT=5001 HTTPS=true react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject"

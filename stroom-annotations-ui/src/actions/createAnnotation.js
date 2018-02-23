@@ -39,7 +39,7 @@ export const createAnnotation = (indexUuid, id) => {
         const state = getState()
         const jwsToken = state.authentication.idToken
 
-        return fetch(`${state.config.annotationsServiceUrl}/single/${indexUuid}/${id}`, {
+        return fetch(`${state.config.annotationsServiceUrl}/annotations/v1/single/${indexUuid}/${id}`, {
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
@@ -54,6 +54,10 @@ export const createAnnotation = (indexUuid, id) => {
                         throw new Error(response.statusText)
                     }
                     return response.json()
+                },
+                error => {
+                    dispatch(receiveCreateAnnotationFailed(thisApiCallId, error.message))
+                    dispatch(sendToSnackbar('Failed to Create Annotation ' + error.message))
                 }
             )
             .then(json => {
@@ -61,9 +65,6 @@ export const createAnnotation = (indexUuid, id) => {
                     dispatch(receiveCreateAnnotation(thisApiCallId, id, json))
                     dispatch(sendToSnackbar('Annotation Created'))
                 }
-            }).catch(error => {
-                dispatch(receiveCreateAnnotationFailed(thisApiCallId, error.message))
-                dispatch(sendToSnackbar('Failed to Create Annotation ' + error.message))
             })
     }
 }

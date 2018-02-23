@@ -39,7 +39,7 @@ export const fetchAnnotationHistory = (indexUuid, id) => {
         const state = getState()
         const jwsToken = state.authentication.idToken
 
-        return fetch(`${state.config.annotationsServiceUrl}/single/${indexUuid}/${id}/history`, {
+        return fetch(`${state.config.annotationsServiceUrl}/annotations/v1/single/${indexUuid}/${id}/history`, {
             headers: {
                 'Accept': 'application/json',
                 'Authorization': 'Bearer ' + jwsToken
@@ -53,7 +53,6 @@ export const fetchAnnotationHistory = (indexUuid, id) => {
                 // https://github.com/facebook/react/issues/6895
                 error => {
                     dispatch(receiveFetchAnnotationHistoryFailed(thisApiCallId, error))
-                    return undefined;
                 }
               )
               .then(json => {

@@ -16,13 +16,19 @@
 # limitations under the License.
 #**********************************************************************
 
-# This script is all you need to build an image of stroom-auth-service and stroom-auth-ui.
+#Stop script on first error
+set -e
 
-# Exclude tests because we want this to be fast. I guess you'd better test the build before releasing.
-./gradlew clean build shadowJar -x test -x integrationTest
+if [ $# -ne 1 ]; then
+    echo "Must supply the version as the first argument, e.g. $0 v0.1-LATEST"
+    exit 1
+fi
+ver="$1"
 
-docker build --tag gchq/stroom-annotations-service:LOCAL stroom-annotations-svc/.
+cd "$(dirname "$0")"
+mkdir -p work
+cp ../package.json work/
+cp -r ../src work/
+cp -r ../public work/
 
-pushd stroom-annotations-ui/docker
-./build.sh LOCAL
-popd
+docker build --tag gchq/stroom-annotations-ui:${ver} .
