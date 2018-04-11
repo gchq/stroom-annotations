@@ -1,27 +1,32 @@
-package stroom.annotations.resources.noauth;
+package stroom.annotations.resources.auth;
 
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import org.eclipse.jetty.http.HttpStatus;
-import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import stroom.annotations.App;
+import stroom.annotations.client.AnnotationsHttpClient;
+import stroom.annotations.client.AnnotationsServiceHttpClient;
 import stroom.annotations.config.Config;
 import stroom.annotations.model.Annotation;
 import stroom.annotations.model.AnnotationHistory;
 import stroom.annotations.model.AnnotationsDocRefEntity;
 import stroom.annotations.model.HistoryOperation;
 import stroom.annotations.model.Status;
-import stroom.annotations.client.AnnotationsHttpClient;
 import stroom.annotations.resources.AuditedAnnotationsResourceImpl;
 import stroom.query.api.v2.DocRef;
+import stroom.query.audit.authorisation.DocumentPermission;
 import stroom.query.audit.client.DocRefResourceHttpClient;
+import stroom.query.audit.client.DocRefServiceHttpClient;
+import stroom.query.audit.client.NotFoundException;
 import stroom.query.audit.rest.AuditedDocRefResourceImpl;
-import stroom.query.audit.security.NoAuthValueFactoryProvider;
+import stroom.query.audit.service.QueryApiException;
 import stroom.query.testing.DropwizardAppWithClientsRule;
 import stroom.query.testing.FifoLogbackRule;
+import stroom.query.testing.StroomAuthenticationRule;
 
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
@@ -44,60 +49,45 @@ import static org.junit.Assert.fail;
 import static stroom.annotations.service.AnnotationsServiceImpl.SEARCH_PAGE_LIMIT;
 import static stroom.query.testing.FifoLogbackRule.containsAllOf;
 
-public class AnnotationsResourcesNoAuthIT {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AnnotationsResourcesNoAuthIT.class);
+public class AnnotationsRemoteServiceIT {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AnnotationsRemoteServiceIT.class);
 
     @ClassRule
     public static final DropwizardAppWithClientsRule<Config> appRule =
-            new DropwizardAppWithClientsRule<>(App.class, resourceFilePath("config_noauth.yml"));
+            new DropwizardAppWithClientsRule<>(App.class, resourceFilePath("config_auth.yml"));
+
+    @ClassRule
+    public static StroomAuthenticationRule authRule =
+            new StroomAuthenticationRule(WireMockConfiguration.options().port(10080));
 
     @Rule
     public FifoLogbackRule auditLogRule = new FifoLogbackRule();
 
-    private final AnnotationsHttpClient annotationsClient;
-    private final DocRefResourceHttpClient<AnnotationsDocRefEntity> docRefClient;
+    private final AnnotationsServiceHttpClient annotationsClient;
+    private final DocRefServiceHttpClient<AnnotationsDocRefEntity> docRefClient;
 
-    public AnnotationsResourcesNoAuthIT() {
-        annotationsClient = appRule.getClient(AnnotationsHttpClient::new);
-        docRefClient = appRule.getClient(DocRefResourceHttpClient::new);
+    public AnnotationsRemoteServiceIT() {
+        annotationsClient = appRule.getClient(AnnotationsServiceHttpClient::new);
+        docRefClient = appRule.getClient(u ->
+                new DocRefServiceHttpClient<>(
+                        AnnotationsDocRefEntity.TYPE,
+                        AnnotationsDocRefEntity.class,
+                        u));
     }
 
     @Test
-    public void testWelcome() {
-        final Response response = annotationsClient.welcome();
-
-        Assert.assertEquals(AuditedAnnotationsResourceImpl.WELCOME_TEXT, response.readEntity(String.class));
-    }
-
-    @Test
-    public void testStatusValues() {
-        final Response response = annotationsClient.statusValues();
-
-        final Map<String, String> responseStatusValues =
-                response.readEntity(new GenericType<Map<String, String>>() {});
-        final Map<String, String> statusValues = Arrays.stream(Status.values())
-                .collect(Collectors.toMap(Object::toString, Status::getDisplayText));
-
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertEquals(statusValues, responseStatusValues);
-    }
-
-    @Test
-    public void testCreateAnnotation() {
+    public void testCreateAnnotation() throws QueryApiException {
         final DocRef docRef = createDocument();
         final String annotationId = UUID.randomUUID().toString();
 
-        final Response response = annotationsClient.create(NoAuthValueFactoryProvider.ADMIN_USER,
-                docRef.getUuid(),
-                annotationId);
-        assertEquals(HttpStatus.OK_200, response.getStatus());
+        final Annotation created = annotationsClient.create(authRule.adminUser(), docRef.getUuid(), annotationId)
+                .orElseThrow(() -> new AssertionError("Response body missing"));
 
-        final Annotation created = response.readEntity(Annotation.class);
         assertEquals(annotationId, created.getId());
         assertEquals(Annotation.DEFAULT_CONTENT, created.getContent());
         assertEquals(Annotation.DEFAULT_ASSIGNEE, created.getAssignTo());
-        assertEquals(NoAuthValueFactoryProvider.ADMIN_USER.getName(), created.getCreateUser());
-        assertEquals(NoAuthValueFactoryProvider.ADMIN_USER.getName(), created.getUpdateUser());
+        assertEquals(authRule.adminUser().getName(), created.getCreateUser());
+        assertEquals(authRule.adminUser().getName(), created.getUpdateUser());
         assertEquals(Annotation.DEFAULT_STATUS, created.getStatus());
 
         // create document, create annotation
@@ -107,27 +97,24 @@ public class AnnotationsResourcesNoAuthIT {
     }
 
     @Test
-    public void testCreateAndGetAnnotation() {
+    public void testCreateAndGetAnnotation() throws QueryApiException {
         final DocRef docRef = createDocument();
         final String annotationId = UUID.randomUUID().toString();
 
-        final Response response = annotationsClient.create(NoAuthValueFactoryProvider.ADMIN_USER,
-                docRef.getUuid(),
-                annotationId);
-        assertEquals(HttpStatus.OK_200, response.getStatus());
+        annotationsClient.create(authRule.adminUser(), docRef.getUuid(), annotationId)
+                .orElseThrow(() -> new AssertionError("Response body missing"));
 
-        final Annotation annotationResponse = getAnnotation(docRef.getUuid(), annotationId);
-        assertNotNull(annotationResponse);
+        getAnnotation(docRef.getUuid(), annotationId);
 
         // Create Document, create annotation, get annotation
-        auditLogRule.check().thereAreAtLeast(3)
+        auditLogRule.check().thereAreAtLeast(1)
                 .containsOrdered(containsAllOf(AuditedDocRefResourceImpl.CREATE_DOC_REF, docRef.getUuid()))
                 .containsOrdered(containsAllOf(AuditedAnnotationsResourceImpl.CREATE_ANNOTATION, annotationId))
                 .containsOrdered(containsAllOf(AuditedAnnotationsResourceImpl.GET_ANNOTATION, annotationId));
     }
 
     @Test
-    public void testCreateUpdateAndGetMultipleAnnotations() {
+    public void testCreateUpdateAndGetMultipleAnnotations() throws QueryApiException {
         // Create some test data
         final DocRef docRef = createDocument();
 
@@ -163,21 +150,25 @@ public class AnnotationsResourcesNoAuthIT {
     }
 
     @Test
-    public void testDelete() {
+    public void testDelete() throws QueryApiException {
         final DocRef docRef = createDocument();
         final String id = UUID.randomUUID().toString();
 
-        final Response createResponse = annotationsClient.create(NoAuthValueFactoryProvider.ADMIN_USER, docRef.getUuid(), id);
-        assertEquals(HttpStatus.OK_200, createResponse.getStatus());
+        annotationsClient.create(authRule.adminUser(), docRef.getUuid(), id)
+                .orElseThrow(() -> new AssertionError("Response body missing"));
 
-        Response preDeleteGetResponse = annotationsClient.get(NoAuthValueFactoryProvider.ADMIN_USER, docRef.getUuid(), id);
-        assertEquals(HttpStatus.OK_200, preDeleteGetResponse.getStatus());
+        annotationsClient.get(authRule.adminUser(), docRef.getUuid(), id)
+                .orElseThrow(() -> new AssertionError("Response body missing"));
 
-        final Response deleteResponse = annotationsClient.remove(NoAuthValueFactoryProvider.ADMIN_USER, docRef.getUuid(), id);
-        assertEquals(HttpStatus.OK_200, deleteResponse.getStatus());
+        annotationsClient.remove(authRule.adminUser(), docRef.getUuid(), id)
+                .orElseThrow(() -> new AssertionError("Response body missing"));
         
-        Response postDeleteGetResponse = annotationsClient.get(NoAuthValueFactoryProvider.ADMIN_USER, docRef.getUuid(), id);
-        assertEquals(HttpStatus.NOT_FOUND_404, postDeleteGetResponse.getStatus());
+        try {
+            annotationsClient.get(authRule.adminUser(), docRef.getUuid(), id);
+            fail();
+        } catch (NotFoundException e) {
+            // good
+        }
 
         // create document, create annotation, pre-get, Delete, post-get
         auditLogRule.check()
@@ -190,13 +181,13 @@ public class AnnotationsResourcesNoAuthIT {
     }
 
     @Test
-    public void testGetHistory() {
+    public void testGetHistory() throws QueryApiException {
         final DocRef docRef = createDocument();
         final String id = UUID.randomUUID().toString();
 
         final int numberUpdates = 5;
-        final Response createResponse = annotationsClient.create(NoAuthValueFactoryProvider.ADMIN_USER, docRef.getUuid(), id);
-        assertEquals(HttpStatus.OK_200, createResponse.getStatus());
+        annotationsClient.create(authRule.adminUser(), docRef.getUuid(), id)
+                .orElseThrow(() -> new AssertionError("Response body missing"));
 
         final List<Annotation> annotationHistory =
                 IntStream.range(0, numberUpdates).mapToObj(i -> new Annotation.Builder()
@@ -207,23 +198,25 @@ public class AnnotationsResourcesNoAuthIT {
                         .build())
                         .peek(a -> {
                             // Update the annotation with new randomised details
-                            final Response updateResponse = annotationsClient.update(
-                                    NoAuthValueFactoryProvider.ADMIN_USER,
-                                    docRef.getUuid(),
-                                    a.getId(),
-                                    a);
-                            assertEquals(HttpStatus.OK_200, updateResponse.getStatus());
+                            try {
+                                annotationsClient.update(
+                                        authRule.adminUser(),
+                                        docRef.getUuid(),
+                                        a.getId(),
+                                        a)
+                                        .orElseThrow(() -> new AssertionError("Response body missing"));
+                            } catch (final QueryApiException e) {
+                                fail(e.getLocalizedMessage());
+                            }
                         }) // push update to database
                         .collect(Collectors.toList());
 
-        final Response deleteResponse = annotationsClient.remove(NoAuthValueFactoryProvider.ADMIN_USER, docRef.getUuid(), id);
-        assertEquals(HttpStatus.OK_200, deleteResponse.getStatus());
+        annotationsClient.remove(authRule.adminUser(), docRef.getUuid(), id)
+                .orElseThrow(() -> new AssertionError("Response body missing"));
 
         // Get the history for this annotation
-        final Response getHistoryResponse = annotationsClient.getHistory(NoAuthValueFactoryProvider.ADMIN_USER, docRef.getUuid(), id);
-        assertEquals(HttpStatus.OK_200, getHistoryResponse.getStatus());
-
-        final List<AnnotationHistory> history = getHistoryResponse.readEntity(new GenericType<List<AnnotationHistory>>() {});
+        final List<AnnotationHistory> history = annotationsClient.getHistory(authRule.adminUser(), docRef.getUuid(), id)
+                .orElseThrow(() -> new AssertionError("Response body missing"));
 
         // Check that the history contains all the expected events
         assertEquals(numberUpdates + 2, history.size());
@@ -248,7 +241,7 @@ public class AnnotationsResourcesNoAuthIT {
     }
 
     @Test
-    public void testSearchSingle() {
+    public void testSearchSingle() throws QueryApiException {
         // Create some test data
         final DocRef docRef = createDocument();
 
@@ -281,7 +274,7 @@ public class AnnotationsResourcesNoAuthIT {
     }
 
     @Test
-    public void testSearchPages() {
+    public void testSearchPages() throws QueryApiException {
         // Generate an UUID we can embed into the content of some annotations so we can find them
         final DocRef docRef = createDocument();
 
@@ -386,7 +379,7 @@ public class AnnotationsResourcesNoAuthIT {
      * It will also give READ, UPDATE, DELETE permissions to the admin user.
      * @return The DocRef of the newly created annotations index.
      */
-    private DocRef createDocument() {
+    private DocRef createDocument() throws QueryApiException {
         // Generate UUID's for the doc ref and it's parent folder
         final DocRef docRef = new DocRef.Builder()
                 .uuid(UUID.randomUUID().toString())
@@ -395,8 +388,16 @@ public class AnnotationsResourcesNoAuthIT {
                 .build();
 
         // Create a doc ref to hang the search from
-        final Response createResponse = docRefClient.createDocument(NoAuthValueFactoryProvider.ADMIN_USER, docRef.getUuid(), docRef.getName());
-        assertEquals(HttpStatus.OK_200, createResponse.getStatus());
+        docRefClient.createDocument(authRule.adminUser(), docRef.getUuid(), docRef.getName())
+                .orElseThrow(() -> new AssertionError("Response body missing"));
+
+        // Give the admin user complete permissions over the document
+        authRule.permitAdminUser()
+                .docRef(docRef)
+                .permission(DocumentPermission.READ)
+                .permission(DocumentPermission.DELETE)
+                .permission(DocumentPermission.UPDATE)
+                .done();
 
         return docRef;
     }
@@ -414,11 +415,11 @@ public class AnnotationsResourcesNoAuthIT {
         Annotation result = null;
 
         try {
-            final Response createResponse = annotationsClient.create(NoAuthValueFactoryProvider.ADMIN_USER, docRef.getUuid(), annotation.getId());
-            assertEquals(HttpStatus.OK_200, createResponse.getStatus());
+            annotationsClient.create(authRule.adminUser(), docRef.getUuid(), annotation.getId())
+                    .orElseThrow(() -> new AssertionError("Response body missing"));
 
-            final Response updateResponse = annotationsClient.update(NoAuthValueFactoryProvider.ADMIN_USER, docRef.getUuid(), annotation.getId(), annotation);
-            assertEquals(HttpStatus.OK_200, updateResponse.getStatus());
+            annotationsClient.update(authRule.adminUser(), docRef.getUuid(), annotation.getId(), annotation)
+                    .orElseThrow(() -> new AssertionError("Response body missing"));
         } catch (Exception e) {
             fail(e.getLocalizedMessage());
         }
@@ -451,10 +452,7 @@ public class AnnotationsResourcesNoAuthIT {
         List<Annotation> result = null;
 
         try {
-            final Response response = annotationsClient.search(NoAuthValueFactoryProvider.ADMIN_USER, docRef.getUuid(), queryTerm, seekPosition);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-
-            result = response.readEntity(new GenericType<List<Annotation>>(){});
+            result = annotationsClient.search(authRule.adminUser(), docRef.getUuid(), queryTerm, seekPosition);
         } catch (Exception e) {
             fail(e.getLocalizedMessage());
         }
@@ -474,11 +472,8 @@ public class AnnotationsResourcesNoAuthIT {
         Annotation result = null;
 
         try {
-            final Response response = annotationsClient.get(NoAuthValueFactoryProvider.ADMIN_USER, index, id);
-
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-
-            result = response.readEntity(Annotation.class);
+            result = annotationsClient.get(authRule.adminUser(), index, id)
+                    .orElseThrow(() -> new AssertionError("Response body missing"));
 
             assertEquals(id, result.getId());
         } catch (Exception e) {

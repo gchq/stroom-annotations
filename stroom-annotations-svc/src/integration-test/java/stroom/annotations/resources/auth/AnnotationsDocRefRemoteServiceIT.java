@@ -6,6 +6,7 @@ import stroom.annotations.App;
 import stroom.annotations.config.Config;
 import stroom.annotations.model.AnnotationsDocRefEntity;
 import stroom.query.audit.model.DocRefEntity;
+import stroom.query.testing.DocRefRemoteServiceIT;
 import stroom.query.testing.DocRefResourceIT;
 import stroom.query.testing.DropwizardAppWithClientsRule;
 import stroom.query.testing.StroomAuthenticationRule;
@@ -15,8 +16,8 @@ import java.util.Map;
 
 import static io.dropwizard.testing.ResourceHelpers.resourceFilePath;
 
-public class AnnotationsDocRefResourceIT
-        extends DocRefResourceIT<AnnotationsDocRefEntity, Config> {
+public class AnnotationsDocRefRemoteServiceIT
+        extends DocRefRemoteServiceIT<AnnotationsDocRefEntity, Config> {
 
     @ClassRule
     public static final DropwizardAppWithClientsRule<Config> appRule =
@@ -26,7 +27,7 @@ public class AnnotationsDocRefResourceIT
     public static StroomAuthenticationRule authRule =
             new StroomAuthenticationRule(WireMockConfiguration.options().port(10080));
 
-    public AnnotationsDocRefResourceIT() {
+    public AnnotationsDocRefRemoteServiceIT() {
         super(AnnotationsDocRefEntity.TYPE,
                 AnnotationsDocRefEntity.class,
                 appRule,
