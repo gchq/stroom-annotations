@@ -1,8 +1,9 @@
-package stroom.annotations.resources;
+package stroom.annotations.client;
 
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.client.ClientResponse;
 import stroom.annotations.model.Annotation;
+import stroom.annotations.resources.AnnotationsResource;
 import stroom.query.audit.security.ServiceUser;
 
 import javax.ws.rs.client.Client;

@@ -14,7 +14,7 @@ import stroom.annotations.model.AnnotationHistory;
 import stroom.annotations.model.AnnotationsDocRefEntity;
 import stroom.annotations.model.HistoryOperation;
 import stroom.annotations.model.Status;
-import stroom.annotations.resources.AnnotationsHttpClient;
+import stroom.annotations.client.AnnotationsHttpClient;
 import stroom.annotations.resources.AuditedAnnotationsResourceImpl;
 import stroom.query.api.v2.DocRef;
 import stroom.query.audit.authorisation.DocumentPermission;
@@ -54,7 +54,7 @@ public class AnnotationsResourcesIT {
 
     @ClassRule
     public static StroomAuthenticationRule authRule =
-            new StroomAuthenticationRule(WireMockConfiguration.options().port(10080), AnnotationsDocRefEntity.TYPE);
+            new StroomAuthenticationRule(WireMockConfiguration.options().port(10080));
 
     @Rule
     public FifoLogbackRule auditLogRule = new FifoLogbackRule();
@@ -389,7 +389,6 @@ public class AnnotationsResourcesIT {
      */
     private DocRef createDocument() {
         // Generate UUID's for the doc ref and it's parent folder
-        final String parentFolderUuid = UUID.randomUUID().toString();
         final DocRef docRef = new DocRef.Builder()
                 .uuid(UUID.randomUUID().toString())
                 .type(AnnotationsDocRefEntity.TYPE)
@@ -397,14 +396,16 @@ public class AnnotationsResourcesIT {
                 .build();
 
         // Create a doc ref to hang the search from
-        authRule.giveFolderCreatePermission(authRule.adminUser(), parentFolderUuid);
-        final Response createResponse = docRefClient.createDocument(authRule.adminUser(), docRef.getUuid(), docRef.getName(), parentFolderUuid);
+        final Response createResponse = docRefClient.createDocument(authRule.adminUser(), docRef.getUuid(), docRef.getName());
         assertEquals(HttpStatus.OK_200, createResponse.getStatus());
 
         // Give the admin user complete permissions over the document
-        authRule.giveDocumentPermission(authRule.adminUser(), docRef.getUuid(), DocumentPermission.UPDATE);
-        authRule.giveDocumentPermission(authRule.adminUser(), docRef.getUuid(), DocumentPermission.READ);
-        authRule.giveDocumentPermission(authRule.adminUser(), docRef.getUuid(), DocumentPermission.DELETE);
+        authRule.permitAdminUser()
+                .docRef(docRef)
+                .permission(DocumentPermission.READ)
+                .permission(DocumentPermission.DELETE)
+                .permission(DocumentPermission.UPDATE)
+                .done();
 
         return docRef;
     }

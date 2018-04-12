@@ -45,11 +45,11 @@ public class AuditedAnnotationsResourceImpl implements AnnotationsResource {
     public AuditedAnnotationsResourceImpl(final AnnotationsService service,
                                           final AuthorisationService authorisationService,
                                           final EventLoggingService eventLoggingService,
-                                          final DocRefService<AnnotationsDocRefEntity> docRefService) {
+                                          final DocRefService docRefService) {
         this.service = service;
         this.eventLoggingService = eventLoggingService;
         this.authorisationService = authorisationService;
-        this.docRefService = docRefService;
+        this.docRefService = (DocRefService<AnnotationsDocRefEntity>) docRefService;
     }
 
     @Override

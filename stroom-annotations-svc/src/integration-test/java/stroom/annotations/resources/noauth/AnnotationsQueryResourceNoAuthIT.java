@@ -8,7 +8,7 @@ import stroom.annotations.config.Config;
 import stroom.annotations.model.Annotation;
 import stroom.annotations.model.AnnotationsDocRefEntity;
 import stroom.annotations.model.Status;
-import stroom.annotations.resources.AnnotationsHttpClient;
+import stroom.annotations.client.AnnotationsHttpClient;
 import stroom.annotations.resources.AuditedAnnotationsResourceImpl;
 import stroom.datasource.api.v2.DataSource;
 import stroom.datasource.api.v2.DataSourceField;
@@ -60,8 +60,7 @@ public class AnnotationsQueryResourceNoAuthIT extends QueryResourceNoAuthIT<Anno
     private final AnnotationsHttpClient annotationsClient;
 
     public AnnotationsQueryResourceNoAuthIT() {
-        super(AnnotationsDocRefEntity.class,
-                AnnotationsDocRefEntity.TYPE,
+        super(AnnotationsDocRefEntity.TYPE,
                 appRule);
 
         annotationsClient = appRule.getClient(AnnotationsHttpClient::new);
@@ -166,7 +165,7 @@ public class AnnotationsQueryResourceNoAuthIT extends QueryResourceNoAuthIT<Anno
                 try {
                     final SearchRequest request = getValidSearchRequest(docRef, expressionOperator, offsetRange);
 
-                    final Response response = queryClient.search(NoAuthValueFactoryProvider.ADMIN_USER, request);
+                    final Response response = getQueryClient().search(NoAuthValueFactoryProvider.ADMIN_USER, request);
                     assertEquals(HttpStatus.OK_200, response.getStatus());
 
                     final SearchResponse searchResponse = response.readEntity(SearchResponse.class);
@@ -208,7 +207,7 @@ public class AnnotationsQueryResourceNoAuthIT extends QueryResourceNoAuthIT<Anno
     public void testDestroy() {
         final QueryKey aQueryKey = new QueryKey(UUID.randomUUID().toString());
 
-        final Response authenticatedDestroyResponse = queryClient.destroy(NoAuthValueFactoryProvider.ADMIN_USER, aQueryKey);
+        final Response authenticatedDestroyResponse = getQueryClient().destroy(NoAuthValueFactoryProvider.ADMIN_USER, aQueryKey);
         assertEquals(HttpStatus.NOT_FOUND_404, authenticatedDestroyResponse.getStatus());
 
         // Just the authenticated destroy

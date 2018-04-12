@@ -12,6 +12,7 @@ import stroom.annotations.model.Annotation;
 import stroom.annotations.model.AnnotationHistory;
 import stroom.annotations.model.HistoryOperation;
 import stroom.query.audit.security.ServiceUser;
+import stroom.query.audit.service.QueryApiException;
 import stroom.query.jooq.DocRefJooqEntity;
 import stroom.query.jooq.JooqEntity;
 import stroom.query.jooq.QueryableJooqEntity;
@@ -35,8 +36,8 @@ public class AnnotationsServiceImpl implements AnnotationsService {
     public static final int SEARCH_PAGE_LIMIT = 10;
 
     @Inject
-    public AnnotationsServiceImpl(final Configuration jooqConfig) {
-        this.database = DSL.using(jooqConfig);
+    public AnnotationsServiceImpl(final DSLContext jooqConfig) {
+        this.database = jooqConfig;
         this.annotationTable = Optional.ofNullable(Annotation.class.getAnnotation(JooqEntity.class))
                 .map(JooqEntity::tableName)
                 .map(DSL::table)
@@ -51,7 +52,7 @@ public class AnnotationsServiceImpl implements AnnotationsService {
     public List<Annotation> search(final ServiceUser user,
                                    final String index,
                                    final String q,
-                                   final Integer seekPosition) throws Exception {
+                                   final Integer seekPosition) {
         return database.transactionResult(configuration -> {
             LOGGER.info(String.format("Searching the annotations for %s, pagination information (position=%d)",
                     q, seekPosition));
@@ -77,7 +78,7 @@ public class AnnotationsServiceImpl implements AnnotationsService {
     @Override
     public Optional<Annotation> get(final ServiceUser user,
                                     final String index,
-                                    final String id) throws Exception {
+                                    final String id) {
         return database.transactionResult(configuration -> {
             final Annotation result = DSL.using(configuration)
                     .select()
@@ -92,7 +93,7 @@ public class AnnotationsServiceImpl implements AnnotationsService {
     @Override
     public Optional<List<AnnotationHistory>> getHistory(final ServiceUser user,
                                                         final String index,
-                                                        final String id) throws Exception {
+                                                        final String id) {
         return database.transactionResult(configuration ->
                 Optional.of(DSL.using(configuration).select()
                         .from(historyTable)
@@ -106,7 +107,7 @@ public class AnnotationsServiceImpl implements AnnotationsService {
     @Override
     public Optional<Annotation> create(final ServiceUser user,
                                        final String index,
-                                       final String id) throws Exception {
+                                       final String id) {
         return database.transactionResult(configuration -> {
             final ULong now = ULong.valueOf(System.currentTimeMillis());
 
@@ -143,7 +144,7 @@ public class AnnotationsServiceImpl implements AnnotationsService {
     public Optional<Annotation> update(final ServiceUser user,
                                        final String index,
                                        final String id,
-                                       final Annotation annotationUpdate) throws Exception {
+                                       final Annotation annotationUpdate) {
         return database.transactionResult(configuration -> {
             final ULong now = ULong.valueOf(System.currentTimeMillis());
 
@@ -171,7 +172,7 @@ public class AnnotationsServiceImpl implements AnnotationsService {
     @Override
     public Optional<Boolean> remove(final ServiceUser user,
                                     final String index,
-                                    final String id) throws Exception {
+                                    final String id) {
         return database.transactionResult(configuration -> {
             takeAnnotationHistoryDelete(user, configuration, index, id);
 

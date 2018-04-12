@@ -26,12 +26,15 @@ import stroom.query.api.v2.ResultRequest;
 import stroom.query.api.v2.SearchRequest;
 import stroom.query.api.v2.SearchResponse;
 import stroom.query.api.v2.TableSettings;
+import stroom.query.audit.client.NotFoundException;
+import stroom.query.audit.client.UnauthenticatedException;
+import stroom.query.audit.model.DocRefEntity;
 import stroom.query.audit.rest.AuditedDocRefResourceImpl;
 import stroom.query.audit.rest.AuditedQueryResourceImpl;
-import stroom.query.audit.model.DocRefEntity;
+import stroom.query.audit.service.QueryApiException;
 import stroom.query.testing.DropwizardAppWithClientsRule;
 import stroom.query.testing.FifoLogbackRule;
-import stroom.query.testing.QueryResourceIT;
+import stroom.query.testing.QueryRemoteServiceIT;
 import stroom.query.testing.StroomAuthenticationRule;
 
 import javax.ws.rs.core.Response;
@@ -52,7 +55,7 @@ import static org.junit.Assert.fail;
 import static stroom.annotations.service.AnnotationsServiceImpl.SEARCH_PAGE_LIMIT;
 import static stroom.query.testing.FifoLogbackRule.containsAllOf;
 
-public class AnnotationsQueryResourceIT extends QueryResourceIT<AnnotationsDocRefEntity, Config> {
+public class AnnotationsQueryRemoteServiceIT extends QueryRemoteServiceIT<AnnotationsDocRefEntity, Config> {
 
     @ClassRule
     public static final DropwizardAppWithClientsRule<Config> appRule =
@@ -64,8 +67,9 @@ public class AnnotationsQueryResourceIT extends QueryResourceIT<AnnotationsDocRe
 
     private final AnnotationsHttpClient annotationsClient;
 
-    public AnnotationsQueryResourceIT() {
+    public AnnotationsQueryRemoteServiceIT() {
         super(AnnotationsDocRefEntity.TYPE,
+                AnnotationsDocRefEntity.class,
                 appRule,
                 authRule);
 
@@ -96,7 +100,7 @@ public class AnnotationsQueryResourceIT extends QueryResourceIT<AnnotationsDocRe
     }
 
     @Test
-    public void testQuerySearch() {
+    public void testQuerySearch() throws QueryApiException {
         final DocRef docRef = createDocument();
 
         auditLogRule.check().thereAreAtLeast(2)
@@ -171,10 +175,8 @@ public class AnnotationsQueryResourceIT extends QueryResourceIT<AnnotationsDocRe
                 try {
                     final SearchRequest request = getValidSearchRequest(docRef, expressionOperator, offsetRange);
 
-                    final Response response = queryClient.search(authRule.adminUser(), request);
-                    assertEquals(HttpStatus.OK_200, response.getStatus());
-
-                    final SearchResponse searchResponse = response.readEntity(SearchResponse.class);
+                    final SearchResponse searchResponse = queryClient.search(authRule.adminUser(), request)
+                            .orElseThrow(() -> new AssertionError("Response body missing"));
 
                     for (final Result result : searchResponse.getResults()) {
                         assertTrue(result instanceof FlatResult);
@@ -210,17 +212,25 @@ public class AnnotationsQueryResourceIT extends QueryResourceIT<AnnotationsDocRe
     }
 
     @Test
-    public void testDestroy() {
+    public void testDestroy() throws QueryApiException {
         final QueryKey aQueryKey = new QueryKey(UUID.randomUUID().toString());
         final String unauthentiatedUsername = UUID.randomUUID().toString();
 
-        final Response authenticatedDestroyResponse = queryClient.destroy(authRule.adminUser(), aQueryKey);
-        assertEquals(HttpStatus.NOT_FOUND_404, authenticatedDestroyResponse.getStatus());
+        try {
+            queryClient.destroy(authRule.adminUser(), aQueryKey);
+            fail();
+        } catch (final NotFoundException e) {
+            // good
+        }
 
-        final Response unauthenticatedDestroyResponse = queryClient.destroy(
-                authRule.unauthenticatedUser(unauthentiatedUsername),
-                aQueryKey);
-        assertEquals(HttpStatus.UNAUTHORIZED_401, unauthenticatedDestroyResponse.getStatus());
+        try {
+            queryClient.destroy(
+                    authRule.unauthenticatedUser(unauthentiatedUsername),
+                    aQueryKey);
+            fail();
+        } catch (final UnauthenticatedException e) {
+            // good
+        }
 
         // Just the authenticated destroy
         auditLogRule.check().thereAreAtLeast(1)

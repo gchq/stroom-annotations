@@ -1,13 +1,16 @@
 package stroom.annotations;
 
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.Module;
+import com.google.inject.util.Modules;
 import io.dropwizard.Application;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
-import org.glassfish.hk2.api.TypeLiteral;
-import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import stroom.annotations.config.Config;
 import stroom.annotations.model.Annotation;
 import stroom.annotations.model.AnnotationsDocRefEntity;
@@ -24,14 +27,12 @@ import java.util.EnumSet;
 
 public class App extends Application<Config> {
 
-    private final AuditedJooqQueryBundle<Config,
+    private Injector injector;
+
+    private AuditedJooqQueryBundle<Config,
                     AnnotationsDocRefServiceImpl,
                     AnnotationsDocRefEntity,
-                    Annotation> auditedQueryBundle =
-            new AuditedJooqQueryBundle<>(
-                    AnnotationsDocRefServiceImpl.class,
-                    AnnotationsDocRefEntity.class,
-                    Annotation.class);
+                    Annotation> auditedQueryBundle;
 
     public static void main(final String[] args) throws Exception {
         new App().run(args);
@@ -40,19 +41,12 @@ public class App extends Application<Config> {
     @Override
     public void run(final Config configuration,
                     final Environment environment) {
-
         // And we want to configure authentication before the resources
         configureCors(environment);
 
-        environment.jersey().register(new AbstractBinder() {
-            @Override
-            protected void configure() {
-                bind(AnnotationsServiceImpl.class).to(AnnotationsService.class);
-                bind(AnnotationsDocRefServiceImpl.class).to(new TypeLiteral<DocRefService<AnnotationsDocRefEntity>>() {});
-            }
-        });
-        environment.jersey().register(AuditedAnnotationsResourceImpl.class);
+        environment.jersey().register(injector.getInstance(AuditedAnnotationsResourceImpl.class));
     }
+
     private static void configureCors(final Environment environment) {
         FilterRegistration.Dynamic cors = environment.servlets().addFilter("CORS", CrossOriginFilter.class);
         cors.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, new String[]{"/*"});
@@ -63,9 +57,28 @@ public class App extends Application<Config> {
         cors.setInitParameter("allowCredentials", "true");
     }
 
+
+    private Module getGuiceModule(final Config config) {
+        return Modules.combine(new AbstractModule() {
+            @Override
+            protected void configure() {
+                bind(AnnotationsService.class).to(AnnotationsServiceImpl.class);
+            }
+        }, auditedQueryBundle.getGuiceModule(config));
+    }
+
     @Override
     public void initialize(final Bootstrap<Config> bootstrap) {
         super.initialize(bootstrap);
+
+        auditedQueryBundle =
+                new AuditedJooqQueryBundle<>((c) -> {
+                    injector = Guice.createInjector(getGuiceModule(c));
+                    return injector;
+                },
+                AnnotationsDocRefServiceImpl.class,
+                AnnotationsDocRefEntity.class,
+                Annotation.class);
 
         // This allows us to use templating in the YAML configuration.
         bootstrap.setConfigurationSourceProvider(new SubstitutingSourceProvider(
